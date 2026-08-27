@@ -1,0 +1,36 @@
+name: Milestone work item
+description: Propose one bounded product or engineering outcome.
+title: "feat(scope): "
+labels: ["type:feature", "status:triage"]
+body:
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone and issue id
+      placeholder: "0.2.0 / CQ-101"
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User or engineering outcome
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-scope
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance evidence
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk, privacy/security, and recovery
+    validations:
+      required: true

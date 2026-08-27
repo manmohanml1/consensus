@@ -1,0 +1,21 @@
+{
+  "name": "consensus",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @consensus/web dev",
+    "build": "pnpm --filter @consensus/domain build && pnpm --filter @consensus/web build",
+    "lint": "pnpm --filter @consensus/web lint",
+    "typecheck": "pnpm --filter @consensus/domain typecheck && pnpm --filter @consensus/web typecheck",
+    "test": "pnpm --filter @consensus/domain test && pnpm --filter @consensus/web test",
+    "format:check": "prettier --check .",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}

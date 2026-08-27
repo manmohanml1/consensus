@@ -1,0 +1,16 @@
+# Observability
+
+## Operational telemetry
+
+Use structured logs, traces, metrics, and correlation ids across room commands, persistence, realtime publication, and place-provider calls. Never log capabilities, exact room codes, names, precise coordinates, constraints, raw votes, or provider credentials.
+
+Initial service-level indicators:
+
+- command success/error/latency by type;
+- projection convergence delay;
+- active rooms and participants without identity;
+- place-provider latency, rejection, fallback and data-completeness rates;
+- decision completion/no-safe-result/abandonment rates;
+- retention job success and oldest eligible record age.
+
+Alerts must describe an operator action. Product analytics are a separate minimized event contract defined in ADR 0008.
