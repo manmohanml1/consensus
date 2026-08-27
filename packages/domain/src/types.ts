@@ -17,6 +17,7 @@ export interface Candidate {
   openConfidence: "verified-open" | "likely-open" | "unknown";
   constraintEvidence: Record<string, ConstraintEvidence>;
   sourceLabel: string;
+  websiteUrl: string | null;
 }
 
 export type Preference = "prefer" | "accept" | "avoid";

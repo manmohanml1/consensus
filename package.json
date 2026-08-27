@@ -12,8 +12,9 @@
     "lint": "pnpm --filter @consensus/web lint",
     "typecheck": "pnpm --filter @consensus/domain typecheck && pnpm --filter @consensus/web typecheck",
     "test": "pnpm --filter @consensus/domain test && pnpm --filter @consensus/web test",
+    "test:e2e": "pnpm --filter @consensus/web test:e2e",
     "format:check": "prettier --check .",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
     "prettier": "^3.6.2"
