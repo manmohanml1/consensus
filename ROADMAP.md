@@ -22,3 +22,7 @@ Completion means the milestone contract and verification gates are satisfied. It
 - The project targets zero infrastructure spend through prototype and closed-beta validation, not perpetual zero-cost commercial production.
 - Live nearby discovery enters through a provider adapter in 0.5. Fixture media demonstrates the interaction before licensed venue media is available.
 - Provider quotas, commercial terms, field provenance, attribution, and graceful degradation are release gates rather than implementation details.
+
+## Next issue
+
+[CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) is the next bounded implementation step: PWA installability and responsive acceptance evidence. Milestone 0.3 room persistence begins only after that issue and the remaining 0.2 usability gate are resolved or explicitly rescheduled.

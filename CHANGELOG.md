@@ -9,6 +9,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Mobile-first, photo-led ballot cards with optional horizontal swipe gestures and complete button fallbacks.
 - Four locally generated, explicitly illustrative restaurant fixture images.
 - Milestone 0.2.1 and ADRs for progressive responsive design and zero-cost validation controls.
+- Issue-to-PR delivery rules and owner-facing Preview/Production setup gates.
 
 ### Planned
 

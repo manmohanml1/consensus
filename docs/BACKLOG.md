@@ -14,6 +14,8 @@ Each item is sized for an individual pull request unless marked Epic. Use the ma
 - [CQ-102](issues/CQ-102-candidate-review.md) — Candidate review and manual entry
 - [CQ-103](issues/CQ-103-ballot-result.md) — Complete ballot/result state machine
 - [CQ-104](issues/CQ-104-browser-acceptance.md) — Browser and accessibility acceptance suite
+- [CQ-105](issues/CQ-105-mobile-discovery-deck.md) — Mobile-first photo-led discovery deck
+- [CQ-106](issues/CQ-106-pwa-responsive-acceptance.md) — PWA installability and responsive acceptance
 
 ## 0.3 Secure rooms
 
