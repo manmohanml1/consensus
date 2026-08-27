@@ -64,6 +64,7 @@ jobs:
           name: consensus-web-${{ github.sha }}
           path: apps/web/.next
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
       - name: Upload Playwright diagnostics on failure
         if: failure()
