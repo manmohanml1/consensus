@@ -8,7 +8,8 @@ import {
   type DecisionResult,
   type Preference,
 } from "@consensus/domain";
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import {
   buildSampleCandidates,
   candidateMapUrl,
@@ -73,6 +74,36 @@ const cloneBallots = (ballots: Ballots): Ballots =>
 
 const participantId = (index: number) => `participant-${index + 1}`;
 
+const fixtureMedia: Record<
+  string,
+  { src: string; alt: string; vibe: string; highlights: readonly string[] }
+> = {
+  "garden-table": {
+    src: "/fixtures/garden-table.png",
+    alt: "Illustrative seasonal vegetable plates in a plant-filled dining room",
+    vibe: "Calm · plant-forward · date-night",
+    highlights: ["Seasonal vegetables", "Shareable plates", "Quiet tables"],
+  },
+  "night-noodle": {
+    src: "/fixtures/night-noodle.png",
+    alt: "Illustrative bowl of spicy noodles at a colorful evening counter",
+    vibe: "Lively · quick · late-night",
+    highlights: ["Handmade noodles", "Flexible bowls", "Fast service"],
+  },
+  "harbor-kitchen": {
+    src: "/fixtures/harbor-kitchen.png",
+    alt: "Illustrative shared lunch spread beside a bright waterfront window",
+    vibe: "Relaxed · roomy · waterfront",
+    highlights: ["Comfort plates", "Group tables", "Clear menu"],
+  },
+  "cellar-club": {
+    src: "/fixtures/cellar-club.png",
+    alt: "Illustrative candlelit tasting plates in a brick cellar dining room",
+    vibe: "Intimate · tasting menu · moody",
+    highlights: ["Small plates", "Candlelit room", "Limited menu"],
+  },
+};
+
 export function DecisionWorkflow() {
   const [step, setStep] = useState<WorkflowStep>("setup");
   const [setup, setSetup] = useState<RoomSetup>(initialSetup);
@@ -94,6 +125,9 @@ export function DecisionWorkflow() {
   const [decision, setDecision] = useState<DecisionResult | null>(null);
   const [committedIds, setCommittedIds] = useState<string[]>([]);
   const [shareStatus, setShareStatus] = useState("");
+  const [dragX, setDragX] = useState(0);
+  const dragStartX = useRef<number | null>(null);
+  const dragCurrentX = useRef(0);
 
   const constraints = useMemo(
     () => selectedConstraints(setup.constraintIds),
@@ -277,7 +311,37 @@ export function DecisionWorkflow() {
     next[currentParticipant.id] = participantBallot;
     setBallots(next);
     setStrongestPick(false);
+    setDragX(0);
+    dragCurrentX.current = 0;
+    dragStartX.current = null;
     advanceBallot();
+  };
+
+  const startDrag = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStartX.current = event.clientX;
+  };
+
+  const moveDrag = (event: PointerEvent<HTMLElement>) => {
+    if (dragStartX.current === null) return;
+    const nextDragX = Math.max(
+      -140,
+      Math.min(140, event.clientX - dragStartX.current),
+    );
+    dragCurrentX.current = nextDragX;
+    setDragX(nextDragX);
+  };
+
+  const endDrag = () => {
+    if (dragStartX.current === null) return;
+    if (dragCurrentX.current <= -90) castVote("avoid");
+    else if (dragCurrentX.current >= 90) castVote("prefer");
+    else {
+      setDragX(0);
+      dragCurrentX.current = 0;
+      dragStartX.current = null;
+    }
   };
 
   const undoVote = () => {
@@ -527,6 +591,17 @@ export function DecisionWorkflow() {
               );
               return (
                 <article key={candidate.id} className="review-card">
+                  {fixtureMedia[candidate.id] && (
+                    <div className="review-card-media">
+                      <Image
+                        src={fixtureMedia[candidate.id].src}
+                        alt={fixtureMedia[candidate.id].alt}
+                        fill
+                        sizes="(max-width: 650px) 38vw, 180px"
+                      />
+                      <span>Illustrative</span>
+                    </div>
+                  )}
                   <div>
                     <p className="candidate-facts">
                       <span>{candidate.priceLabel ?? "Price unknown"}</span>
@@ -730,19 +805,71 @@ export function DecisionWorkflow() {
             />
           </div>
 
-          <article className="ballot-card">
-            <div className="candidate-visual" aria-hidden="true">
-              <span>{currentCandidate.name.slice(0, 1)}</span>
-              <div className="orbit orbit-one" />
-              <div className="orbit orbit-two" />
+          <p className="swipe-hint">Swipe left or right—or use the buttons.</p>
+          <article
+            className="ballot-card"
+            data-testid="ballot-card"
+            onPointerDown={startDrag}
+            onPointerMove={moveDrag}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            style={{
+              transform: `translateX(${dragX}px) rotate(${dragX / 28}deg)`,
+            }}
+          >
+            <div className="candidate-visual">
+              {fixtureMedia[currentCandidate.id] ? (
+                <Image
+                  src={fixtureMedia[currentCandidate.id].src}
+                  alt={fixtureMedia[currentCandidate.id].alt}
+                  fill
+                  draggable={false}
+                  priority={candidateIndex === 0 && participantIndex === 0}
+                  sizes="(max-width: 650px) 100vw, (max-width: 1000px) 44vw, 420px"
+                />
+              ) : (
+                <span aria-hidden="true">
+                  {currentCandidate.name.slice(0, 1)}
+                </span>
+              )}
+              <div className="fixture-label">Illustrative fixture</div>
+              <div
+                className={`swipe-stamp swipe-no ${dragX < -35 ? "is-visible" : ""}`}
+                aria-hidden="true"
+              >
+                PASS
+              </div>
+              <div
+                className={`swipe-stamp swipe-yes ${dragX > 35 ? "is-visible" : ""}`}
+                aria-hidden="true"
+              >
+                LIKE
+              </div>
             </div>
             <div className="ballot-copy">
+              {fixtureMedia[currentCandidate.id] && (
+                <p className="candidate-vibe">
+                  {fixtureMedia[currentCandidate.id].vibe}
+                </p>
+              )}
               <p className="candidate-facts">
                 <span>{currentCandidate.priceLabel ?? "Price unknown"}</span>
                 <span>{formatDistance(currentCandidate.distanceMeters)}</span>
                 <span>{currentCandidate.openConfidence.replace("-", " ")}</span>
               </p>
               <p>{currentCandidate.summary}</p>
+              {fixtureMedia[currentCandidate.id] && (
+                <div
+                  className="dish-highlights"
+                  aria-label="Fixture highlights"
+                >
+                  {fixtureMedia[currentCandidate.id].highlights.map(
+                    (highlight) => (
+                      <span key={highlight}>{highlight}</span>
+                    ),
+                  )}
+                </div>
+              )}
               <small>{currentCandidate.sourceLabel}</small>
               <label className="must-pick">
                 <input
@@ -762,6 +889,7 @@ export function DecisionWorkflow() {
             <button
               type="button"
               className="vote avoid"
+              aria-label="Avoid — preference, not a safety veto"
               onClick={() => castVote("avoid")}
             >
               <span>×</span>Avoid<small>Preference, not a safety veto</small>
@@ -769,6 +897,7 @@ export function DecisionWorkflow() {
             <button
               type="button"
               className="vote accept"
+              aria-label="Accept — a workable compromise"
               onClick={() => castVote("accept")}
             >
               <span>○</span>Accept<small>A workable compromise</small>
@@ -776,6 +905,7 @@ export function DecisionWorkflow() {
             <button
               type="button"
               className="vote prefer"
+              aria-label="Prefer — a positive choice"
               onClick={() => castVote("prefer")}
             >
               <span>♥</span>Prefer<small>A positive choice</small>

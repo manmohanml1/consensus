@@ -9,7 +9,7 @@ async function reachResult(page: Page) {
 
   for (let response = 0; response < 12; response += 1) {
     await page
-      .getByRole("button", { name: /Prefer A positive choice/ })
+      .getByRole("button", { name: /Prefer.*positive choice/i })
       .click();
   }
   await page.getByRole("button", { name: "Resolve fairly" }).click();
@@ -48,6 +48,37 @@ test("does not overflow a 390px mobile viewport", async ({ page }) => {
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
   await expect(
     page.getByRole("button", { name: "Review candidates" }),
+  ).toBeVisible();
+});
+
+test("supports an optional mobile swipe without removing buttons", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Review candidates" }).click();
+  await page
+    .getByRole("button", { name: "Lock roster and begin voting" })
+    .click();
+
+  const card = page.getByTestId("ballot-card");
+  await card.scrollIntoViewIfNeeded();
+  const box = await card.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) return;
+
+  await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * 0.4);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.4, {
+    steps: 8,
+  });
+  await page.mouse.up();
+
+  await expect(
+    page.getByRole("heading", { name: "Night Noodle" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Accept.*workable compromise/i }),
   ).toBeVisible();
 });
 

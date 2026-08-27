@@ -343,12 +343,42 @@ button:disabled {
 }
 .review-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 148px 1fr auto;
   gap: 24px;
-  padding: 22px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.02);
+}
+.review-card-media {
+  position: relative;
+  min-height: 132px;
+  overflow: hidden;
+  border-radius: 13px;
+  background: var(--panel-soft);
+}
+.review-card-media img,
+.candidate-visual img {
+  object-fit: cover;
+}
+.review-card-media span,
+.fixture-label {
+  position: absolute;
+  z-index: 2;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  color: white;
+  background: rgba(5, 8, 14, 0.7);
+  backdrop-filter: blur(9px);
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.review-card-media span {
+  right: 8px;
+  bottom: 8px;
 }
 .review-card h4,
 .result-grid h4 {
@@ -448,22 +478,88 @@ button:disabled {
   transition: width 0.2s ease;
 }
 .ballot-card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) 1.2fr;
   overflow: hidden;
   border: 1px solid rgba(117, 245, 195, 0.23);
   border-radius: 24px;
   background: #0a111c;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.34);
+  touch-action: pan-y;
+  user-select: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  will-change: transform;
 }
 .ballot-card .candidate-visual {
   height: 100%;
-  min-height: 280px;
+  min-height: 420px;
+}
+.swipe-hint {
+  margin: -8px 0 13px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-align: center;
+}
+.fixture-label {
+  top: 14px;
+  left: 14px;
+}
+.swipe-stamp {
+  position: absolute;
+  z-index: 4;
+  top: 74px;
+  padding: 8px 12px;
+  border: 3px solid currentColor;
+  border-radius: 9px;
+  opacity: 0;
+  font-size: 1.35rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  transition: opacity 120ms ease;
+}
+.swipe-stamp.is-visible {
+  opacity: 1;
+}
+.swipe-no {
+  right: 20px;
+  color: #ff8294;
+  transform: rotate(10deg);
+}
+.swipe-yes {
+  left: 20px;
+  color: var(--mint);
+  transform: rotate(-10deg);
 }
 .ballot-copy {
   display: grid;
   align-content: center;
   gap: 20px;
   padding: clamp(24px, 5vw, 42px);
+}
+.candidate-vibe {
+  margin: 0 !important;
+  color: var(--gold) !important;
+  font-size: 0.72rem !important;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.dish-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dish-highlights span {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #dce6f5;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 .ballot-copy > p:not(.candidate-facts) {
   margin: 0;
@@ -868,8 +964,24 @@ button:disabled {
 }
 
 @media (max-width: 650px) {
+  body {
+    background:
+      radial-gradient(
+        circle at 50% 0%,
+        rgba(117, 245, 195, 0.1),
+        transparent 25rem
+      ),
+      var(--night);
+  }
   .hero {
-    padding-top: 70px;
+    padding: 54px 4px 42px;
+  }
+  h1 {
+    font-size: clamp(3.15rem, 15vw, 4.7rem);
+  }
+  .hero-copy {
+    margin: 24px 0;
+    font-size: 1rem;
   }
   .room-shell {
     width: min(100% - 18px, 1180px);
@@ -900,22 +1012,53 @@ button:disabled {
     grid-template-columns: 1fr;
   }
   .review-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: 108px 1fr;
+    gap: 14px;
+  }
+  .review-card-media {
+    min-height: 142px;
   }
   .review-status {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: start;
   }
   .ballot-card {
     grid-template-columns: 1fr;
+    border-radius: 28px;
   }
   .ballot-card .candidate-visual {
-    min-height: 170px;
+    height: min(58dvh, 470px);
+    min-height: 330px;
+  }
+  .ballot-copy {
+    gap: 14px;
+    padding: 20px;
   }
   .vote-controls {
-    grid-template-columns: 1fr;
+    position: sticky;
+    z-index: 6;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    grid-template-columns: repeat(3, 1fr);
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: rgba(7, 11, 18, 0.88);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.44);
+    backdrop-filter: blur(16px);
   }
   .vote {
-    min-height: 78px;
+    min-height: 72px;
+    padding: 9px 4px;
+    border-radius: 18px;
+    font-size: 0.76rem;
+  }
+  .vote small {
+    display: none;
+  }
+  .vote > span {
+    font-size: 1.55rem;
   }
   .ballot-progress {
     align-items: start;

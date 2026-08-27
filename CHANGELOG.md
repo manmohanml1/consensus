@@ -4,6 +4,12 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ## Unreleased
 
+### Added
+
+- Mobile-first, photo-led ballot cards with optional horizontal swipe gestures and complete button fallbacks.
+- Four locally generated, explicitly illustrative restaurant fixture images.
+- Milestone 0.2.1 and ADRs for progressive responsive design and zero-cost validation controls.
+
 ### Planned
 
 - Multi-device rooms, authoritative realtime state, production place data, and commitment handoffs.
