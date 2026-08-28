@@ -21,6 +21,7 @@
 
 - [ ] Focused tests passed
 - [ ] `pnpm verify` passed
+- [ ] Workflow policy, dependency review, and applicable security scans passed
 - [ ] Desktop/mobile/keyboard/reduced-motion evidence included when UI changed
 - [ ] No secrets, private room data, precise location, or generated output committed
 
@@ -38,6 +39,7 @@
 - [ ] Production setup/runbook updated
 - [ ] Owner actions and required secrets documented without including secret values
 - [ ] Rollback and post-deploy verification documented
+- [ ] Exact promotion artifact and commit recorded when Production is requested
 
 ## Merge authorization
 

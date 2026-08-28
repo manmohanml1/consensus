@@ -6,6 +6,8 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -20,3 +22,5 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    commit-message:
+      prefix: "ci(deps)"

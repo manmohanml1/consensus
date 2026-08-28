@@ -39,8 +39,8 @@ The repository currently records `0.1.0` as its version baseline. No tag or GitH
 4. Open a Conventional Commit PR such as `chore(release): prepare v0.3.0`; leave it unmerged.
 5. Merge only after the owner explicitly authorizes that PR.
 6. Ask for separate owner authorization to create and push the exact annotated tag.
-7. Push the annotated tag. The release workflow rechecks provenance and versions, runs the full verification suite, packages the application, and creates the GitHub Release.
-8. Verify the release artifact and production behavior; document rollback or follow-up work.
+7. Push the annotated tag. The release workflow rechecks provenance and versions, runs the full verification suite, packages the application, emits a SHA-256 checksum and GitHub build-provenance attestation, and creates the GitHub Release.
+8. Verify the checksum, attestation, release artifact, and production behavior; document rollback or follow-up work.
 
 ## Independent compatibility versions
 
