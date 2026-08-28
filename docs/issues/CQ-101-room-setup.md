@@ -2,6 +2,7 @@
 
 **Milestone:** 0.2.0  
 **Type:** feature
+**GitHub:** [#3](https://github.com/manmohanml1/consensus/issues/3)
 
 Build target-time, group-size, dietary, accessibility, price and distance setup with private/aggregate explanation semantics.
 

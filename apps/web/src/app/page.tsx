@@ -1,24 +1,15 @@
-import { resolveDecision } from "@consensus/domain";
-import { DecisionDemo } from "@/components/decision-demo";
-import {
-  sampleCandidates,
-  sampleConstraints,
-  sampleDecisionInput,
-  sampleParticipants,
-} from "@/lib/sample-room";
+import { DecisionWorkflow } from "@/components/decision-workflow";
 
 export default function HomePage() {
-  const decision = resolveDecision(sampleDecisionInput);
-
   return (
     <main>
       <section className="hero" aria-labelledby="hero-title">
-        <div className="eyebrow">Consensus · foundation build</div>
+        <div className="eyebrow">Consensus · decision MVP</div>
         <h1 id="hero-title">Make the choice. Keep the group.</h1>
         <p className="hero-copy">
           Non-negotiables first, preferences second, and a clear reason for the
-          result. This sample is local, deterministic, and intentionally uses no
-          live venue claims.
+          result. Build a room, review honest options, vote together, and leave
+          with a plan—all without an account.
         </p>
         <div className="hero-meta" aria-label="Product principles">
           <span>Zero signup</span>
@@ -27,12 +18,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <DecisionDemo
-        candidates={sampleCandidates}
-        constraints={sampleConstraints}
-        decision={decision}
-        participants={sampleParticipants}
-      />
+      <DecisionWorkflow />
 
       <section
         className="architecture-note"

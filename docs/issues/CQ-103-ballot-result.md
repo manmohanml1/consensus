@@ -3,6 +3,7 @@
 **Milestone:** 0.2.0  
 **Type:** feature  
 **Depends on:** CQ-001, CQ-102
+**GitHub:** [#5](https://github.com/manmohanml1/consensus/issues/5)
 
 Implement prefer/accept/avoid/must-pick input, undo, completion, no-safe-result, explanation, runner-up and commitment views.
 

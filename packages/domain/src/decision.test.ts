@@ -12,6 +12,7 @@ const candidates: Candidate[] = [
     openConfidence: "verified-open",
     constraintEvidence: { vegetarian: true, accessible: true },
     sourceLabel: "Sample fixture",
+    websiteUrl: null,
   },
   {
     id: "noodle",
@@ -22,6 +23,7 @@ const candidates: Candidate[] = [
     openConfidence: "likely-open",
     constraintEvidence: { vegetarian: true, accessible: true },
     sourceLabel: "Sample fixture",
+    websiteUrl: null,
   },
 ];
 
