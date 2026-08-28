@@ -19,6 +19,13 @@ If Git integration is unsuitable later, a separately approved CI workflow may us
 
 ## Preview acceptance checklist
 
+Run the browser suite against the immutable Preview artifact before completing the manual checks:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "https://<preview-host>"
+pnpm --filter @consensus/web test:e2e
+```
+
 - Record deployment URL, commit SHA, target environment, build duration, and status in the pull request.
 - Complete host setup, candidate review, ballot, no-safe-result, result, commitment, and safe-link flows.
 - Check 320px and 390px phones, 768px tablet, and 1440px desktop.

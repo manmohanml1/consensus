@@ -24,4 +24,11 @@ Milestone 0.2.1 also validates install metadata and generated icons, plus horizo
 
 Browser projects use bounded parallelism so image-heavy responsive journeys do not create development-server startup races on constrained CI runners. Increasing worker count requires repeated evidence that the full suite remains stable.
 
+Set `PLAYWRIGHT_BASE_URL` to an immutable HTTPS Preview origin to run the same suite without starting the local development server:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "https://<preview-host>"
+pnpm test:e2e
+```
+
 Do not use a production provider or user room as automated test data.
