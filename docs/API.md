@@ -1,6 +1,8 @@
 # API outline
 
-The concrete OpenAPI contract begins with milestone 0.3. This document fixes resource semantics, not provider implementation.
+The concrete OpenAPI contract begins with milestone 0.3. This document fixes resource semantics, not provider implementation. The versioned provider-neutral command, projection, and public-error shapes are defined in [ROOM_PROTOCOL.md](ROOM_PROTOCOL.md); OpenAPI must reference those semantics rather than create a parallel model.
+
+All room reads and mutations are private request-time data and return `Cache-Control: no-store`. Capabilities are carried by the approved transport boundary and never appear in request or response bodies.
 
 ## Commands
 
@@ -21,3 +23,5 @@ The concrete OpenAPI contract begins with milestone 0.3. This document fixes res
 ## Error model
 
 Errors contain a stable code, safe message, correlation id, and retryability. Unknown and unauthorized rooms return equivalent public responses. Validation errors identify fields without echoing sensitive values.
+
+Parsing establishes shape and boundedness only. Every handler must separately authenticate the capability, authorize its room/member/role scope, enforce aggregate revision and participant sequence, apply idempotency, and commit the mutation with its outbox record in one transaction.

@@ -1,0 +1,1559 @@
+{
+  "schemaVersion": 1,
+  "repository": "manmohanml1/consensus",
+  "generatedFor": "Roadmap v0.3.0 through v1.0.0",
+  "labels": [
+    {
+      "name": "status:planned",
+      "color": "bfdadc",
+      "description": "Approved backlog item not yet started"
+    },
+    {
+      "name": "status:blocked",
+      "color": "d4c5f9",
+      "description": "Blocked by another issue or owner decision"
+    },
+    {
+      "name": "status:in-progress",
+      "color": "fbca04",
+      "description": "Actively being implemented"
+    },
+    {
+      "name": "type:architecture",
+      "color": "5319e7",
+      "description": "Architecture work item"
+    },
+    {
+      "name": "type:feature",
+      "color": "1d76db",
+      "description": "Feature work item"
+    },
+    {
+      "name": "type:security",
+      "color": "b60205",
+      "description": "Security work item"
+    },
+    {
+      "name": "type:privacy",
+      "color": "c5def5",
+      "description": "Privacy work item"
+    },
+    {
+      "name": "type:reliability",
+      "color": "fbca04",
+      "description": "Reliability work item"
+    },
+    {
+      "name": "type:operations",
+      "color": "0e8a16",
+      "description": "Operations work item"
+    },
+    {
+      "name": "type:research",
+      "color": "d876e3",
+      "description": "Research work item"
+    },
+    {
+      "name": "type:testing",
+      "color": "0052cc",
+      "description": "Testing work item"
+    },
+    {
+      "name": "type:accessibility",
+      "color": "f143ab",
+      "description": "Accessibility work item"
+    },
+    {
+      "name": "phase:0.3.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.3.0 work"
+    },
+    {
+      "name": "phase:0.4.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.4.0 work"
+    },
+    {
+      "name": "phase:0.5.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.5.0 work"
+    },
+    {
+      "name": "phase:0.6.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.6.0 work"
+    },
+    {
+      "name": "phase:0.7.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.7.0 work"
+    },
+    {
+      "name": "phase:0.8.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.8.0 work"
+    },
+    {
+      "name": "phase:0.9.0",
+      "color": "0366d6",
+      "description": "Roadmap 0.9.0 work"
+    },
+    {
+      "name": "phase:1.0.0",
+      "color": "0366d6",
+      "description": "Roadmap 1.0.0 work"
+    }
+  ],
+  "milestones": [
+    {
+      "version": "0.3.0",
+      "title": "v0.3.0 — Secure ephemeral rooms",
+      "description": "Durable anonymous rooms, capability security, locked rosters, lifecycle, and authoritative commands."
+    },
+    {
+      "version": "0.4.0",
+      "title": "v0.4.0 — Authoritative realtime",
+      "description": "Multi-device convergence over committed server state with recovery and degraded operation."
+    },
+    {
+      "version": "0.5.0",
+      "title": "v0.5.0 — Trustworthy place data",
+      "description": "Licensed nearby discovery with provenance, freshness, constraints, and honest fallback."
+    },
+    {
+      "version": "0.6.0",
+      "title": "v0.6.0 — Closed beta readiness",
+      "description": "Operationally supported beta with privacy-safe evidence, accessibility, and recovery."
+    },
+    {
+      "version": "0.7.0",
+      "title": "v0.7.0 — Repeat-group utility",
+      "description": "Consented repeat-group value, saved preferences, history, and scheduled rituals."
+    },
+    {
+      "version": "0.8.0",
+      "title": "v0.8.0 — Handoffs and monetization",
+      "description": "Transparent reservation/order handoffs and ethical monetization experiments."
+    },
+    {
+      "version": "0.9.0",
+      "title": "v0.9.0 — Expansion and scale",
+      "description": "New decision categories, calibration, abuse defense, failover, and scale proof."
+    },
+    {
+      "version": "1.0.0",
+      "title": "v1.0.0 — Trustworthy launch",
+      "description": "Launch criteria, independent audits, operability, economics, and release evidence."
+    }
+  ],
+  "issues": [
+    {
+      "id": "CQ-201",
+      "version": "0.3.0",
+      "title": "Select and approve the transactional database provider",
+      "type": "architecture",
+      "dependsOn": [],
+      "outcome": "Choose a PostgreSQL-compatible provider under ADR 0007 without provisioning before owner approval.",
+      "acceptance": [
+        "Comparison records free allowance, spend controls, terms, portability, recovery, and migration threshold",
+        "Accepted ADR names the provider and degradation plan",
+        "Non-production provisioning and teardown require explicit owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-202",
+      "version": "0.3.0",
+      "title": "Implement the room schema and forward-only migrations",
+      "type": "feature",
+      "dependsOn": ["CQ-201"],
+      "outcome": "Create durable rooms, participants, constraints, candidates, ballots, decisions, commands, and outbox records.",
+      "acceptance": [
+        "Migrations run in order against disposable PostgreSQL",
+        "Uniqueness, revision, foreign-key, and idempotency constraints are enforced",
+        "Retention and deletion paths are represented"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-203",
+      "version": "0.3.0",
+      "title": "Implement anonymous capability issuance and hashing",
+      "type": "security",
+      "dependsOn": ["CQ-202", "CQ-205"],
+      "outcome": "Issue room-scoped host and participant capabilities while storing only cryptographic hashes.",
+      "acceptance": [
+        "Raw capabilities never enter storage, logs, analytics, or error payloads",
+        "Capabilities are scoped to one room, member, role, and expiry",
+        "Cross-room attempts fail indistinguishably"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-204",
+      "version": "0.3.0",
+      "title": "Implement the idempotent room command API",
+      "type": "feature",
+      "dependsOn": ["CQ-202", "CQ-203", "CQ-205"],
+      "outcome": "Accept versioned room commands with authorization, compare-and-set revisions, and participant sequences.",
+      "acceptance": [
+        "Duplicate idempotency keys return the prior result without reapplying",
+        "Stale revisions have a documented recoverable response",
+        "Every accepted mutation and outbox append share one transaction"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-205",
+      "version": "0.3.0",
+      "title": "Define versioned room protocol contracts",
+      "type": "architecture",
+      "dependsOn": [],
+      "outcome": "Define provider-neutral runtime contracts for room commands, projections, roles, phases, revisions, and errors.",
+      "acceptance": [
+        "Every external payload has a runtime parser and bounded fields",
+        "Protocol versions and compatibility rules are documented",
+        "Tests reject malformed, oversized, unsafe, and secret-bearing inputs"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-206",
+      "version": "0.3.0",
+      "title": "Build room creation and invitation locator flow",
+      "type": "feature",
+      "dependsOn": ["CQ-203", "CQ-205"],
+      "outcome": "Let a host create a temporary room and share a friendly locator that grants no authority by itself.",
+      "acceptance": [
+        "Room codes are non-authoritative and resistant to enumeration",
+        "Join links never embed host authority",
+        "Expired, missing, and unauthorized rooms are indistinguishable"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-207",
+      "version": "0.3.0",
+      "title": "Enforce participant roster lifecycle and round locking",
+      "type": "feature",
+      "dependsOn": ["CQ-204", "CQ-206"],
+      "outcome": "Make join, leave, host approval, quorum, dropout, and roster lock explicit server transitions.",
+      "acceptance": [
+        "Starting a round snapshots the eligible roster",
+        "Late participants cannot silently change unanimity or quorum",
+        "Dropout handling is explicit, versioned, and tested"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-208",
+      "version": "0.3.0",
+      "title": "Implement room expiry, retention, and deletion",
+      "type": "privacy",
+      "dependsOn": ["CQ-202", "CQ-204"],
+      "outcome": "Expire temporary rooms and delete sensitive room data on a documented lifecycle.",
+      "acceptance": [
+        "Expiry is enforced server-side and visible to clients",
+        "Deletion is idempotent and covers projections, commands, ballots, and capabilities",
+        "Tests verify no expired room can be revived accidentally"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-209",
+      "version": "0.3.0",
+      "title": "Implement host recovery and capability rotation",
+      "type": "security",
+      "dependsOn": ["CQ-203", "CQ-204"],
+      "outcome": "Recover host control without accounts while revoking superseded capabilities.",
+      "acceptance": [
+        "Recovery requires an explicit short-lived flow",
+        "Rotation invalidates prior host authority atomically",
+        "Recovery attempts are rate-limited and never reveal room existence"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-210",
+      "version": "0.3.0",
+      "title": "Build privacy-minimized authorized room projections",
+      "type": "privacy",
+      "dependsOn": ["CQ-204"],
+      "outcome": "Return only the room state each host or participant role is allowed to observe.",
+      "acceptance": [
+        "Individual constraints and ballots are not exposed beyond the approved contract",
+        "Projection responses are revisioned and no-store",
+        "Snapshot tests prevent accidental sensitive-field expansion"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-211",
+      "version": "0.3.0",
+      "title": "Add command concurrency and duplicate-delivery tests",
+      "type": "reliability",
+      "dependsOn": ["CQ-204", "CQ-207"],
+      "outcome": "Prove correctness when commands race, repeat, arrive stale, or use invalid participant sequences.",
+      "acceptance": [
+        "Parallel tests cover duplicate vote, roster lock, resolve, and expiry races",
+        "No acknowledged command is applied twice",
+        "Database constraints and application errors agree"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-212",
+      "version": "0.3.0",
+      "title": "Document migration, backup, restore, and provider teardown",
+      "type": "operations",
+      "dependsOn": ["CQ-201", "CQ-202"],
+      "outcome": "Create reversible operational procedures for the first durable store.",
+      "acceptance": [
+        "Disposable restore produces the expected schema and fixture room",
+        "Rollback limitations and forward-fix procedure are explicit",
+        "Provider teardown removes non-production data without exposing secrets"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-213",
+      "version": "0.3.0",
+      "title": "Add room-code abuse, enumeration, and rate controls",
+      "type": "security",
+      "dependsOn": ["CQ-203", "CQ-206"],
+      "outcome": "Bound anonymous create, locate, join, and recovery attempts without collecting invasive identity.",
+      "acceptance": [
+        "Per-origin and per-room limits have safe defaults and kill switches",
+        "Responses do not become a room enumeration oracle",
+        "Legitimate small groups receive accessible retry guidance"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-214",
+      "version": "0.3.0",
+      "title": "Complete the secure-room threat model and exit review",
+      "type": "security",
+      "dependsOn": [
+        "CQ-207",
+        "CQ-208",
+        "CQ-209",
+        "CQ-210",
+        "CQ-211",
+        "CQ-212",
+        "CQ-213"
+      ],
+      "outcome": "Review the complete 0.3 attack surface and verify the milestone exit gate.",
+      "acceptance": [
+        "Threat model covers capabilities, CSRF, replay, fixation, enumeration, retention, and insider access",
+        "Release-critical findings have owners and tests",
+        "Milestone evidence records an explicit pass or deferral rationale"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-301",
+      "version": "0.4.0",
+      "title": "Select and approve the realtime transport",
+      "type": "architecture",
+      "dependsOn": ["CQ-204"],
+      "outcome": "Measure transports without allowing realtime delivery to become authoritative.",
+      "acceptance": [
+        "Evaluation covers acknowledgement, fan-out, auth, quotas, observability, recovery, and cost",
+        "Accepted ADR preserves transactional authority",
+        "Provisioning requires explicit owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-302",
+      "version": "0.4.0",
+      "title": "Implement the transactional outbox publisher",
+      "type": "feature",
+      "dependsOn": ["CQ-305", "CQ-306"],
+      "outcome": "Publish committed room projections with retry and bounded retention.",
+      "acceptance": [
+        "Committed transitions are eventually visible",
+        "Uncommitted transitions are never published",
+        "Repeated publication is harmless"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-303",
+      "version": "0.4.0",
+      "title": "Implement revision reconciliation and recovery",
+      "type": "feature",
+      "dependsOn": ["CQ-302", "CQ-308"],
+      "outcome": "Detect projection gaps and converge clients on the current committed revision.",
+      "acceptance": [
+        "Gap detection fetches an authorized current projection",
+        "Duplicate and reordered events do not regress state",
+        "Reconnect produces deterministic convergence"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-304",
+      "version": "0.4.0",
+      "title": "Define versioned realtime event envelopes",
+      "type": "architecture",
+      "dependsOn": ["CQ-205", "CQ-301"],
+      "outcome": "Specify event identity, room revision, type, timestamp semantics, compatibility, and privacy boundaries.",
+      "acceptance": [
+        "Parsers reject unknown unsafe shapes while supporting documented compatibility",
+        "Events never carry raw capabilities or private ballots",
+        "Golden fixtures cover every event version"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-305",
+      "version": "0.4.0",
+      "title": "Add transactional outbox schema and retention",
+      "type": "feature",
+      "dependsOn": ["CQ-202", "CQ-304"],
+      "outcome": "Persist publishable events alongside accepted commands.",
+      "acceptance": [
+        "Outbox insert is atomic with aggregate revision",
+        "Records support lease, retry, poison state, and expiry",
+        "Indexes support bounded publisher scans"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-306",
+      "version": "0.4.0",
+      "title": "Implement publisher leases, retries, and poison-event visibility",
+      "type": "reliability",
+      "dependsOn": ["CQ-301", "CQ-305"],
+      "outcome": "Operate multiple publishers without duplicate side effects or silent poison records.",
+      "acceptance": [
+        "Leases recover after crashes",
+        "Retry uses bounded backoff and dead-letter visibility",
+        "Operator metrics expose lag and poison count"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-307",
+      "version": "0.4.0",
+      "title": "Authorize room subscriptions and channel membership",
+      "type": "security",
+      "dependsOn": ["CQ-203", "CQ-301", "CQ-304"],
+      "outcome": "Ensure only current room capabilities can subscribe to allowed projections.",
+      "acceptance": [
+        "Revoked and expired capabilities lose subscription access",
+        "Cross-room subscription attempts reveal nothing",
+        "Channel identifiers do not confer authority"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-308",
+      "version": "0.4.0",
+      "title": "Build the client revision state machine",
+      "type": "feature",
+      "dependsOn": ["CQ-304"],
+      "outcome": "Model connecting, current, stale, reconciling, degraded, and terminal room states.",
+      "acceptance": [
+        "State transitions are deterministic and unit tested",
+        "UI never presents pending state as committed",
+        "Revision regression is impossible"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-309",
+      "version": "0.4.0",
+      "title": "Add degraded polling fallback",
+      "type": "reliability",
+      "dependsOn": ["CQ-303"],
+      "outcome": "Continue safe read progress when realtime is unavailable.",
+      "acceptance": [
+        "Polling is bounded, jittered, authorized, and no-store",
+        "UI clearly identifies degraded mode",
+        "Recovery returns to realtime without duplicate commands"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-310",
+      "version": "0.4.0",
+      "title": "Add offline and pending-command UX",
+      "type": "feature",
+      "dependsOn": ["CQ-308", "CQ-309"],
+      "outcome": "Show connectivity and command acknowledgement honestly on mobile.",
+      "acceptance": [
+        "Unacknowledged votes remain visibly pending",
+        "Replay is bounded and idempotent",
+        "Offline UI never claims synchronized completion"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-311",
+      "version": "0.4.0",
+      "title": "Build a network partition and event disorder simulator",
+      "type": "testing",
+      "dependsOn": ["CQ-303", "CQ-306"],
+      "outcome": "Exercise delay, loss, duplicates, reorder, reconnect, and publisher crashes deterministically.",
+      "acceptance": [
+        "Scenarios are reproducible with seeds",
+        "Failures retain traces without sensitive room data",
+        "Simulator runs in CI within a bounded time"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-312",
+      "version": "0.4.0",
+      "title": "Verify multi-device convergence and realtime SLOs",
+      "type": "reliability",
+      "dependsOn": ["CQ-307", "CQ-310", "CQ-311"],
+      "outcome": "Prove two to eight clients converge without split brain under target conditions.",
+      "acceptance": [
+        "Multi-browser tests cover joins, votes, roster lock, result, reconnect, and expiry",
+        "No acknowledged vote is lost",
+        "Latency and recovery objectives are measured and documented"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-401",
+      "version": "0.5.0",
+      "title": "Select and approve the licensed place provider",
+      "type": "architecture",
+      "dependsOn": [],
+      "outcome": "Compare commercial providers for the launch geography under ADR 0005 and ADR 0007.",
+      "acceptance": [
+        "Evaluation covers fields, coverage, terms, caching, attribution, quotas, cost, deletion, and handoffs",
+        "Accepted ADR defines migration and outage behavior",
+        "Provisioning requires explicit owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-402",
+      "version": "0.5.0",
+      "title": "Implement the provenance-aware place adapter",
+      "type": "feature",
+      "dependsOn": ["CQ-401"],
+      "outcome": "Normalize provider records without leaking vendor payloads into domain contracts.",
+      "acceptance": [
+        "Every normalized field carries availability, provenance, and freshness",
+        "Malformed payloads fail closed",
+        "Contract fixtures prevent provider coupling"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-403",
+      "version": "0.5.0",
+      "title": "Implement place quality metrics and outage behavior",
+      "type": "reliability",
+      "dependsOn": ["CQ-402", "CQ-413"],
+      "outcome": "Measure completeness and freshness while degrading honestly during provider failure.",
+      "acceptance": [
+        "Dashboards expose quality and outage states",
+        "Fallback never fabricates fields",
+        "Host receives actionable manual-entry alternatives"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-404",
+      "version": "0.5.0",
+      "title": "Define privacy-preserving area and location input",
+      "type": "privacy",
+      "dependsOn": ["CQ-401"],
+      "outcome": "Support typed area, coarse location, and optional device location with explicit consent.",
+      "acceptance": [
+        "Precise location is not retained beyond documented need",
+        "Permission denial preserves typed-area flow",
+        "Logs and analytics exclude coordinates"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-405",
+      "version": "0.5.0",
+      "title": "Build mobile area search and map selection",
+      "type": "feature",
+      "dependsOn": ["CQ-404"],
+      "outcome": "Let hosts choose a search area by text or map without making a map mandatory.",
+      "acceptance": [
+        "Text-only, keyboard, and screen-reader paths are complete",
+        "Map controls are thumb-usable and responsive",
+        "Selected area is summarized before querying"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-406",
+      "version": "0.5.0",
+      "title": "Implement bounded nearby candidate discovery",
+      "type": "feature",
+      "dependsOn": ["CQ-401", "CQ-405"],
+      "outcome": "Fetch a small decision-ready venue deck within server-side quotas.",
+      "acceptance": [
+        "Per-room candidate cap, timeout, quota, and kill switch are enforced",
+        "Queries are server-side and secrets never reach clients",
+        "Empty and partial results are honest"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-407",
+      "version": "0.5.0",
+      "title": "Expose field provenance and freshness in venue cards",
+      "type": "feature",
+      "dependsOn": ["CQ-402"],
+      "outcome": "Make source, update time, estimated, missing, and host-confirmed facts understandable.",
+      "acceptance": [
+        "Cards distinguish provider, host-confirmed, estimated, stale, and unavailable data",
+        "Accessibility labels convey the same meaning",
+        "No visual badge implies unsupported certainty"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-408",
+      "version": "0.5.0",
+      "title": "Implement licensed venue photo handling",
+      "type": "feature",
+      "dependsOn": ["CQ-402"],
+      "outcome": "Render provider-permitted venue media with attribution, fallbacks, and safe optimization.",
+      "acceptance": [
+        "Photo terms, caching, and attribution are enforced",
+        "Broken or absent photos use a non-deceptive fallback",
+        "Responsive image budgets meet mobile targets"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-409",
+      "version": "0.5.0",
+      "title": "Implement ratings and review-count honesty",
+      "type": "feature",
+      "dependsOn": ["CQ-402"],
+      "outcome": "Show ratings and counts only when licensed, current, and correctly attributed.",
+      "acceptance": [
+        "Rating scale and count source are explicit",
+        "Missing or stale data is not synthesized",
+        "Tests reject mismatched rating/count provenance"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-410",
+      "version": "0.5.0",
+      "title": "Implement timezone-aware hours and open-now evidence",
+      "type": "feature",
+      "dependsOn": ["CQ-402"],
+      "outcome": "Represent hours and target-time confidence without claiming certainty from incomplete schedules.",
+      "acceptance": [
+        "Timezone and overnight hours are tested",
+        "Unknown and exceptional hours remain unknown",
+        "Target-time checks record source and freshness"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-411",
+      "version": "0.5.0",
+      "title": "Model dietary and accessibility evidence separately",
+      "type": "feature",
+      "dependsOn": ["CQ-402"],
+      "outcome": "Keep safety/access evidence distinct from general tags and popularity.",
+      "acceptance": [
+        "Evidence supports confirmed yes, confirmed no, unknown, and stale",
+        "Hard constraints fail safely on insufficient evidence",
+        "Host corrections retain provenance"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-412",
+      "version": "0.5.0",
+      "title": "Implement distance evidence and safe map handoff",
+      "type": "feature",
+      "dependsOn": ["CQ-402", "CQ-405"],
+      "outcome": "Show straight-line or provider route distance honestly and open supported map apps safely.",
+      "acceptance": [
+        "Distance method and freshness are explicit",
+        "Handoff URLs are allowlisted and encoded",
+        "Unsupported devices receive a copyable address/search fallback"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-413",
+      "version": "0.5.0",
+      "title": "Add place cache, circuit breaker, and quota kill switch",
+      "type": "reliability",
+      "dependsOn": ["CQ-401"],
+      "outcome": "Bound provider cost and outage impact while respecting license terms.",
+      "acceptance": [
+        "Cache policy matches provider terms",
+        "Circuit breaker and kill switch are server-controlled",
+        "Quota exhaustion falls back without uncontrolled spend"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-414",
+      "version": "0.5.0",
+      "title": "Add host corrections, removal, and manual fallback",
+      "type": "feature",
+      "dependsOn": ["CQ-403", "CQ-407", "CQ-411"],
+      "outcome": "Let a host remove unsuitable venues or explicitly confirm missing evidence.",
+      "acceptance": [
+        "Corrections identify host provenance and expire with the room",
+        "Removing a candidate cannot corrupt an active ballot",
+        "Manual entry remains available during provider outage"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-501",
+      "version": "0.6.0",
+      "title": "Implement privacy-safe product measurement",
+      "type": "privacy",
+      "dependsOn": [],
+      "outcome": "Implement ADR 0008 with minimized event schemas and retention controls.",
+      "acceptance": [
+        "Schemas reject names, room codes, coordinates, candidates, constraints, and ballots",
+        "Events occur only after successful transitions",
+        "Sampling and retention are configurable"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-502",
+      "version": "0.6.0",
+      "title": "Establish service indicators, alerts, and recovery exercises",
+      "type": "operations",
+      "dependsOn": ["CQ-508", "CQ-509", "CQ-510"],
+      "outcome": "Create actionable operational signals and rehearse recovery.",
+      "acceptance": [
+        "Indicators cover availability, command failures, outbox lag, provider quality, and deletion",
+        "Alerts have owners and runbooks",
+        "Exercises record recovery time and follow-ups"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-503",
+      "version": "0.6.0",
+      "title": "Run the thirty-group validation study",
+      "type": "research",
+      "dependsOn": ["CQ-513"],
+      "outcome": "Evaluate product usefulness and guardrails with at least thirty completed real groups.",
+      "acceptance": [
+        "Recruitment and consent follow the study plan",
+        "Evidence combines minimized metrics and interviews",
+        "Limitations and severe constraint incidents are recorded"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-504",
+      "version": "0.6.0",
+      "title": "Implement explicit commitment and destination handoff",
+      "type": "feature",
+      "dependsOn": ["CQ-303", "CQ-412"],
+      "outcome": "Help participants commit and continue to maps or an approved reservation destination.",
+      "acceptance": [
+        "Commitment is distinct from voting",
+        "Handoff never claims booking or live availability",
+        "Failure and return paths preserve the result"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-505",
+      "version": "0.6.0",
+      "title": "Add voluntary feedback and research consent",
+      "type": "research",
+      "dependsOn": ["CQ-501"],
+      "outcome": "Collect optional structured feedback without attaching sensitive room content.",
+      "acceptance": [
+        "Consent is explicit and revocable where applicable",
+        "Free text warns against sensitive details",
+        "Feedback retention and access are documented"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-506",
+      "version": "0.6.0",
+      "title": "Complete independent accessibility audit and remediation",
+      "type": "accessibility",
+      "dependsOn": [],
+      "outcome": "Audit the entire create, join, vote, result, recovery, and deletion journey.",
+      "acceptance": [
+        "Keyboard, screen reader, zoom, contrast, reduced motion, and touch targets are covered",
+        "Critical findings block release",
+        "Remediation includes regression tests"
+      ],
+      "labels": ["accessibility"]
+    },
+    {
+      "id": "CQ-507",
+      "version": "0.6.0",
+      "title": "Harden anonymous abuse and moderation controls",
+      "type": "security",
+      "dependsOn": ["CQ-213"],
+      "outcome": "Protect room creation, joins, text fields, and provider usage without identity profiling.",
+      "acceptance": [
+        "Threat cases include flooding, offensive names, link sharing, and quota abuse",
+        "Controls have false-positive recovery",
+        "Moderation does not expose private room content unnecessarily"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-508",
+      "version": "0.6.0",
+      "title": "Run beta load and capacity tests",
+      "type": "reliability",
+      "dependsOn": ["CQ-312", "CQ-413"],
+      "outcome": "Measure realistic concurrent groups against free-tier and approved budget ceilings.",
+      "acceptance": [
+        "Workload model and limits are documented",
+        "Tests identify saturation and graceful rejection behavior",
+        "Capacity assumptions feed cost forecasts"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-509",
+      "version": "0.6.0",
+      "title": "Rehearse database backup and restore",
+      "type": "operations",
+      "dependsOn": ["CQ-212"],
+      "outcome": "Prove room-state recovery within the beta objective.",
+      "acceptance": [
+        "Restore is performed in an isolated environment",
+        "Integrity checks compare revisions, commands, and decisions",
+        "Secrets and participant data are handled safely"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-510",
+      "version": "0.6.0",
+      "title": "Verify retention, expiry, and deletion in production-like data",
+      "type": "privacy",
+      "dependsOn": ["CQ-208"],
+      "outcome": "Demonstrate that sensitive room data expires and deletion completes.",
+      "acceptance": [
+        "Synthetic expired rooms are removed on schedule",
+        "Deletion failures alert operators",
+        "Evidence contains no real room content"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-511",
+      "version": "0.6.0",
+      "title": "Create support and incident response runbooks",
+      "type": "operations",
+      "dependsOn": ["CQ-502"],
+      "outcome": "Give operators bounded procedures for participant, provider, privacy, and availability incidents.",
+      "acceptance": [
+        "Runbooks define severity, ownership, communication, escalation, and recovery",
+        "Support intake warns against sharing capabilities or private room data",
+        "Tabletop exercise records gaps"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-512",
+      "version": "0.6.0",
+      "title": "Run database, realtime, and place-provider outage drills",
+      "type": "reliability",
+      "dependsOn": ["CQ-403", "CQ-502"],
+      "outcome": "Validate honest degraded states and recovery across external dependencies.",
+      "acceptance": [
+        "Each dependency has injection, detection, user messaging, recovery, and rollback evidence",
+        "No drill fabricates committed state or place facts",
+        "Follow-up issues are prioritized"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-513",
+      "version": "0.6.0",
+      "title": "Prepare beta recruitment, consent, and tester governance",
+      "type": "research",
+      "dependsOn": ["CQ-505", "CQ-506", "CQ-511"],
+      "outcome": "Define who tests, what is collected, how support works, and when access ends.",
+      "acceptance": [
+        "Tester information and consent are plain language",
+        "Access and data lifecycle are bounded",
+        "Exclusion and stop criteria are explicit"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-514",
+      "version": "0.6.0",
+      "title": "Record the beta go, pivot, or stop decision",
+      "type": "research",
+      "dependsOn": ["CQ-503", "CQ-506", "CQ-508", "CQ-510", "CQ-512"],
+      "outcome": "Judge the MVP against success, safety, retention, and cost evidence.",
+      "acceptance": [
+        "Decision cites measured evidence and limitations",
+        "Unmet guardrails cannot be averaged away",
+        "Next investment and shutdown obligations are explicit"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-601",
+      "version": "0.7.0",
+      "title": "Decide the consented repeat-group identity model",
+      "type": "architecture",
+      "dependsOn": ["CQ-514"],
+      "outcome": "Select an accountless or optional-account model for repeat groups without weakening room isolation.",
+      "acceptance": [
+        "ADR covers consent, recovery, portability, deletion, abuse, and provider lock-in",
+        "Anonymous one-off rooms remain available",
+        "Provisioning requires owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-602",
+      "version": "0.7.0",
+      "title": "Implement saved group membership and recovery",
+      "type": "feature",
+      "dependsOn": ["CQ-601"],
+      "outcome": "Let consenting groups return across devices with explicit membership controls.",
+      "acceptance": [
+        "Membership changes are authorized and auditable",
+        "Loss and recovery do not expose old rooms",
+        "Leaving a group revokes future access"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-603",
+      "version": "0.7.0",
+      "title": "Implement consented saved preferences and constraints",
+      "type": "privacy",
+      "dependsOn": ["CQ-601"],
+      "outcome": "Save reusable defaults without silently converting safety needs into profiling.",
+      "acceptance": [
+        "Each saved field has purpose, consent, edit, expiry, export, and delete behavior",
+        "Hard constraints require confirmation per decision where needed",
+        "Analytics never receives raw values"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-604",
+      "version": "0.7.0",
+      "title": "Build reusable decision templates",
+      "type": "feature",
+      "dependsOn": ["CQ-602"],
+      "outcome": "Let groups save room setup patterns without copying sensitive historical ballots.",
+      "acceptance": [
+        "Templates contain only approved reusable fields",
+        "Version changes migrate or fail safely",
+        "One-off users can still create rooms directly"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-605",
+      "version": "0.7.0",
+      "title": "Implement scheduled decision rituals",
+      "type": "feature",
+      "dependsOn": ["CQ-604", "CQ-609"],
+      "outcome": "Support recurring prompts such as weekly lunch with explicit opt-in.",
+      "acceptance": [
+        "Schedules are timezone aware and editable",
+        "No notification is sent without consent",
+        "Missed rituals expire without creating phantom rooms"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-606",
+      "version": "0.7.0",
+      "title": "Add privacy-bounded result history",
+      "type": "feature",
+      "dependsOn": ["CQ-602", "CQ-603"],
+      "outcome": "Show consenting groups useful past decisions without exposing ballots or precise location.",
+      "acceptance": [
+        "History retention is configurable",
+        "Venue identity handling matches provider terms",
+        "Export and deletion include history"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-607",
+      "version": "0.7.0",
+      "title": "Implement transparent repeat-group recommendations",
+      "type": "feature",
+      "dependsOn": ["CQ-603", "CQ-606"],
+      "outcome": "Use consented history to diversify or recall options with understandable reasons.",
+      "acceptance": [
+        "Recommendation inputs are inspectable and editable",
+        "Constraints remain pre-score gates",
+        "No hidden sensitive inference is introduced"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-608",
+      "version": "0.7.0",
+      "title": "Add preference export, expiry, and deletion controls",
+      "type": "privacy",
+      "dependsOn": ["CQ-603"],
+      "outcome": "Give people direct control over retained group data.",
+      "acceptance": [
+        "Export is machine-readable and understandable",
+        "Deletion revokes access and removes derived data",
+        "Expiry jobs and failures are observable"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-609",
+      "version": "0.7.0",
+      "title": "Select and approve the notification provider",
+      "type": "architecture",
+      "dependsOn": ["CQ-601"],
+      "outcome": "Evaluate web push, email, or other channels for consent, cost, deliverability, privacy, and teardown.",
+      "acceptance": [
+        "ADR chooses the minimum viable channel",
+        "Quiet hours, unsubscribe, bounce, and abuse behavior are defined",
+        "Provisioning requires owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-610",
+      "version": "0.7.0",
+      "title": "Measure repeat-group retention without identity leakage",
+      "type": "privacy",
+      "dependsOn": ["CQ-501", "CQ-601"],
+      "outcome": "Measure repeat utility using consented identifiers and coarse events.",
+      "acceptance": [
+        "One-off anonymous rooms remain unlinkable",
+        "Retention windows and cohort rules are documented",
+        "Sensitive preference and room content is excluded"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-611",
+      "version": "0.7.0",
+      "title": "Verify repeat-group cross-device recovery",
+      "type": "testing",
+      "dependsOn": ["CQ-602", "CQ-608"],
+      "outcome": "Test membership, saved defaults, history, recovery, export, and deletion across devices.",
+      "acceptance": [
+        "Multi-browser tests cover loss and rotation",
+        "Revoked devices cannot regain access",
+        "Recovery never changes an active roster silently"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-612",
+      "version": "0.7.0",
+      "title": "Run the repeat-utility experiment gate",
+      "type": "research",
+      "dependsOn": ["CQ-605", "CQ-607", "CQ-610", "CQ-611"],
+      "outcome": "Decide whether recurring utility earns continued retention investment.",
+      "acceptance": [
+        "Gate measures opt-in, repeat completion, notification harm, deletion, and support burden",
+        "Results include qualitative evidence",
+        "Go, revise, or stop decision is recorded"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-701",
+      "version": "0.8.0",
+      "title": "Define the reservation and order handoff boundary",
+      "type": "architecture",
+      "dependsOn": ["CQ-514"],
+      "outcome": "Specify what Consensus may claim before, during, and after third-party handoff.",
+      "acceptance": [
+        "ADR covers deep links, attribution, availability honesty, privacy, errors, and liability",
+        "Consensus never claims completion without evidence",
+        "Provider selection remains separate"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-702",
+      "version": "0.8.0",
+      "title": "Implement safe reservation deep links",
+      "type": "feature",
+      "dependsOn": ["CQ-701", "CQ-707"],
+      "outcome": "Open approved reservation destinations with correct venue and time context.",
+      "acceptance": [
+        "Links are allowlisted, encoded, attributed, and device tested",
+        "Fallback provides a safe search or copy path",
+        "No sensitive room data is transmitted"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-703",
+      "version": "0.8.0",
+      "title": "Implement safe ordering handoffs",
+      "type": "feature",
+      "dependsOn": ["CQ-701", "CQ-707"],
+      "outcome": "Open approved ordering destinations without pretending Consensus owns the transaction.",
+      "acceptance": [
+        "Destination and commercial relationship are disclosed",
+        "Unavailable handoffs fail honestly",
+        "Return flow preserves the decision result"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-704",
+      "version": "0.8.0",
+      "title": "Model handoff status and availability honesty",
+      "type": "feature",
+      "dependsOn": ["CQ-701"],
+      "outcome": "Represent unknown, opened, externally confirmed, failed, and expired handoff states.",
+      "acceptance": [
+        "UI never equates a click with a booking",
+        "Status provenance and timestamp are visible",
+        "Stale external confirmations expire"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-705",
+      "version": "0.8.0",
+      "title": "Add affiliate and sponsorship disclosure",
+      "type": "privacy",
+      "dependsOn": ["CQ-701"],
+      "outcome": "Disclose commercial influence wherever ranking or handoff could be affected.",
+      "acceptance": [
+        "Paid placement cannot bypass constraints or masquerade as fairness",
+        "Disclosure is accessible and proximal",
+        "Organic alternatives remain available"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-706",
+      "version": "0.8.0",
+      "title": "Implement privacy-safe monetization events",
+      "type": "privacy",
+      "dependsOn": ["CQ-501", "CQ-701"],
+      "outcome": "Measure outbound handoff and coarse conversion without room or ballot content.",
+      "acceptance": [
+        "Event schema excludes participant, location, constraint, and vote details",
+        "Partner parameters are minimized",
+        "Retention and reconciliation are documented"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-707",
+      "version": "0.8.0",
+      "title": "Evaluate and approve handoff partners",
+      "type": "architecture",
+      "dependsOn": ["CQ-701"],
+      "outcome": "Compare reservation and ordering partners on terms, coverage, fees, attribution, privacy, and failure modes.",
+      "acceptance": [
+        "Provider matrix and commercial terms are reviewed",
+        "Spend and revenue assumptions are explicit",
+        "Integration requires owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-708",
+      "version": "0.8.0",
+      "title": "Add controlled monetization feature flags",
+      "type": "operations",
+      "dependsOn": ["CQ-707"],
+      "outcome": "Roll out handoff and monetization experiments by environment and cohort with fast disable.",
+      "acceptance": [
+        "Flags fail closed and are auditable",
+        "Kill switch removes commercial UI without breaking decisions",
+        "Experiment assignment excludes sensitive traits"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-709",
+      "version": "0.8.0",
+      "title": "Implement price, fee, and availability transparency",
+      "type": "feature",
+      "dependsOn": ["CQ-707"],
+      "outcome": "Show known external fees and uncertainty before handoff.",
+      "acceptance": [
+        "Provider-supplied and estimated amounts are distinct",
+        "Missing fees are disclosed as unknown",
+        "Currency and locale behavior are tested"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-710",
+      "version": "0.8.0",
+      "title": "Handle handoff failure, return, and retry",
+      "type": "reliability",
+      "dependsOn": ["CQ-702", "CQ-703", "CQ-704"],
+      "outcome": "Recover when partner apps, links, or sessions fail.",
+      "acceptance": [
+        "Retry is bounded and does not duplicate transactions",
+        "Result remains accessible after return",
+        "Support guidance names the responsible provider"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-711",
+      "version": "0.8.0",
+      "title": "Reconcile revenue and investigate attribution abuse",
+      "type": "operations",
+      "dependsOn": ["CQ-706", "CQ-707"],
+      "outcome": "Compare privacy-safe outbound records with partner reports and detect fraud.",
+      "acceptance": [
+        "Reconciliation tolerances and disputes are documented",
+        "No raw room data is required",
+        "Anomalies can disable a partner safely"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-712",
+      "version": "0.8.0",
+      "title": "Run the monetization ethics and viability gate",
+      "type": "research",
+      "dependsOn": ["CQ-705", "CQ-709", "CQ-711"],
+      "outcome": "Decide whether handoff revenue improves sustainability without corrupting trust.",
+      "acceptance": [
+        "Gate measures revenue, completion, confusion, fairness, support, and opt-out",
+        "Sponsored influence cannot change safe ranking",
+        "Go, revise, or stop decision is recorded"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-801",
+      "version": "0.9.0",
+      "title": "Define the category expansion framework",
+      "type": "architecture",
+      "dependsOn": ["CQ-514"],
+      "outcome": "Specify how new decision categories plug into constraints, evidence, candidates, and handoffs.",
+      "acceptance": [
+        "Core room and fairness rules remain category neutral",
+        "Category modules declare schemas and evidence policy",
+        "Unsupported categories fail safely"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-802",
+      "version": "0.9.0",
+      "title": "Define activity-specific constraints and evidence",
+      "type": "feature",
+      "dependsOn": ["CQ-801"],
+      "outcome": "Model time, age, mobility, weather, equipment, distance, and budget evidence for activities.",
+      "acceptance": [
+        "Hard constraints remain pre-score",
+        "Unknown and stale evidence are explicit",
+        "Safety-sensitive fields receive review"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-803",
+      "version": "0.9.0",
+      "title": "Implement the category provider adapter boundary",
+      "type": "architecture",
+      "dependsOn": ["CQ-801"],
+      "outcome": "Prevent activity or future provider payloads from entering core domain contracts.",
+      "acceptance": [
+        "Adapters emit versioned normalized candidates",
+        "Field provenance and license metadata are mandatory",
+        "Provider replacement has contract tests"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-804",
+      "version": "0.9.0",
+      "title": "Evaluate and approve the first non-food provider",
+      "type": "architecture",
+      "dependsOn": ["CQ-802", "CQ-803"],
+      "outcome": "Select one expansion category and provider using evidence, cost, terms, and coverage.",
+      "acceptance": [
+        "Category choice cites user demand",
+        "Provider ADR covers quotas, caching, attribution, deletion, and handoff",
+        "Provisioning requires owner approval"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-805",
+      "version": "0.9.0",
+      "title": "Build category-adaptive candidate cards and filters",
+      "type": "feature",
+      "dependsOn": ["CQ-802", "CQ-804"],
+      "outcome": "Render category-specific evidence without fragmenting the core workflow.",
+      "acceptance": [
+        "Mobile hierarchy remains focused and accessible",
+        "Buttons remain complete without gestures",
+        "Unknown data is not hidden by category styling"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-806",
+      "version": "0.9.0",
+      "title": "Create a consented decision-calibration dataset",
+      "type": "research",
+      "dependsOn": ["CQ-501"],
+      "outcome": "Collect minimized outcome feedback suitable for fairness calibration.",
+      "acceptance": [
+        "Dataset excludes raw identities, precise locations, and unnecessary ballots",
+        "Consent and deletion propagate to derived data",
+        "Sampling limitations are documented"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-807",
+      "version": "0.9.0",
+      "title": "Calibrate decision rules across group shapes",
+      "type": "research",
+      "dependsOn": ["CQ-806"],
+      "outcome": "Evaluate satisfaction, least-satisfied outcomes, ties, and veto-like signals without weakening constraints.",
+      "acceptance": [
+        "Ruleset changes are versioned and replayable",
+        "Calibration includes adverse subgroup analysis where ethical and feasible",
+        "No rule ships solely on aggregate popularity"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-808",
+      "version": "0.9.0",
+      "title": "Harden abuse defense for public scale",
+      "type": "security",
+      "dependsOn": ["CQ-507"],
+      "outcome": "Address automated room creation, link scanning, provider scraping, harassment, and resource exhaustion.",
+      "acceptance": [
+        "Controls include detection, prevention, recovery, appeal, and kill switches",
+        "Private room content is not used unnecessarily",
+        "Load tests cover attack-shaped traffic"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-809",
+      "version": "0.9.0",
+      "title": "Prove launch-scale capacity and cost ceilings",
+      "type": "reliability",
+      "dependsOn": ["CQ-508"],
+      "outcome": "Measure database, realtime, provider, cache, and function limits under projected load.",
+      "acceptance": [
+        "Capacity model includes peak rooms and fan-out",
+        "Hard budgets and rejection thresholds are configured",
+        "Unit costs feed the 1.0 economics gate"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-810",
+      "version": "0.9.0",
+      "title": "Design and test regional failure recovery",
+      "type": "reliability",
+      "dependsOn": ["CQ-509", "CQ-809"],
+      "outcome": "Recover safely from regional compute or data unavailability.",
+      "acceptance": [
+        "RPO and RTO are explicit",
+        "Failover cannot create split-brain room authority",
+        "Exercise records user-visible degraded behavior"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-811",
+      "version": "0.9.0",
+      "title": "Implement provider failover and portability drills",
+      "type": "reliability",
+      "dependsOn": ["CQ-403", "CQ-803", "CQ-809"],
+      "outcome": "Prove selected providers can be disabled or replaced within documented thresholds.",
+      "acceptance": [
+        "Export/import and adapter cutover are rehearsed",
+        "Licensing and deletion obligations survive exit",
+        "Fallback remains honest throughout"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-812",
+      "version": "0.9.0",
+      "title": "Complete launch-candidate chaos and recovery review",
+      "type": "reliability",
+      "dependsOn": ["CQ-807", "CQ-808", "CQ-810", "CQ-811"],
+      "outcome": "Exercise compound failures and verify the product remains safe or clearly unavailable.",
+      "acceptance": [
+        "Scenarios combine database, realtime, provider, network, and abuse faults",
+        "No scenario fabricates decisions or venue facts",
+        "Release-critical gaps block 1.0"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-901",
+      "version": "1.0.0",
+      "title": "Define public-launch SLOs and release criteria",
+      "type": "operations",
+      "dependsOn": ["CQ-812"],
+      "outcome": "Turn product promises into measurable availability, correctness, recovery, privacy, and support gates.",
+      "acceptance": [
+        "SLOs have indicators, budgets, owners, and escalation",
+        "Constraint safety and decision integrity are top-level gates",
+        "Criteria distinguish launch blockers from follow-ups"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-902",
+      "version": "1.0.0",
+      "title": "Complete independent application security assessment",
+      "type": "security",
+      "dependsOn": ["CQ-808", "CQ-901"],
+      "outcome": "Review anonymous capabilities, APIs, dependencies, infrastructure, and abuse controls before launch.",
+      "acceptance": [
+        "Assessment includes penetration testing and threat-model validation",
+        "Critical and high findings are resolved or launch-blocking",
+        "Retest evidence is recorded privately and summarized safely"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-903",
+      "version": "1.0.0",
+      "title": "Complete privacy, terms, and data-practice review",
+      "type": "privacy",
+      "dependsOn": ["CQ-608", "CQ-706", "CQ-901"],
+      "outcome": "Ensure public promises match actual collection, retention, providers, deletion, and monetization.",
+      "acceptance": [
+        "Privacy notice and terms are understandable and accurate",
+        "Processor/subprocessor records are current",
+        "User requests and provider exits are rehearsed"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-904",
+      "version": "1.0.0",
+      "title": "Complete launch accessibility conformance review",
+      "type": "accessibility",
+      "dependsOn": ["CQ-506", "CQ-805", "CQ-901"],
+      "outcome": "Verify all supported journeys and categories meet the documented accessibility target.",
+      "acceptance": [
+        "Independent audit covers supported devices and assistive technology",
+        "Known limitations are public and prioritized",
+        "Release-critical barriers are fixed"
+      ],
+      "labels": ["accessibility"]
+    },
+    {
+      "id": "CQ-905",
+      "version": "1.0.0",
+      "title": "Audit export, deletion, and data portability end to end",
+      "type": "privacy",
+      "dependsOn": ["CQ-608", "CQ-811", "CQ-903"],
+      "outcome": "Prove users and operators can retrieve or remove all applicable data.",
+      "acceptance": [
+        "Requests cover primary, cache, analytics, backup, partner, and derived data",
+        "Completion evidence avoids exposing content",
+        "Failures alert and have recovery procedures"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-906",
+      "version": "1.0.0",
+      "title": "Validate unit economics and hard spending controls",
+      "type": "operations",
+      "dependsOn": ["CQ-712", "CQ-809"],
+      "outcome": "Show a sustainable cost envelope without relying on perpetual free tiers.",
+      "acceptance": [
+        "Per-completed-group costs include every provider and support burden",
+        "Budgets, alerts, and kill switches are live",
+        "Revenue assumptions are separated from measured results"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-907",
+      "version": "1.0.0",
+      "title": "Establish production on-call and observability readiness",
+      "type": "operations",
+      "dependsOn": ["CQ-502", "CQ-901"],
+      "outcome": "Ensure launch operators can detect, diagnose, communicate, and recover.",
+      "acceptance": [
+        "Dashboards, alerts, rotations, status communication, and runbooks are tested",
+        "Sensitive data is absent from telemetry",
+        "Alert fatigue and ownership gaps are resolved"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-908",
+      "version": "1.0.0",
+      "title": "Pass the final disaster recovery rehearsal",
+      "type": "reliability",
+      "dependsOn": ["CQ-810", "CQ-907"],
+      "outcome": "Recover the production system and verify integrity under the launch RPO/RTO.",
+      "acceptance": [
+        "Restore and failover use documented procedures",
+        "Room revision and decision integrity are checked",
+        "Results and corrective actions are approved"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-909",
+      "version": "1.0.0",
+      "title": "Record launch evidence and the go or no-go decision",
+      "type": "research",
+      "dependsOn": ["CQ-902", "CQ-903", "CQ-904", "CQ-905", "CQ-906", "CQ-908"],
+      "outcome": "Judge product value, safety, retention, operations, and economics together.",
+      "acceptance": [
+        "Decision cites beta, repeat-use, monetization, scale, audit, and recovery evidence",
+        "Unmet safety gates cannot be waived by growth",
+        "Rollback and shutdown obligations are explicit"
+      ],
+      "labels": []
+    },
+    {
+      "id": "CQ-910",
+      "version": "1.0.0",
+      "title": "Create the verified 1.0 release and public launch",
+      "type": "operations",
+      "dependsOn": ["CQ-909"],
+      "outcome": "Promote the approved artifact, publish release records, and begin measured public operation.",
+      "acceptance": [
+        "Exact commit and artifact are verified in Preview and Production",
+        "Annotated tag and GitHub Release require explicit owner authorization",
+        "Post-launch smoke, monitoring, rollback, and communication are complete"
+      ],
+      "labels": []
+    }
+  ]
+}

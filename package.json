@@ -13,6 +13,8 @@
     "typecheck": "pnpm --filter @consensus/domain typecheck && pnpm --filter @consensus/web typecheck",
     "test": "pnpm --filter @consensus/domain test && pnpm --filter @consensus/web test",
     "test:e2e": "pnpm --filter @consensus/web test:e2e",
+    "backlog:check": "node scripts/sync-github-backlog.mjs",
+    "backlog:sync": "node scripts/sync-github-backlog.mjs --apply",
     "format:check": "prettier --check .",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
   },
