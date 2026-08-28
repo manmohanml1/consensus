@@ -2,7 +2,11 @@ name: Consensus Release
 
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-preview.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
 
 permissions:
   contents: write
@@ -34,10 +38,7 @@ jobs:
           release_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
           git fetch origin main --no-tags
           git merge-base --is-ancestor "$release_commit" origin/main
-          expected="${RELEASE_TAG#v}"
-          test "$(node -p "require('./package.json').version")" = "$expected"
-          test "$(node -p "require('./apps/web/package.json').version")" = "$expected"
-          test "$(node -p "require('./packages/domain/package.json').version")" = "$expected"
+          pnpm release:check -- --tag "$RELEASE_TAG"
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm verify
       - name: Package immutable application artifact

@@ -58,4 +58,6 @@ Consensus gets a small group from indecision to a plan they can accept and act o
 
 Every pull request must explain purpose, scope, risk, recovery, and verification; pass `pnpm verify`; add tests for changed behavior; include mobile/desktop evidence for UI work; and update the roadmap, changelog, milestone, API contract, or ADR when facts change.
 
+The default completion state is an open, review-ready pull request. Only an explicit owner instruction to merge that exact pull request authorizes a merge; checks, previews, reviews, prior permissions, and milestone completion do not.
+
 Releases use annotated `vMAJOR.MINOR.PATCH` tags. A verified milestone, merge, or deployment never implicitly authorizes a tag or GitHub Release.

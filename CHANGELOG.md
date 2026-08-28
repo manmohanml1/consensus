@@ -6,6 +6,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Owner-gated merge and release governance, Conventional Commit enforcement, and a machine-checked Semantic Versioning release preflight.
 - A repository-owned, idempotent 100-issue GitHub backlog for milestones 0.3 through 1.0.
 - Versioned, provider-neutral secure-room command and projection contracts with bounded runtime validation and safe public errors.
 - Mobile-first, photo-led ballot cards with optional horizontal swipe gestures and complete button fallbacks.

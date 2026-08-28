@@ -16,7 +16,10 @@ Read `docs/PROJECT_GUIDE.md` before changing product scope, architecture, depend
 ## Change discipline
 
 - Use short-lived topic branches and Conventional Commit pull-request titles.
+- Use Conventional Commit subjects for every commit: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, or `revert`, with an optional scope and `!` for a breaking change.
 - Keep `main` releasable.
+- Never merge a pull request unless the owner explicitly authorizes that exact merge. Green checks, an approved review, a successful Preview, an earlier instruction to keep working, or permission to push/open a PR do not authorize a merge.
+- After opening or updating a PR, leave it open and report its URL, checks, deployment impact, and remaining owner action. Do not infer merge permission from prior merges or standing workflow requests.
 - Do not provision a provider before its milestone needs it and its ADR is accepted.
 - Treat accessibility, privacy, deletion, observability, abuse prevention, and graceful degradation as product behavior.
 - Never create a tag, release, remote repository, deployment, or paid resource without explicit owner authorization.

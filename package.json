@@ -15,8 +15,9 @@
     "test:e2e": "pnpm --filter @consensus/web test:e2e",
     "backlog:check": "node scripts/sync-github-backlog.mjs",
     "backlog:sync": "node scripts/sync-github-backlog.mjs --apply",
+    "release:check": "node scripts/validate-release.mjs",
     "format:check": "prettier --check .",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
+    "verify": "pnpm release:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
     "prettier": "^3.6.2"

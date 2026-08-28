@@ -38,3 +38,9 @@
 - [ ] Production setup/runbook updated
 - [ ] Owner actions and required secrets documented without including secret values
 - [ ] Rollback and post-deploy verification documented
+
+## Merge authorization
+
+- [ ] PR is review-ready and must remain open until the owner explicitly authorizes this exact merge
+
+Green checks, Preview success, review approval, or permission to push/open this PR are not merge authorization. Production promotion, tags, and GitHub Releases require their own explicit owner instructions.
