@@ -7,7 +7,7 @@ on:
     - cron: "31 7 * * 1"
   workflow_dispatch:
 
-permissions: read-all
+permissions: {}
 
 concurrency:
   group: scorecard-${{ github.ref }}
