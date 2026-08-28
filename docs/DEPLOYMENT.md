@@ -2,15 +2,15 @@
 
 ## Current boundary
 
-Milestone 0.2 is provider-independent. The repository contains a Vercel build contract, but no Vercel project, database, realtime integration, domain, or production environment has been created.
+Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview delivery. No database, realtime integration, custom domain, production data, or production secret has been created.
 
-## Owner setup checklist for the first Preview
+## First Preview setup
 
-These actions require the repository owner and are intentionally not performed by a code-only pull request:
+The initial project setup uses these settings:
 
-1. Sign in to Vercel and import `manmohanml1/consensus` as a new project named `consensus-web`.
-2. Keep the repository root as the Vercel project root so the committed `vercel.json` controls install, build, and output behavior.
-3. Confirm the production branch is `main` and that non-production pull-request branches create Preview deployments.
+1. Link `manmohanml1/consensus` to the Vercel project named `consensus-web`.
+2. Set the Vercel Root Directory to `apps/web`. The app-local `vercel.json` selects the Next.js framework while Vercel discovers the workspace lockfile and framework build defaults.
+3. Keep `main` as the production branch and use non-production pull-request branches for Preview deployments.
 4. Do not add database, place, realtime, analytics, or production secrets for milestone 0.2; the current build uses fixtures only.
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
 6. Share the first Preview URL in the implementing pull request and complete the Preview acceptance checklist below.
@@ -61,6 +61,6 @@ topic branch -> pull request -> stable quality gate -> immutable artifact
 
 Vercel Git integration is the preferred initial web delivery. The default Node.js/Fluid Compute runtime is used. Preview deployment should consume the exact lockfile and build contract. Production secrets must never be available to pull requests from forks.
 
-The root `vercel.json` pins the current monorepo install, build, and output contract. It contains no project IDs, tokens, or environment-specific secrets. Linking the Vercel project and changing GitHub repository settings remain explicit external actions.
+The app-local `apps/web/vercel.json` pins the framework contract. Project IDs, tokens, and environment-specific secrets remain outside the repository. The Vercel project Root Directory must stay aligned with `apps/web`; changes to provider or GitHub settings remain explicit external actions.
 
 The provider integration and `vercel.ts` configuration are added only when a deployment is authorized and the target project is linked. Database migrations remain separately approval-gated and run before promotion with a verified recovery plan.
