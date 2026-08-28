@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Consensus</title>
+  <desc id="description">A mint C mark on a dark blue-green background.</desc>
+  <defs>
+    <linearGradient id="background" x1="40" y1="28" x2="470" y2="490" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b1220"/>
+      <stop offset="0.58" stop-color="#111f32"/>
+      <stop offset="1" stop-color="#163c34"/>
+    </linearGradient>
+    <filter id="shadow" x="80" y="90" width="352" height="372" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#background)"/>
+  <rect x="97" y="97" width="318" height="318" rx="108" fill="#75f5c3" filter="url(#shadow)"/>
+  <path d="M331 310c-18 22-41 33-70 33-49 0-84-36-84-87s35-87 84-87c29 0 52 11 70 33l-35 30c-9-11-20-17-34-17-23 0-39 17-39 41s16 41 39 41c14 0 25-6 34-17l35 30Z" fill="#07110d"/>
+</svg>

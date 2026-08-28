@@ -20,4 +20,15 @@ pnpm --filter @consensus/web exec playwright install chromium
 - Browser: Playwright desktop/mobile/keyboard/reduced-motion journeys beginning in 0.2.
 - Production: health, create/join/vote/result/delete smoke path with synthetic rooms beginning in 0.6.
 
+Milestone 0.2.1 also validates install metadata and generated icons, plus horizontal-overflow and primary-action availability at 320, 390, 768, 1024, and 1440 CSS pixels. Manual HTTPS install and device checks follow [PWA.md](PWA.md); automation does not substitute for iOS/Android home-screen verification.
+
+Browser projects use bounded parallelism so image-heavy responsive journeys do not create development-server startup races on constrained CI runners. Increasing worker count requires repeated evidence that the full suite remains stable.
+
+Set `PLAYWRIGHT_BASE_URL` to an immutable HTTPS Preview origin to run the same suite without starting the local development server:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "https://<preview-host>"
+pnpm test:e2e
+```
+
 Do not use a production provider or user room as automated test data.

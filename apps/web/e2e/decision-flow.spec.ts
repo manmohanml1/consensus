@@ -51,6 +51,76 @@ test("does not overflow a 390px mobile viewport", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("publishes valid install metadata and icons", async ({
+  page,
+  request,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "Install metadata is project-independent",
+  );
+  test.setTimeout(60_000);
+  await page.goto("/");
+
+  const manifestLink = page.locator('link[rel="manifest"]');
+  await expect(manifestLink).toHaveAttribute("href", /manifest\.webmanifest/);
+
+  const manifestResponse = await request.get("/manifest.webmanifest");
+  expect(manifestResponse.ok()).toBe(true);
+  const manifest = await manifestResponse.json();
+  expect(manifest).toMatchObject({
+    name: "Consensus — decide together",
+    short_name: "Consensus",
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    background_color: "#070b12",
+    theme_color: "#0b1220",
+  });
+  expect(manifest.icons).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ sizes: "192x192", type: "image/png" }),
+      expect.objectContaining({ sizes: "512x512", type: "image/png" }),
+    ]),
+  );
+
+  for (const iconPath of [
+    "/icons/consensus-192.png",
+    "/icons/consensus-512.png",
+  ]) {
+    const iconResponse = await request.get(iconPath);
+    expect(iconResponse.ok()).toBe(true);
+    expect(iconResponse.headers()["content-type"]).toContain("image/png");
+  }
+});
+
+test("keeps the setup action within supported responsive widths", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "This test sets each supported viewport explicitly",
+  );
+  test.setTimeout(60_000);
+  await page.goto("/");
+
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 1000 });
+
+    const dimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(
+      dimensions.scrollWidth,
+      `horizontal overflow at ${width}px`,
+    ).toBeLessThanOrEqual(dimensions.clientWidth);
+    await expect(
+      page.getByRole("button", { name: "Review candidates" }),
+    ).toBeVisible();
+  }
+});
+
 test("supports an optional mobile swipe without removing buttons", async ({
   page,
 }) => {
