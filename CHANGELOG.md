@@ -10,6 +10,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Four locally generated, explicitly illustrative restaurant fixture images.
 - Milestone 0.2.1 and ADRs for progressive responsive design and zero-cost validation controls.
 - Issue-to-PR delivery rules and owner-facing Preview/Production setup gates.
+- Installable PWA metadata, generated app icons, safe-area layout support, responsive-width acceptance coverage, and a manual iOS/Android device runbook.
 
 ### Planned
 

@@ -16,3 +16,7 @@ Finish the installable mobile shell and collect release evidence at the supporte
 - a documented manual device-test checklist and screenshots.
 
 **Done when:** install metadata validates, the core flow works without gesture-only controls at every target width, automated checks pass, manual device findings are recorded, and remaining polish is split into linked follow-up issues.
+
+## Implementation status
+
+Manifest metadata, generated 192px/512px icons, standalone/mobile metadata, safe-area layout support, supported-width browser checks, and the manual device runbook are implemented on `codex/pwa-responsive-acceptance`. HTTPS home-screen installation and physical iOS/Android checks remain Preview acceptance tasks.

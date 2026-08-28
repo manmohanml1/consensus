@@ -25,4 +25,4 @@ Completion means the milestone contract and verification gates are satisfied. It
 
 ## Next issue
 
-[CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) is the next bounded implementation step: PWA installability and responsive acceptance evidence. Milestone 0.3 room persistence begins only after that issue and the remaining 0.2 usability gate are resolved or explicitly rescheduled.
+[CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) is the active implementation step. Code-level installability and responsive coverage are complete when its pull request passes; physical-device and HTTPS installation evidence is collected on Preview before the issue closes. Milestone 0.3 room persistence begins only after that gate is resolved or explicitly rescheduled.
