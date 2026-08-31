@@ -4,7 +4,7 @@
 
 Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. No database, realtime integration, custom domain, production data, or application secret has been created.
 
-The 2026-08-28 deployment audit found that Vercel Git integration created Preview deployments for pull-request commits and automatically created Production deployments for merged `main` commits. That behavior did not match the earlier manual-promotion documentation. ADR 0011 corrects the boundary: pull requests retain automatic Previews, merged `main` builds become non-aliased candidates through `github.autoAlias: false`, and only the owner-dispatched promotion workflow may move the production alias.
+The 2026-08-28 deployment audit found that Vercel Git integration created Preview deployments for pull-request commits and automatically created Production deployments for merged `main` commits. That behavior did not match the earlier manual-promotion documentation. ADR 0011 corrects the boundary: pull requests retain automatic Previews, and the Vercel project setting **Production → Branch Tracking → Auto-assign Custom Production Domains** remains disabled so merged `main` builds are staged Production candidates. Only the owner-dispatched promotion workflow may move the production alias. This provider-side setting—not `vercel.json`—is the authoritative control.
 
 ## First Preview setup
 
@@ -12,7 +12,7 @@ The initial project setup uses these settings:
 
 1. Link `manmohanml1/consensus` to the Vercel project named `consensus-web`.
 2. Set the Vercel Root Directory to `apps/web`. The app-local `vercel.json` selects the Next.js framework while Vercel discovers the workspace lockfile and framework build defaults.
-3. Keep `main` as the Vercel production build branch and use pull-request branches for Preview deployments. The checked-in `github.autoAlias: false` setting prevents Git integration from automatically assigning a merged build to the production alias.
+3. Keep `main` as the Vercel production build branch and use pull-request branches for Preview deployments. In **Settings → Environments → Production → Branch Tracking**, disable **Auto-assign Custom Production Domains**. Vercel then creates a staged Production deployment for `main` without moving the production alias.
 4. Do not add database, place, realtime, analytics, or production secrets for milestone 0.2; the current build uses fixtures only.
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
 6. Share the first Preview URL in the implementing pull request and complete the Preview acceptance checklist below.
@@ -38,7 +38,7 @@ pnpm --filter @consensus/web test:e2e
 
 ## Production owner gate
 
-Production promotion is separate from merge after ADR 0011 is active. Before promotion, the owner must approve the exact READY Vercel deployment URL and current full `main` SHA, intended domain, current cost envelope, monitoring gaps, privacy/retention behavior, and rollback target. The promotion workflow verifies the deployment belongs to the configured project, represents current `main`, and is READY before it changes the production alias. It never rebuilds.
+Production promotion is separate from merge after ADR 0011 is active. Before promotion, the owner must approve the exact READY, staged **Production** Vercel deployment URL and current full `main` SHA, intended domain, current cost envelope, monitoring gaps, privacy/retention behavior, and rollback target. The promotion workflow verifies the deployment belongs to the configured project, represents current `main`, has Vercel target `production`, and is READY before it changes the production alias. It never rebuilds. A Preview deployment is rejected because promoting one causes a production rebuild.
 
 The promotion workflow requires the owner to type `PROMOTE`, pass the exact deployment and production URLs, pass the full `main` SHA, and approve the protected GitHub `production` environment. Workflow dispatch permission alone is not production authorization for an agent; the owner must explicitly request the exact promotion.
 
@@ -51,8 +51,8 @@ Complete these owner actions before merging the first change that expects manual
 1. In GitHub repository settings, create an environment named `production`.
 2. Configure required reviewers and disable administrator bypass where the GitHub plan supports those controls.
 3. Add environment secrets named `VERCEL_TOKEN` and `VERCEL_PROJECT_ID`. For a team-owned project, also add `VERCEL_ORG_ID` (the Vercel `team_` identifier). A personal-account project omits that secret entirely. The workflow temporarily accepts `VERCEL_TEAM_ID` as a compatibility alias for team-owned projects. Use a scoped Vercel token and record its expiry/rotation outside Git.
-4. Confirm `apps/web/vercel.json` is the effective project configuration and the Vercel Root Directory remains `apps/web`.
-5. Confirm pull requests still receive Preview URLs and a merged `main` candidate is built without moving `https://consensus-web-navy.vercel.app/`.
+4. Confirm `apps/web/vercel.json` is the effective framework configuration, the Vercel Root Directory remains `apps/web`, and **Auto-assign Custom Production Domains** is disabled in the Vercel Production environment.
+5. Confirm pull requests still receive Preview URLs and a merged `main` candidate is a READY deployment with target `production` that has not moved `https://consensus-web-navy.vercel.app/`.
 6. From GitHub Actions, dispatch `Consensus Production Promotion` from `main` with the exact candidate URL, current 40-character `main` SHA, production URL, and `PROMOTE` confirmation.
 7. Approve the GitHub environment gate, observe the ownership/state checks, then complete browser and log verification.
 8. Rehearse rollback by identifying—but not promoting without approval—the last known-good deployment.

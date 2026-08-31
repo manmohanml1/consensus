@@ -17,7 +17,7 @@ Consensus has architecture-appropriate DevSecOps controls: immutable workflow de
 - Vercel merge and promotion behavior matches the repository records.
 - Owner setup, verification, rollback, cost, and secrets are documented.
 - Container, Kubernetes, Terraform, automatic publishing, and duplicate scanners remain deferred until justified.
-- PR #113 remains open until the owner explicitly authorizes its merge.
+- PR #113 was merged only after explicit owner authorization. The remaining acceptance proof is one owner-approved staged Production promotion and rollback rehearsal using the documented Vercel setting and exact-artifact workflow.
 
 ## References
 

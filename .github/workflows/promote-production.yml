@@ -59,7 +59,7 @@ jobs:
           deployment_host="${DEPLOYMENT_URL#https://}"
           deployment_host="${deployment_host%/}"
           echo "deployment_host=$deployment_host" >> "$GITHUB_ENV"
-      - name: Verify deployment ownership, state, branch, and commit
+      - name: Verify staged Production deployment ownership, state, branch, and commit
         id: deployment
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
@@ -86,6 +86,7 @@ jobs:
           jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' deployment.json
           jq --exit-status --arg commit "$EXPECTED_COMMIT" '.meta.githubCommitSha == $commit' deployment.json
           jq --exit-status '.meta.githubCommitRef == "main"' deployment.json
+          jq --exit-status '.target == "production"' deployment.json
           jq --exit-status '.readyState == "READY"' deployment.json
 
           deployment_id="$(jq --raw-output '.id' deployment.json)"
