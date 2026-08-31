@@ -51,7 +51,7 @@ Before the first manual Production promotion:
 
 1. Create a GitHub environment named `production`.
 2. Add the owner as required reviewer and prevent administrators from bypassing the environment gate when the account plan supports it.
-3. Store `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` as environment secrets.
+3. Store `VERCEL_TOKEN` and `VERCEL_PROJECT_ID` as environment secrets. Add `VERCEL_ORG_ID` only for a team-owned project; it is Vercel's `team_` identifier. `VERCEL_TEAM_ID` is temporarily accepted only as a team-owned compatibility alias.
 4. Scope the Vercel token to the owning account/project where supported and record its rotation date outside the repository.
 5. Keep production secrets unavailable to pull-request workflows.
 6. Run one non-critical promotion and rollback rehearsal, then record results in the implementing PR or release record.
