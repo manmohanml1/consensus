@@ -17,7 +17,7 @@ The initial project setup uses these settings:
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
 6. Share the first Preview URL in the implementing pull request and complete the Preview acceptance checklist below.
 
-Git integration remains the build path because it already produces immutable Preview and `main` candidates. The repository does not rebuild in GitHub Actions. The separately dispatched promotion workflow uses Vercel's API to point production traffic at the exact verified candidate. `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` belong only in the protected GitHub `production` environment, never in repository files or pull-request jobs.
+Git integration remains the build path because it already produces immutable Preview and `main` candidates. The repository does not rebuild in GitHub Actions. The separately dispatched promotion workflow uses Vercel's API to point production traffic at the exact verified candidate. `VERCEL_TOKEN` and `VERCEL_PROJECT_ID` belong only in the protected GitHub `production` environment. A team-owned project additionally supplies `VERCEL_ORG_ID`; a personal-account project omits it. No secret belongs in repository files or pull-request jobs.
 
 ## Preview acceptance checklist
 
@@ -50,7 +50,7 @@ Complete these owner actions before merging the first change that expects manual
 
 1. In GitHub repository settings, create an environment named `production`.
 2. Configure required reviewers and disable administrator bypass where the GitHub plan supports those controls.
-3. Add environment secrets named `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. `VERCEL_ORG_ID` is the Vercel team ID (it begins with `team_`). The workflow temporarily accepts the legacy name `VERCEL_TEAM_ID` when the canonical secret is absent, but new configuration uses `VERCEL_ORG_ID`. Use a scoped Vercel token and record its expiry/rotation outside Git.
+3. Add environment secrets named `VERCEL_TOKEN` and `VERCEL_PROJECT_ID`. For a team-owned project, also add `VERCEL_ORG_ID` (the Vercel `team_` identifier). A personal-account project omits that secret entirely. The workflow temporarily accepts `VERCEL_TEAM_ID` as a compatibility alias for team-owned projects. Use a scoped Vercel token and record its expiry/rotation outside Git.
 4. Confirm `apps/web/vercel.json` is the effective project configuration and the Vercel Root Directory remains `apps/web`.
 5. Confirm pull requests still receive Preview URLs and a merged `main` candidate is built without moving `https://consensus-web-navy.vercel.app/`.
 6. From GitHub Actions, dispatch `Consensus Production Promotion` from `main` with the exact candidate URL, current 40-character `main` SHA, production URL, and `PROMOTE` confirmation.

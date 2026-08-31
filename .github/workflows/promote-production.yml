@@ -63,21 +63,24 @@ jobs:
         id: deployment
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || secrets.VERCEL_TEAM_ID }}
+          VERCEL_SCOPE_ID: ${{ secrets.VERCEL_ORG_ID || secrets.VERCEL_TEAM_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           test -n "$VERCEL_TOKEN"
-          test -n "$VERCEL_ORG_ID"
           test -n "$VERCEL_PROJECT_ID"
-          [[ "$VERCEL_ORG_ID" =~ ^team_[A-Za-z0-9]+$ ]]
           [[ "$VERCEL_PROJECT_ID" =~ ^prj_[A-Za-z0-9]+$ ]]
+
+          deployment_api_url="https://api.vercel.com/v13/deployments/$deployment_host"
+          if [ -n "$VERCEL_SCOPE_ID" ]; then
+            [[ "$VERCEL_SCOPE_ID" =~ ^team_[A-Za-z0-9]+$ ]]
+            encoded_scope_id="$(jq --raw-output --null-input --arg value "$VERCEL_SCOPE_ID" '$value | @uri')"
+            deployment_api_url="$deployment_api_url?teamId=$encoded_scope_id"
+          fi
 
           curl --fail --silent --show-error \
             --header "Authorization: Bearer $VERCEL_TOKEN" \
-            --get \
-            --data-urlencode "teamId=$VERCEL_ORG_ID" \
-            "https://api.vercel.com/v13/deployments/$deployment_host" \
+            "$deployment_api_url" \
             --output deployment.json
 
           jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' deployment.json
@@ -91,17 +94,22 @@ jobs:
       - name: Promote the verified deployment without rebuilding
         env:
           DEPLOYMENT_ID: ${{ steps.deployment.outputs.deployment_id }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || secrets.VERCEL_TEAM_ID }}
+          VERCEL_SCOPE_ID: ${{ secrets.VERCEL_ORG_ID || secrets.VERCEL_TEAM_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
+          promotion_api_url="https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOYMENT_ID"
+          if [ -n "$VERCEL_SCOPE_ID" ]; then
+            [[ "$VERCEL_SCOPE_ID" =~ ^team_[A-Za-z0-9]+$ ]]
+            encoded_scope_id="$(jq --raw-output --null-input --arg value "$VERCEL_SCOPE_ID" '$value | @uri')"
+            promotion_api_url="$promotion_api_url?teamId=$encoded_scope_id"
+          fi
+
           curl --fail --silent --show-error \
             --request POST \
             --header "Authorization: Bearer $VERCEL_TOKEN" \
             --header "Content-Type: application/json" \
-            --get \
-            --data-urlencode "teamId=$VERCEL_ORG_ID" \
-            "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOYMENT_ID" \
+            "$promotion_api_url" \
             --output promotion.json
           jq --exit-status . promotion.json > /dev/null
       - name: Smoke-check Production
