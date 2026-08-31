@@ -19,4 +19,6 @@ Alerts must describe an operator action. Product analytics are a separate minimi
 
 Every Production promotion record includes the GitHub workflow run, full source SHA, Vercel deployment ID/URL, target project, approval time, smoke result, and rollback candidate. Never copy tokens or full provider payloads into the record.
 
+The first owner-gated promotion is recorded in [the 2026-08-31 Production promotion record](operations/2026-08-31-production-promotion.md). Its workflow false-negative is tracked by GitHub issue #118 and the corrective pull request linked there.
+
 Track build failures, Preview acceptance failures, promotion failures, rollback frequency, production smoke failures, and time from merge to approved promotion. Before closed beta, add an owner-visible runtime error source and a bounded alert for new production failures. A deployment is not healthy merely because Vercel reports READY.
