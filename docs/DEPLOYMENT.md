@@ -50,7 +50,7 @@ Complete these owner actions before merging the first change that expects manual
 
 1. In GitHub repository settings, create an environment named `production`.
 2. Configure required reviewers and disable administrator bypass where the GitHub plan supports those controls.
-3. Add environment secrets named `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. Use a scoped Vercel token and record its expiry/rotation outside Git.
+3. Add environment secrets named `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. `VERCEL_ORG_ID` is the Vercel team ID (it begins with `team_`). The workflow temporarily accepts the legacy name `VERCEL_TEAM_ID` when the canonical secret is absent, but new configuration uses `VERCEL_ORG_ID`. Use a scoped Vercel token and record its expiry/rotation outside Git.
 4. Confirm `apps/web/vercel.json` is the effective project configuration and the Vercel Root Directory remains `apps/web`.
 5. Confirm pull requests still receive Preview URLs and a merged `main` candidate is built without moving `https://consensus-web-navy.vercel.app/`.
 6. From GitHub Actions, dispatch `Consensus Production Promotion` from `main` with the exact candidate URL, current 40-character `main` SHA, production URL, and `PROMOTE` confirmation.
