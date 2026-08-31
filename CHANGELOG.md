@@ -7,6 +7,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 ### Fixed
 
 - Made Vercel's Production-environment domain-assignment setting the authoritative staged-deployment control, removed the misleading `github.autoAlias` configuration, and reject Preview targets from the no-rebuild promotion workflow.
+- Treat a successful empty Vercel promotion response as success instead of falsely failing after the production alias has moved.
 
 ### Added
 

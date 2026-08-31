@@ -106,13 +106,17 @@ jobs:
             promotion_api_url="$promotion_api_url?teamId=$encoded_scope_id"
           fi
 
-          curl --fail --silent --show-error \
+          promotion_status="$(curl --fail --silent --show-error \
             --request POST \
             --header "Authorization: Bearer $VERCEL_TOKEN" \
             --header "Content-Type: application/json" \
             "$promotion_api_url" \
-            --output promotion.json
-          jq --exit-status . promotion.json > /dev/null
+            --output promotion.json \
+            --write-out '%{http_code}')"
+          [[ "$promotion_status" =~ ^2[0-9]{2}$ ]]
+          if [ -s promotion.json ]; then
+            jq --exit-status . promotion.json > /dev/null
+          fi
       - name: Smoke-check Production
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}

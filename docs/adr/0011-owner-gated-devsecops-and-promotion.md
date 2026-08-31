@@ -55,7 +55,7 @@ The references are inputs, not authorities. Several are teaching catalogs rather
 
 ## Implementation update — 2026-08-31
 
-The Vercel dashboard setting above was verified and saved as disabled. The former `github.autoAlias: false` entry was removed from `apps/web/vercel.json`: it is not the provider-side control that creates a staged Production deployment. The promotion workflow now rejects any deployment whose Vercel `target` is not `production`, ensuring a Preview artifact cannot silently enter the no-rebuild path.
+The Vercel dashboard setting above was verified and saved as disabled. The former `github.autoAlias: false` entry was removed from `apps/web/vercel.json`: it is not the provider-side control that creates a staged Production deployment. The promotion workflow now rejects any deployment whose Vercel `target` is not `production`, ensuring a Preview artifact cannot silently enter the no-rebuild path. It accepts a successful empty response from Vercel's promotion endpoint; JSON is optional diagnostic output, not the definition of success.
 
 ### Architecture not adopted
 
