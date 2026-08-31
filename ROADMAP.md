@@ -25,7 +25,7 @@ Completion means the milestone contract and verification gates are satisfied. It
 
 ## Active issues
 
-[CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14) is the first milestone 0.3 implementation slice: versioned, provider-neutral room protocol contracts. [CQ-201 / GitHub #10](https://github.com/manmohanml1/consensus/issues/10) evaluates the transactional provider in parallel but cannot provision it without explicit owner approval.
+[CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14) is the first milestone 0.3 implementation slice: versioned, provider-neutral room protocol contracts. [CQ-201 / GitHub #10](https://github.com/manmohanml1/consensus/issues/10) selects Neon PostgreSQL for disposable non-production use in ADR 0012, but cannot provision it without explicit owner approval.
 
 [CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) remains an acceptance follow-up for physical iOS/Android installation evidence and the explicit Vercel access-control decision. The owner explicitly started 0.3 while that device-only evidence remains open; this does not mark CQ-106 complete or weaken its acceptance criteria.
 
