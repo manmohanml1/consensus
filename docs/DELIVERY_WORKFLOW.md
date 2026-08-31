@@ -54,3 +54,5 @@ The default terminal state for implementation work is an open, review-ready pull
 ## Deployment gate
 
 Every deployment-capable pull request states one of: no deployment impact, Preview required, or Production promotion requested. Preview and Production steps must list owner actions, required secret names, verification, rollback, cost implications, and data/migration effects. Secret values never enter issues, pull requests, logs, or repository files.
+
+Conventional Commit subjects are required for authored commits and pull-request titles. A true multi-parent Git merge commit created solely to synchronize a topic branch with `main` is exempt from subject validation; this keeps protected-branch freshness compatible with the policy without exempting ordinary commits.
