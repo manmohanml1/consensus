@@ -26,6 +26,8 @@ This record maps repository threats to preventive, detective, and recovery contr
 - bounded `timeout-minutes` on every job;
 - absence of `pull_request_target`, `write-all`, and ignored failures.
 
+`pnpm docs:check` validates repository-relative Markdown links, roadmap state ordering, backlog-to-roadmap milestone coverage, dependency references, and stale topic-branch implementation claims. `pnpm backlog:check` validates the 100-item delivery manifest without writing to GitHub. Both run inside `pnpm verify` and therefore the required `build-and-test` gate.
+
 Dependabot proposes reviewed SHA updates. Do not replace SHA pins with mutable major tags for convenience.
 
 GitHub private vulnerability reporting is enabled and routes reporters to a private security advisory. Dependabot automated security fixes are enabled, but their pull requests remain subject to normal review and required checks; no security or dependency update is auto-merged.
@@ -48,15 +50,10 @@ Vercel owns the build/runtime platform for the current application. Consensus ow
 
 Docker, Kubernetes, Terraform, image scanners, and GitOps configuration are added only when the repository owns those deployable resources. Adding unused infrastructure would create credentials, patching, cost, and recovery obligations without reducing the current risk.
 
-## Owner setup still required
+## Current owner-controlled production state
 
-Before the first manual Production promotion:
+The protected `production` environment, required owner review, `VERCEL_TOKEN`, and `VERCEL_PROJECT_ID` are configured. The personal-account Vercel project correctly omits `VERCEL_ORG_ID`. Pull-request workflows cannot access those environment secrets, and the first exact-artifact promotion is recorded in `docs/operations/2026-08-31-production-promotion.md`.
 
-1. Create a GitHub environment named `production`.
-2. Add the owner as required reviewer and prevent administrators from bypassing the environment gate when the account plan supports it.
-3. Store `VERCEL_TOKEN` and `VERCEL_PROJECT_ID` as environment secrets. Add `VERCEL_ORG_ID` only for a team-owned project; it is Vercel's `team_` identifier. `VERCEL_TEAM_ID` is temporarily accepted only as a team-owned compatibility alias.
-4. Scope the Vercel token to the owning account/project where supported and record its rotation date outside the repository.
-5. Keep production secrets unavailable to pull-request workflows.
-6. Run one non-critical promotion and rollback rehearsal, then record results in the implementing PR or release record.
+One control remains deliberately open: run a non-critical rollback-and-restore rehearsal only after the owner explicitly authorizes the exact rollback candidate and restoration target. Record both traffic changes and verification evidence in the operating record. Token scope and rotation dates remain outside Git.
 
 Secret values, project-link files, and copied deployment payloads never enter the repository.

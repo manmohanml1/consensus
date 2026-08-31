@@ -16,4 +16,4 @@ Define provider-neutral runtime contracts for room commands, authorized projecti
 
 ## Implementation status
 
-The provider-neutral command/projection types, parsers, safe public error factory, tests, and protocol documentation are implemented on `codex/v0.3-room-protocol`. Provider provisioning remains blocked on CQ-201 and explicit owner approval.
+Complete. PR #111 merged the provider-neutral command/projection types, parsers, safe public error factory, tests, and protocol documentation into `main`; GitHub issue #14 is closed. Provider provisioning remains separately gated by CQ-201 and explicit owner approval.

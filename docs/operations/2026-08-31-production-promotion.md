@@ -17,9 +17,9 @@ The owner explicitly authorized staged commit `5aeaaf406d020f71577548a1d49120c83
 - HTTP smoke: `200`, HTML response, expected security-header baseline present
 - Runtime review: no application exception was observed; audit-client range requests produced four `416` access-log entries and are not an application failure
 
-## Workflow false-negative
+## Resolved workflow false-negative
 
-The Vercel promotion endpoint returned a successful empty response. The workflow then attempted to parse that empty file as JSON, reported failure, and skipped its built-in HTTP smoke step even though the alias had moved successfully. GitHub issue #118 and its corrective pull request make JSON optional, retain non-2xx failure behavior, and verify the Production alias against the exact deployment before the smoke check.
+The Vercel promotion endpoint returned a successful empty response. The original workflow then attempted to parse that empty file as JSON, reported failure, and skipped its built-in HTTP smoke step even though the alias had moved successfully. GitHub issue #118 closed when PR #119 merged the correction: JSON is optional after a successful status, non-2xx responses still fail, and the workflow now re-reads the exact deployment to verify the Production alias before smoke testing.
 
 ## Recovery
 

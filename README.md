@@ -6,7 +6,9 @@ The first product wedge is nearby food: one person starts a room, the group agre
 
 ## Repository status
 
-Version `0.1.0` is a provider-independent foundation and single-device product slice. It contains:
+The package and release baseline remains `0.1.0` because no version tag or GitHub Release has been authorized. Current `main` also contains the technically complete 0.2/0.2.1 single-device capabilities, whose moderated-usability and physical-device exit evidence remains in acceptance. Product capability, production deployment, and release version are deliberately separate states.
+
+The provider-independent foundation contains:
 
 - a Next.js App Router application shell;
 - a deterministic, tested decision engine;
@@ -34,7 +36,7 @@ Open <http://localhost:3000>.
 pnpm verify
 ```
 
-The verification gate includes release-version alignment, immutable GitHub Actions policy, lint/type checks, domain and web tests, a production build, and browser acceptance. See [DevSecOps controls](docs/DEVSECOPS.md) and [deployment and promotion](docs/DEPLOYMENT.md) for security and release operations.
+The verification gate includes release-version alignment, roadmap/backlog and documentation contracts, immutable GitHub Actions policy, lint/type checks, domain and web tests, a production build, and browser acceptance. See [DevSecOps controls](docs/DEVSECOPS.md) and [deployment and promotion](docs/DEPLOYMENT.md) for security and release operations.
 
 ## Source of truth
 

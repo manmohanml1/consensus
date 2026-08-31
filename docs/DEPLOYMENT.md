@@ -2,20 +2,20 @@
 
 ## Current boundary
 
-Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. No database, realtime integration, custom domain, production data, or application secret has been created.
+Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. The fixture-only reference application is live at `https://consensus-web-navy.vercel.app/`. No database, realtime integration, custom domain, production data, or application-runtime secret has been created. GitHub's protected `production` environment contains only the Vercel deployment credentials described below.
 
 The 2026-08-28 deployment audit found that Vercel Git integration created Preview deployments for pull-request commits and automatically created Production deployments for merged `main` commits. That behavior did not match the earlier manual-promotion documentation. ADR 0011 corrects the boundary: pull requests retain automatic Previews, and the Vercel project setting **Production → Branch Tracking → Auto-assign Custom Production Domains** remains disabled so merged `main` builds are staged Production candidates. Only the owner-dispatched promotion workflow may move the production alias. This provider-side setting—not `vercel.json`—is the authoritative control.
 
-## First Preview setup
+## Established Preview setup
 
-The initial project setup uses these settings:
+The project currently uses these settings:
 
 1. Link `manmohanml1/consensus` to the Vercel project named `consensus-web`.
 2. Set the Vercel Root Directory to `apps/web`. The app-local `vercel.json` selects the Next.js framework while Vercel discovers the workspace lockfile and framework build defaults.
 3. Keep `main` as the Vercel production build branch and use pull-request branches for Preview deployments. In **Settings → Environments → Production → Branch Tracking**, disable **Auto-assign Custom Production Domains**. Vercel then creates a staged Production deployment for `main` without moving the production alias.
 4. Do not add database, place, realtime, analytics, or production secrets for milestone 0.2; the current build uses fixtures only.
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
-6. Share the first Preview URL in the implementing pull request and complete the Preview acceptance checklist below.
+6. Record each applicable Preview URL in its implementing pull request and complete the Preview acceptance checklist below.
 
 Git integration remains the build path because it already produces immutable Preview and `main` candidates. The repository does not rebuild in GitHub Actions. The separately dispatched promotion workflow uses Vercel's API to point production traffic at the exact verified candidate. `VERCEL_TOKEN` and `VERCEL_PROJECT_ID` belong only in the protected GitHub `production` environment. A team-owned project additionally supplies `VERCEL_ORG_ID`; a personal-account project omits it. No secret belongs in repository files or pull-request jobs.
 
@@ -44,32 +44,25 @@ The promotion workflow requires the owner to type `PROMOTE`, pass the exact depl
 
 After promotion, run the critical browser flow against Production and inspect Vercel runtime errors before declaring the release healthy. A passing HTTP smoke check is necessary but not sufficient.
 
-## Production environment setup
+## Production environment state
 
-Complete these owner actions before merging the first change that expects manual promotion:
+The following setup is complete:
 
-1. In GitHub repository settings, create an environment named `production`.
-2. Configure required reviewers and disable administrator bypass where the GitHub plan supports those controls.
-3. Add environment secrets named `VERCEL_TOKEN` and `VERCEL_PROJECT_ID`. For a team-owned project, also add `VERCEL_ORG_ID` (the Vercel `team_` identifier). A personal-account project omits that secret entirely. The workflow temporarily accepts `VERCEL_TEAM_ID` as a compatibility alias for team-owned projects. Use a scoped Vercel token and record its expiry/rotation outside Git.
-4. Confirm `apps/web/vercel.json` is the effective framework configuration, the Vercel Root Directory remains `apps/web`, and **Auto-assign Custom Production Domains** is disabled in the Vercel Production environment.
-5. Confirm pull requests still receive Preview URLs and a merged `main` candidate is a READY deployment with target `production` that has not moved `https://consensus-web-navy.vercel.app/`.
-6. From GitHub Actions, dispatch `Consensus Production Promotion` from `main` with the exact candidate URL, current 40-character `main` SHA, production URL, and `PROMOTE` confirmation.
-7. Approve the GitHub environment gate, observe the ownership/state checks, then complete browser and log verification.
-8. Rehearse rollback by identifying—but not promoting without approval—the last known-good deployment.
+1. GitHub has a protected environment named `production` with the owner as required reviewer and administrator bypass disabled.
+2. `VERCEL_TOKEN` and `VERCEL_PROJECT_ID` are environment secrets. The project is personally owned, so `VERCEL_ORG_ID` is intentionally omitted; the team-only compatibility alias remains unused.
+3. `apps/web/vercel.json`, the `apps/web` Vercel Root Directory, and disabled automatic Production-domain assignment form the verified build/promotion boundary.
+4. Pull requests receive Preview deployments; merged `main` commits produce READY, staged Production candidates without moving the public alias.
+5. The owner successfully dispatched and approved the first exact-artifact promotion. Its immutable deployment, source SHA, smoke evidence, and rollback candidate are recorded in `docs/operations/2026-08-31-production-promotion.md`.
+
+The remaining operational proof is an explicitly authorized rollback-and-restore rehearsal. Identifying the last known-good deployment is read-only; moving Production traffic to it or restoring the current artifact each requires the owner's exact approval.
 
 The workflow adds no hosting product and no application runtime cost. GitHub Actions usage and Vercel account limits still apply. Vercel OIDC is not a substitute for the token used by deployment APIs; OIDC is reserved for deployed functions authenticating to supported external cloud services.
 
-## Planned deployment sequence
+## Current deployment sequence
 
-1. Finish the `codex/decision-mvp` quality gate and push the topic branch.
-2. Link a dedicated `consensus-web` Vercel project and create an immutable Preview from the exact branch commit.
-3. Run the desktop, mobile, keyboard, reduced-motion, security-header, and no-live-data acceptance checks against Preview.
-4. Complete the moderated 0.2 usability sessions and resolve release-critical findings.
-5. Merge only with explicit owner approval. Vercel builds the resulting current-`main` candidate without changing the production alias.
-6. Verify that exact candidate, then dispatch and approve the production-promotion workflow only with a separate explicit owner instruction.
-7. Run production browser and runtime-log smoke checks before declaring the deployment healthy.
+The initial project link, Preview validation, owner-authorized merges, staged `main` candidate, exact-artifact promotion, and Production smoke review are complete. The public site remains a fixture-only reference deployment; it is not evidence that the 0.2 moderated-usability gate, 0.2.1 device gate, milestone 0.3 persistence work, or any product release is complete.
 
-Preview is therefore planned immediately after technical 0.2 verification. Production is planned after Preview acceptance and the 8/10 usability gate—not simply because the branch builds.
+Future deployable changes follow the promotion contract below. Most merges need no Production action: they may remain as staged candidates until the owner requests an exact promotion. The next product milestone work begins with separately approved non-production database provisioning under CQ-201; it does not place provider credentials or test data in Production.
 
 ## Intended environments
 

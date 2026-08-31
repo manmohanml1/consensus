@@ -19,4 +19,4 @@ Finish the installable mobile shell and collect release evidence at the supporte
 
 ## Implementation status
 
-Manifest metadata, generated 192px/512px icons, standalone/mobile metadata, safe-area layout support, supported-width browser checks, and the manual device runbook are implemented on `codex/pwa-responsive-acceptance`. HTTPS home-screen installation and physical iOS/Android checks remain Preview acceptance tasks.
+Manifest metadata, generated 192px/512px icons, standalone/mobile metadata, safe-area layout support, supported-width browser checks, and the manual device runbook are present on `main`, including the installable shell merged in PR #9. HTTPS home-screen installation and physical iOS/Android checks remain Preview acceptance tasks.
