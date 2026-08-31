@@ -11,7 +11,7 @@ roadmap item
   -> pushed commit
   -> CI and review
   -> preview gate when applicable
-  -> explicit merge/promotion approval
+  -> explicit owner approval for this exact merge
   -> production smoke check
   -> issue closes through the merged PR
 ```
@@ -30,6 +30,7 @@ roadmap item
 - Convert independent discoveries into GitHub issues and local CQ records.
 - Update the PR body as issue scope changes; never rely on chat history as the project record.
 - Do not create providers, deployments, domains, secrets, migrations, releases, or paid resources without the owner gate defined in the relevant record.
+- Stop with the pull request open after it is review-ready. Do not merge unless the owner explicitly authorizes that pull request's merge.
 
 ## Pull-request completion
 
@@ -43,6 +44,12 @@ A pull request is ready only when:
 - changelog, roadmap, milestone, ADR, API/data, runbook, and owner instructions agree with the implementation.
 
 An issue closes when the implementing pull request merges, not merely when code is pushed. A PR may contain multiple tightly coupled issues, but each must have independently verifiable acceptance criteria.
+
+## Owner-only merge authorization
+
+Merge authorization is per pull request and per merge attempt. It cannot be inferred from green checks, a successful Preview, review approval, task-completion wording, permission to push or create a PR, a prior merge authorization, or a request to continue with later work.
+
+The default terminal state for implementation work is an open, review-ready pull request. The owner must explicitly say to merge that PR before any person, agent, CLI, API, or automation performs the merge. Production promotion remains a separate gate even after a merge.
 
 ## Deployment gate
 

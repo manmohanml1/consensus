@@ -1,0 +1,118 @@
+name: Consensus Production Promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: Exact READY Vercel deployment URL built from current main
+        required: true
+        type: string
+      expected_commit:
+        description: Full 40-character main commit SHA represented by the deployment
+        required: true
+        type: string
+      production_url:
+        description: Production vercel.app URL to smoke-check after promotion
+        required: true
+        default: https://consensus-web-navy.vercel.app
+        type: string
+      confirmation:
+        description: Type PROMOTE to authorize this exact production promotion
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consensus-production-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: ${{ inputs.production_url }}
+    steps:
+      - name: Checkout current main without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: main
+      - name: Validate owner-supplied promotion target
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          PRODUCTION_URL: ${{ inputs.production_url }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$CONFIRMATION" = "PROMOTE"
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$DEPLOYMENT_URL" =~ ^https://[a-z0-9][a-z0-9.-]*\.vercel\.app/?$ ]]
+          [[ "$PRODUCTION_URL" =~ ^https://[a-z0-9][a-z0-9.-]*\.vercel\.app/?$ ]]
+          test "$(git rev-parse origin/main)" = "$EXPECTED_COMMIT"
+
+          deployment_host="${DEPLOYMENT_URL#https://}"
+          deployment_host="${deployment_host%/}"
+          echo "deployment_host=$deployment_host" >> "$GITHUB_ENV"
+      - name: Verify deployment ownership, state, branch, and commit
+        id: deployment
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          test -n "$VERCEL_TOKEN"
+          test -n "$VERCEL_ORG_ID"
+          test -n "$VERCEL_PROJECT_ID"
+          [[ "$VERCEL_ORG_ID" =~ ^team_[A-Za-z0-9]+$ ]]
+          [[ "$VERCEL_PROJECT_ID" =~ ^prj_[A-Za-z0-9]+$ ]]
+
+          curl --fail --silent --show-error \
+            --header "Authorization: Bearer $VERCEL_TOKEN" \
+            --get \
+            --data-urlencode "teamId=$VERCEL_ORG_ID" \
+            "https://api.vercel.com/v13/deployments/$deployment_host" \
+            --output deployment.json
+
+          jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' deployment.json
+          jq --exit-status --arg commit "$EXPECTED_COMMIT" '.meta.githubCommitSha == $commit' deployment.json
+          jq --exit-status '.meta.githubCommitRef == "main"' deployment.json
+          jq --exit-status '.readyState == "READY"' deployment.json
+
+          deployment_id="$(jq --raw-output '.id' deployment.json)"
+          [[ "$deployment_id" =~ ^dpl_[A-Za-z0-9]+$ ]]
+          echo "deployment_id=$deployment_id" >> "$GITHUB_OUTPUT"
+      - name: Promote the verified deployment without rebuilding
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.deployment_id }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $VERCEL_TOKEN" \
+            --header "Content-Type: application/json" \
+            --get \
+            --data-urlencode "teamId=$VERCEL_ORG_ID" \
+            "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOYMENT_ID" \
+            --output promotion.json
+          jq --exit-status . promotion.json > /dev/null
+      - name: Smoke-check Production
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          PRODUCTION_URL: ${{ inputs.production_url }}
+        run: |
+          curl --fail --silent --show-error \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "$PRODUCTION_URL" \
+            --output /dev/null
+          echo "Promoted $deployment_host for $EXPECTED_COMMIT" >> "$GITHUB_STEP_SUMMARY"

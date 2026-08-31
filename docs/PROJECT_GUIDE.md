@@ -52,10 +52,14 @@ Consensus gets a small group from indecision to a plan they can accept and act o
 - PostgreSQL as the expected transactional model, but no provider is locked before milestone 0.3
 - Realtime transport carries updates; transactional persistence owns accepted state
 - Vitest for domain/component behavior and Playwright for release-critical journeys
-- GitHub Actions, CodeQL, Dependabot, immutable build artifacts, and protected `main`
+- GitHub Actions with immutable action pins, CodeQL, dependency review, Dependabot, workflow analysis, provenance-attested release artifacts, and protected `main`
 
 ## Quality contract
 
 Every pull request must explain purpose, scope, risk, recovery, and verification; pass `pnpm verify`; add tests for changed behavior; include mobile/desktop evidence for UI work; and update the roadmap, changelog, milestone, API contract, or ADR when facts change.
+
+The default completion state is an open, review-ready pull request. Only an explicit owner instruction to merge that exact pull request authorizes a merge; checks, previews, reviews, prior permissions, and milestone completion do not.
+
+Production promotion is a separate owner gate. Vercel may build current `main`, but the production alias moves only through the verified promotion contract in ADR 0011 and `docs/DEPLOYMENT.md`.
 
 Releases use annotated `vMAJOR.MINOR.PATCH` tags. A verified milestone, merge, or deployment never implicitly authorizes a tag or GitHub Release.

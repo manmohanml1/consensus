@@ -14,3 +14,9 @@ Initial service-level indicators:
 - retention job success and oldest eligible record age.
 
 Alerts must describe an operator action. Product analytics are a separate minimized event contract defined in ADR 0008.
+
+## Delivery telemetry
+
+Every Production promotion record includes the GitHub workflow run, full source SHA, Vercel deployment ID/URL, target project, approval time, smoke result, and rollback candidate. Never copy tokens or full provider payloads into the record.
+
+Track build failures, Preview acceptance failures, promotion failures, rollback frequency, production smoke failures, and time from merge to approved promotion. Before closed beta, add an owner-visible runtime error source and a bounded alert for new production failures. A deployment is not healthy merely because Vercel reports READY.

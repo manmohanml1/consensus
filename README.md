@@ -34,6 +34,8 @@ Open <http://localhost:3000>.
 pnpm verify
 ```
 
+The verification gate includes release-version alignment, immutable GitHub Actions policy, lint/type checks, domain and web tests, a production build, and browser acceptance. See [DevSecOps controls](docs/DEVSECOPS.md) and [deployment and promotion](docs/DEPLOYMENT.md) for security and release operations.
+
 ## Source of truth
 
 Read [docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md), [ROADMAP.md](ROADMAP.md), and [AGENTS.md](AGENTS.md) before changing scope or architecture. Milestone completion does not authorize a deployment, tag, GitHub release, paid service, or production data change.

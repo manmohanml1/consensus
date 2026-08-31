@@ -20,6 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Validate Conventional Commit title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -28,6 +32,19 @@ jobs:
             echo "Use a Conventional Commit pull-request title."
             exit 1
           fi
+      - name: Validate Conventional Commit subjects
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          invalid=0
+          while IFS= read -r subject; do
+            if [[ ! "$subject" =~ ^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?:[[:space:]].+ ]]; then
+              echo "Invalid Conventional Commit subject: $subject"
+              invalid=1
+            fi
+          done < <(git log --format=%s "$BASE_SHA..$HEAD_SHA")
+          test "$invalid" = "0"
       - name: Validate topic branch
         env:
           HEAD_REF: ${{ github.head_ref }}
@@ -42,11 +59,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 11.19.0
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: pnpm
@@ -59,7 +78,7 @@ jobs:
       - name: Verify source
         run: pnpm verify
       - name: Upload immutable application artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: consensus-web-${{ github.sha }}
           path: apps/web/.next
@@ -68,7 +87,7 @@ jobs:
           retention-days: 14
       - name: Upload Playwright diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-diagnostics-${{ github.sha }}
           path: |
@@ -77,10 +96,25 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Reject newly introduced vulnerable dependencies
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          fail-on-scopes: runtime,development,unknown
+          retry-on-snapshot-warnings: true
+          retry-on-snapshot-warnings-timeout: 120
+          show-openssf-scorecard: true
+          show-patched-versions: true
+
   build-and-test:
     name: build-and-test
     if: always()
-    needs: [pull-request-policy, verify]
+    needs: [pull-request-policy, verify, dependency-review]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -89,10 +123,13 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           POLICY_RESULT: ${{ needs.pull-request-policy.result }}
           VERIFY_RESULT: ${{ needs.verify.result }}
+          DEPENDENCY_RESULT: ${{ needs.dependency-review.result }}
         run: |
           test "$VERIFY_RESULT" = "success"
           if [[ "$EVENT_NAME" = "pull_request" ]]; then
             test "$POLICY_RESULT" = "success"
+            test "$DEPENDENCY_RESULT" = "success"
           else
             test "$POLICY_RESULT" = "skipped"
+            test "$DEPENDENCY_RESULT" = "skipped"
           fi

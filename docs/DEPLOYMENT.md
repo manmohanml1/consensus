@@ -2,7 +2,9 @@
 
 ## Current boundary
 
-Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview delivery. No database, realtime integration, custom domain, production data, or production secret has been created.
+Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. No database, realtime integration, custom domain, production data, or application secret has been created.
+
+The 2026-08-28 deployment audit found that Vercel Git integration created Preview deployments for pull-request commits and automatically created Production deployments for merged `main` commits. That behavior did not match the earlier manual-promotion documentation. ADR 0011 corrects the boundary: pull requests retain automatic Previews, merged `main` builds become non-aliased candidates through `github.autoAlias: false`, and only the owner-dispatched promotion workflow may move the production alias.
 
 ## First Preview setup
 
@@ -10,12 +12,12 @@ The initial project setup uses these settings:
 
 1. Link `manmohanml1/consensus` to the Vercel project named `consensus-web`.
 2. Set the Vercel Root Directory to `apps/web`. The app-local `vercel.json` selects the Next.js framework while Vercel discovers the workspace lockfile and framework build defaults.
-3. Keep `main` as the production branch and use non-production pull-request branches for Preview deployments.
+3. Keep `main` as the Vercel production build branch and use pull-request branches for Preview deployments. The checked-in `github.autoAlias: false` setting prevents Git integration from automatically assigning a merged build to the production alias.
 4. Do not add database, place, realtime, analytics, or production secrets for milestone 0.2; the current build uses fixtures only.
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
 6. Share the first Preview URL in the implementing pull request and complete the Preview acceptance checklist below.
 
-If Git integration is unsuitable later, a separately approved CI workflow may use pinned Vercel CLI builds and `vercel deploy --prebuilt`. Its `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` values belong in GitHub Actions secrets, never in the repository. Git integration remains the simpler initial path.
+Git integration remains the build path because it already produces immutable Preview and `main` candidates. The repository does not rebuild in GitHub Actions. The separately dispatched promotion workflow uses Vercel's API to point production traffic at the exact verified candidate. `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` belong only in the protected GitHub `production` environment, never in repository files or pull-request jobs.
 
 ## Preview acceptance checklist
 
@@ -36,7 +38,26 @@ pnpm --filter @consensus/web test:e2e
 
 ## Production owner gate
 
-Production is not an automatic merge side effect. Before promotion, the owner must approve the exact Preview artifact, intended domain, current cost envelope, monitoring gaps, privacy/retention behavior, and rollback target. Promote the verified artifact rather than rebuilding a different one. After promotion, run the same critical flow against Production and inspect runtime errors before declaring the release healthy.
+Production promotion is separate from merge after ADR 0011 is active. Before promotion, the owner must approve the exact READY Vercel deployment URL and current full `main` SHA, intended domain, current cost envelope, monitoring gaps, privacy/retention behavior, and rollback target. The promotion workflow verifies the deployment belongs to the configured project, represents current `main`, and is READY before it changes the production alias. It never rebuilds.
+
+The promotion workflow requires the owner to type `PROMOTE`, pass the exact deployment and production URLs, pass the full `main` SHA, and approve the protected GitHub `production` environment. Workflow dispatch permission alone is not production authorization for an agent; the owner must explicitly request the exact promotion.
+
+After promotion, run the critical browser flow against Production and inspect Vercel runtime errors before declaring the release healthy. A passing HTTP smoke check is necessary but not sufficient.
+
+## Production environment setup
+
+Complete these owner actions before merging the first change that expects manual promotion:
+
+1. In GitHub repository settings, create an environment named `production`.
+2. Configure required reviewers and disable administrator bypass where the GitHub plan supports those controls.
+3. Add environment secrets named `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. Use a scoped Vercel token and record its expiry/rotation outside Git.
+4. Confirm `apps/web/vercel.json` is the effective project configuration and the Vercel Root Directory remains `apps/web`.
+5. Confirm pull requests still receive Preview URLs and a merged `main` candidate is built without moving `https://consensus-web-navy.vercel.app/`.
+6. From GitHub Actions, dispatch `Consensus Production Promotion` from `main` with the exact candidate URL, current 40-character `main` SHA, production URL, and `PROMOTE` confirmation.
+7. Approve the GitHub environment gate, observe the ownership/state checks, then complete browser and log verification.
+8. Rehearse rollback by identifying—but not promoting without approval—the last known-good deployment.
+
+The workflow adds no hosting product and no application runtime cost. GitHub Actions usage and Vercel account limits still apply. Vercel OIDC is not a substitute for the token used by deployment APIs; OIDC is reserved for deployed functions authenticating to supported external cloud services.
 
 ## Planned deployment sequence
 
@@ -44,8 +65,9 @@ Production is not an automatic merge side effect. Before promotion, the owner mu
 2. Link a dedicated `consensus-web` Vercel project and create an immutable Preview from the exact branch commit.
 3. Run the desktop, mobile, keyboard, reduced-motion, security-header, and no-live-data acceptance checks against Preview.
 4. Complete the moderated 0.2 usability sessions and resolve release-critical findings.
-5. Merge only with explicit owner approval, then promote the already-verified Preview artifact to Production.
-6. Run production browser smoke checks before beginning milestone 0.3 persistence work.
+5. Merge only with explicit owner approval. Vercel builds the resulting current-`main` candidate without changing the production alias.
+6. Verify that exact candidate, then dispatch and approve the production-promotion workflow only with a separate explicit owner instruction.
+7. Run production browser and runtime-log smoke checks before declaring the deployment healthy.
 
 Preview is therefore planned immediately after technical 0.2 verification. Production is planned after Preview acceptance and the 8/10 usability gate—not simply because the branch builds.
 
@@ -61,13 +83,15 @@ Preview is therefore planned immediately after technical 0.2 verification. Produ
 ## Promotion contract
 
 ```text
-topic branch -> pull request -> stable quality gate -> immutable artifact
-             -> preview acceptance -> explicit merge approval -> production deploy
-             -> smoke verification -> separately authorized annotated tag/release
+topic branch -> pull request -> stable quality/security gate -> Preview acceptance
+             -> explicit merge approval -> non-aliased current-main candidate
+             -> explicit production approval -> promote exact candidate without rebuild
+             -> production smoke/log verification
+             -> separately authorized annotated tag/release + checksum + provenance
 ```
 
-Vercel Git integration is the preferred initial web delivery. The default Node.js/Fluid Compute runtime is used. Preview deployment should consume the exact lockfile and build contract. Production secrets must never be available to pull requests from forks.
+Vercel Git integration is the preferred initial web build path. The default Node.js/Fluid Compute runtime is used. Preview and main-candidate deployments consume the exact lockfile and build contract. Production secrets must never be available to pull requests or fork jobs.
 
 The app-local `apps/web/vercel.json` pins the framework contract. Project IDs, tokens, and environment-specific secrets remain outside the repository. The Vercel project Root Directory must stay aligned with `apps/web`; changes to provider or GitHub settings remain explicit external actions.
 
-The provider integration and `vercel.ts` configuration are added only when a deployment is authorized and the target project is linked. Database migrations remain separately approval-gated and run before promotion with a verified recovery plan.
+Database migrations remain separately approval-gated and run before promotion with a verified recovery plan. When a migration cannot be rolled back safely, application compatibility must support both the old and new schema during the deployment window.
