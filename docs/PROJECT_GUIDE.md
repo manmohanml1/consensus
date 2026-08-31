@@ -49,7 +49,7 @@ Consensus gets a small group from indecision to a plan they can accept and act o
 - Pure TypeScript domain rules in `packages/domain`
 - Node.js/Fluid Compute runtime by default
 - Schema validation at every external boundary
-- PostgreSQL as the expected transactional model, but no provider is locked before milestone 0.3
+- PostgreSQL as the transactional model; ADR 0012 selects Neon only for an owner-approved, disposable non-production environment
 - Realtime transport carries updates; transactional persistence owns accepted state
 - Vitest for domain/component behavior and Playwright for release-critical journeys
 - GitHub Actions with immutable action pins, CodeQL, dependency review, Dependabot, workflow analysis, provenance-attested release artifacts, and protected `main`
