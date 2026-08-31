@@ -12,6 +12,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Private vulnerability reporting with documented response targets and review-gated Dependabot security-fix pull requests.
 - ADR 0012 and a source-dated transactional database evaluation selecting Neon PostgreSQL for owner-approved, disposable non-production room persistence only.
 - Owner-gated merge and release governance, Conventional Commit enforcement, and a machine-checked Semantic Versioning release preflight.
 - Separate protected workflows for release-candidate tag verification and explicitly authorized GitHub Release publication.

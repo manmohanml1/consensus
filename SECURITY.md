@@ -6,7 +6,11 @@ Before 1.0, security fixes target the latest deployed minor line and the active 
 
 ## Reporting
 
-Do not open a public issue containing credentials, session tokens, private room data, precise location, exploit details, or personal information. Use GitHub private vulnerability reporting when enabled, or contact the repository owner privately.
+Do not open a public issue containing credentials, session tokens, private room data, precise location, exploit details, or personal information. Submit those reports through [GitHub private vulnerability reporting](https://github.com/manmohanml1/consensus/security/advisories/new). Include the affected version or commit, impact, reproduction steps, and any safe proof of concept available.
+
+The owner aims to acknowledge a private report within three business days and provide an initial status or request for more information within seven business days. Fix and disclosure timing depends on severity and exploitability. Keep the report private until a coordinated disclosure date is agreed or the owner confirms publication is safe.
+
+If private reporting is unavailable, open a public issue containing no sensitive details and ask the owner to establish a private channel. Never place a secret or exploit in that issue.
 
 ## Security boundaries
 

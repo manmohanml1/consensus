@@ -4,17 +4,17 @@ This record maps repository threats to preventive, detective, and recovery contr
 
 ## Required gates
 
-| Risk                      | Preventive control                                                                | Detection or evidence                                   | Recovery                                                     |
-| ------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
-| Unauthorized main change  | Protected `main`; PR required; explicit owner merge instruction                   | Branch protection and PR timeline                       | Revert through a new PR                                      |
-| Compromised action tag    | Full commit-SHA pins; Dependabot review                                           | `pnpm workflow:check`; zizmor; Scorecard                | Revert the action update and rotate exposed credentials      |
-| Excess workflow authority | Top-level read/none permissions; job-scoped writes; checkout credentials disabled | Workflow policy and zizmor                              | Disable workflow, revoke tokens, inspect audit logs          |
-| Vulnerable dependency     | Frozen lockfile; ignored install scripts; no automatic major updates              | Dependency Review, `pnpm audit`, Dependabot             | Upgrade, remove, or explicitly document a bounded exception  |
-| Source vulnerability      | Strict TypeScript, schema validation, tests                                       | ESLint, CodeQL extended queries, browser tests          | Patch through normal PR; security release if needed          |
-| Secret exposure           | Environment-scoped secrets; no fork access; minimized job permissions             | GitGuardian plus review                                 | Revoke/rotate first, then investigate and prevent recurrence |
-| Artifact substitution     | Exact commit/lockfile build; checksum; GitHub provenance attestation              | Release preflight and attestation verification          | Withdraw release and issue a new immutable version           |
-| Wrong production artifact | Auto-alias disabled; exact URL/SHA/project validation; owner environment gate     | Promotion workflow summary and Vercel deployment record | Promote the last verified deployment                         |
-| Silent failed scanner     | Security gates do not use `continue-on-error: true`                               | Aggregate `build-and-test` status                       | Fix scanner/gate; never bypass silently                      |
+| Risk                      | Preventive control                                                                | Detection or evidence                                    | Recovery                                                     |
+| ------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| Unauthorized main change  | Protected `main`; PR required; explicit owner merge instruction                   | Branch protection and PR timeline                        | Revert through a new PR                                      |
+| Compromised action tag    | Full commit-SHA pins; Dependabot review                                           | `pnpm workflow:check`; zizmor; Scorecard                 | Revert the action update and rotate exposed credentials      |
+| Excess workflow authority | Top-level read/none permissions; job-scoped writes; checkout credentials disabled | Workflow policy and zizmor                               | Disable workflow, revoke tokens, inspect audit logs          |
+| Vulnerable dependency     | Frozen lockfile; ignored install scripts; no automatic major updates              | Dependency Review, `pnpm audit`, Dependabot security PRs | Upgrade, remove, or explicitly document a bounded exception  |
+| Source vulnerability      | Strict TypeScript, schema validation, tests                                       | ESLint, CodeQL extended queries, browser tests           | Patch through normal PR; security release if needed          |
+| Secret exposure           | Environment-scoped secrets; no fork access; minimized job permissions             | GitGuardian plus review                                  | Revoke/rotate first, then investigate and prevent recurrence |
+| Artifact substitution     | Exact commit/lockfile build; checksum; GitHub provenance attestation              | Release preflight and attestation verification           | Withdraw release and issue a new immutable version           |
+| Wrong production artifact | Auto-alias disabled; exact URL/SHA/project validation; owner environment gate     | Promotion workflow summary and Vercel deployment record  | Promote the last verified deployment                         |
+| Silent failed scanner     | Security gates do not use `continue-on-error: true`                               | Aggregate `build-and-test` status                        | Fix scanner/gate; never bypass silently                      |
 
 ## Workflow policy
 
@@ -27,6 +27,8 @@ This record maps repository threats to preventive, detective, and recovery contr
 - absence of `pull_request_target`, `write-all`, and ignored failures.
 
 Dependabot proposes reviewed SHA updates. Do not replace SHA pins with mutable major tags for convenience.
+
+GitHub private vulnerability reporting is enabled and routes reporters to a private security advisory. Dependabot automated security fixes are enabled, but their pull requests remain subject to normal review and required checks; no security or dependency update is auto-merged.
 
 GitHub's repository-level `sha_pinning_required` Actions policy is also enabled. The server-side setting and repository-owned validator are intentionally redundant: one blocks execution, while the other gives a fast local and review-time explanation.
 

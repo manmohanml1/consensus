@@ -5,13 +5,14 @@
 - Node.js runtime: major `24`, declared in package manifests and CI.
 - Package manager: `pnpm@11.19.0`, declared in the root manifest and CI.
 - Dependency source of truth: root `pnpm-lock.yaml` for all workspaces.
-- Update path: grouped Dependabot pull requests; production high/critical audit and dependency review are blocking gates.
+- Update path: grouped Dependabot pull requests plus automated security-fix pull requests; no dependency PR is auto-merged. Production high/critical audit and dependency review are blocking gates.
 - Install policy: frozen lockfile and `--ignore-scripts` in CI. Any dependency requiring an install script needs an explicit, reviewed exception.
 
 ## GitHub Actions dependencies
 
 - Every external action is pinned to a full commit SHA with the reviewed release in an inline comment.
 - Dependabot checks the `github-actions` ecosystem monthly.
+- GitHub automated security fixes propose reviewable pull requests when a vulnerable dependency has an available patch.
 - `pnpm workflow:check`, zizmor, and OpenSSF Scorecard detect workflow and supply-chain regressions.
 - Reusable workflows from external repositories are not currently trusted dependencies.
 
