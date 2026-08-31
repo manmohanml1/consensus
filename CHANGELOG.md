@@ -4,6 +4,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ## Unreleased
 
+### Fixed
+
+- Made Vercel's Production-environment domain-assignment setting the authoritative staged-deployment control, removed the misleading `github.autoAlias` configuration, and reject Preview targets from the no-rebuild promotion workflow.
+
 ### Added
 
 - ADR 0012 and a source-dated transactional database evaluation selecting Neon PostgreSQL for owner-approved, disposable non-production room persistence only.

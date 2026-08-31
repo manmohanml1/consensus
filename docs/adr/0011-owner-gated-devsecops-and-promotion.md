@@ -48,10 +48,14 @@ The references are inputs, not authorities. Several are teaching catalogs rather
 ### Vercel environments
 
 - Pull requests continue to receive Vercel Preview deployments.
-- Vercel Git integration may build the merged `main` commit, but `github.autoAlias: false` prevents GitHub integration from automatically assigning that deployment to the production alias.
+- Vercel Git integration may build the merged `main` commit. The Vercel project's **Production → Branch Tracking → Auto-assign Custom Production Domains** setting is disabled, so the deployment is staged and does not receive the production alias automatically.
 - Production uses the manually dispatched `Consensus Production Promotion` workflow. It requires the exact deployment URL, full current `main` SHA, `PROMOTE` confirmation, a protected GitHub `production` environment, and environment-scoped Vercel credentials.
 - The workflow verifies project ownership, branch, commit, and READY state through Vercel before promoting without a rebuild, then smoke-checks the production URL.
 - Rollback points production traffic to a previously verified deployment; it does not rebuild or mutate application data.
+
+## Implementation update — 2026-08-31
+
+The Vercel dashboard setting above was verified and saved as disabled. The former `github.autoAlias: false` entry was removed from `apps/web/vercel.json`: it is not the provider-side control that creates a staged Production deployment. The promotion workflow now rejects any deployment whose Vercel `target` is not `production`, ensuring a Preview artifact cannot silently enter the no-rebuild path.
 
 ### Architecture not adopted
 
