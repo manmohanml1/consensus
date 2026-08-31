@@ -18,7 +18,7 @@ Until `v1.0.0`, minor versions may introduce planned product capabilities and co
 | `feat!:` or `BREAKING CHANGE:`          | Incompatible product or contract change          | Major                   |
 | `docs:`, `test:`, `build:`, `ci:`, etc. | Repository work classified by its primary intent | No release by itself    |
 
-The other accepted types are `chore:`, `refactor:`, and `revert:`. Scopes are optional, for example `feat(room): add invitation locator` or `fix(vote): reject duplicate sequence`. Pull-request titles and every commit subject must use the same syntax. Squash merges use the validated PR title as the resulting `main` commit subject.
+The other accepted types are `chore:`, `refactor:`, and `revert:`. Scopes are optional, for example `feat(room): add invitation locator` or `fix(vote): reject duplicate sequence`. Pull-request titles and every authored commit subject use the same syntax. A true multi-parent topic-branch synchronization merge is the only subject exception. GitHub accepts squash merges only, and the validated pull-request title becomes the linear `main` commit subject.
 
 ## Release and tag invariants
 
@@ -39,8 +39,9 @@ The repository currently records `0.1.0` as its version baseline. No tag or GitH
 4. Open a Conventional Commit PR such as `chore(release): prepare v0.3.0`; leave it unmerged.
 5. Merge only after the owner explicitly authorizes that PR.
 6. Ask for separate owner authorization to create and push the exact annotated tag.
-7. Push the annotated tag. The release workflow rechecks provenance and versions, runs the full verification suite, packages the application, emits a SHA-256 checksum and GitHub build-provenance attestation, and creates the GitHub Release.
-8. Verify the checksum, attestation, release artifact, and production behavior; document rollback or follow-up work.
+7. Push the annotated tag. The release-build workflow rechecks provenance and versions, runs the full verification suite, packages the application, emits a SHA-256 checksum and GitHub build-provenance attestation, and retains the verified candidate without publishing a GitHub Release.
+8. Ask for a second explicit owner authorization to publish the GitHub Release for that exact existing tag.
+9. Dispatch `Consensus Release Publication` from `main`, provide the exact tag and `PUBLISH`, approve the protected `release` environment, then verify the rebuilt checksum, attestation, published assets, and production behavior.
 
 ## Independent compatibility versions
 
