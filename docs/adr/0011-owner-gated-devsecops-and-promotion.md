@@ -42,7 +42,7 @@ The references are inputs, not authorities. Several are teaching catalogs rather
 ### Build and release provenance
 
 - CI builds from the lockfile with install scripts disabled and retains the exact `.next` artifact for a bounded period.
-- An owner-authorized annotated tag rebuilds and verifies the source, packages the application, emits a SHA-256 checksum, creates a GitHub build-provenance attestation, and publishes both artifact and checksum.
+- An owner-authorized annotated tag rebuilds and verifies the source, packages the application, emits a SHA-256 checksum, creates a GitHub build-provenance attestation, and retains the candidate. A separately owner-authorized, protected manual workflow re-verifies the exact tag before publishing the GitHub Release and its assets.
 - Tags are immutable and must reference a commit reachable from `origin/main` with matching package and changelog versions.
 
 ### Vercel environments

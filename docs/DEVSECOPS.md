@@ -35,7 +35,8 @@ GitHub's repository-level `sha_pinning_required` Actions policy is also enabled.
 - Every PR: formatting, lint, type checks, domain/web/browser tests, production build, production dependency audit, dependency review, CodeQL, GitGuardian, and workflow policy.
 - Workflow changes: zizmor static analysis.
 - Weekly and on `main`: CodeQL and OpenSSF Scorecard posture scan.
-- Owner-authorized release tag: full verification, checksum, provenance attestation, and immutable GitHub Release artifact.
+- Owner-authorized release tag: full verification, checksum, provenance attestation, and a retained release candidate without publication.
+- Separately owner-authorized GitHub Release: protected `release` environment, exact existing annotated tag, full re-verification, checksum, provenance attestation, and immutable published assets.
 
 Findings are triaged by exploitability, affected data, available fix, and exposure. A passing scanner is evidence, not a security guarantee.
 

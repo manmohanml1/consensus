@@ -1,0 +1,91 @@
+name: Consensus Release Publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing annotated vMAJOR.MINOR.PATCH or supported prerelease tag
+        required: true
+        type: string
+      confirmation:
+        description: Type PUBLISH to authorize the GitHub Release for this exact tag
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-publication-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: release
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    steps:
+      - name: Validate owner-supplied publication target
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$CONFIRMATION" = "PUBLISH"
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(preview|beta|rc)\.[1-9][0-9]*)?$ ]]
+      - name: Checkout the exact tag without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.release_tag }}
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Verify annotated tag, main ancestry, and versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$(git cat-file -t "$RELEASE_TAG")" = "tag" || { echo "Release tags must be annotated."; exit 1; }
+          release_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "$release_commit" origin/main
+          pnpm release:check -- --tag "$RELEASE_TAG"
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo "GitHub Release $RELEASE_TAG already exists. Published versions are immutable."
+            exit 1
+          fi
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm verify
+      - name: Package immutable application artifact
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: tar -czf "consensus-web-${RELEASE_TAG}.tar.gz" -C apps/web .next
+      - name: Generate release checksum
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: sha256sum "consensus-web-${RELEASE_TAG}.tar.gz" > "consensus-web-${RELEASE_TAG}.tar.gz.sha256"
+      - name: Attest release artifact provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: consensus-web-${{ inputs.release_tag }}.tar.gz
+      - name: Publish the owner-approved GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: >-
+          gh release create "$RELEASE_TAG"
+          "consensus-web-${RELEASE_TAG}.tar.gz"
+          "consensus-web-${RELEASE_TAG}.tar.gz.sha256"
+          --verify-tag
+          --title "Consensus ${RELEASE_TAG}"
+          --generate-notes

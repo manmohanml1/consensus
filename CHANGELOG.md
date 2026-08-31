@@ -14,6 +14,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 - ADR 0012 and a source-dated transactional database evaluation selecting Neon PostgreSQL for owner-approved, disposable non-production room persistence only.
 - Owner-gated merge and release governance, Conventional Commit enforcement, and a machine-checked Semantic Versioning release preflight.
+- Separate protected workflows for release-candidate tag verification and explicitly authorized GitHub Release publication.
 - Immutable GitHub Action pins, blocking dependency review, workflow static analysis, OpenSSF Scorecard, release checksums/provenance, and exact-artifact Vercel production promotion.
 - HSTS, cross-origin isolation metadata, and legacy cross-domain policy response headers with browser acceptance coverage.
 - A repository-owned, idempotent 100-issue GitHub backlog for milestones 0.3 through 1.0.

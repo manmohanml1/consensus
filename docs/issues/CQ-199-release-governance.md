@@ -7,13 +7,15 @@
 
 ## Outcome
 
-Consensus follows Ghostwriter's repository-maintenance pattern: protected `main`, Conventional Commit changes, aligned Semantic Versions, annotated release tags, and separate explicit owner gates for merges, production promotions, tags, and GitHub Releases.
+Consensus follows Ghostwriter's repository-maintenance pattern: protected linear `main`, squash commits derived from validated Conventional Commit pull-request titles, aligned Semantic Versions, immutable annotated release tags, and separate explicit owner gates for merges, production promotions, tags, and GitHub Releases.
 
 ## Acceptance
 
 - Repository instructions make per-PR owner merge authorization unambiguous.
 - GitHub validates Conventional Commit PR titles and commit subjects.
-- `main` requires a pull request, the aggregate quality gate, current branches, resolved conversations, and applies protection to administrators.
+- `main` requires a pull request, the aggregate quality gate, current branches, resolved conversations, linear history, and applies protection to administrators.
+- GitHub accepts squash merges only and derives the `main` commit subject from the validated pull-request title.
+- Tag verification and GitHub Release publication use separate protected workflows and explicit owner approvals.
 - Package and changelog versions are checked locally and again before a tag can publish a release.
 - This implementation remains in an open PR until the owner explicitly authorizes its merge.
 
