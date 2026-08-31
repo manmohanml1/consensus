@@ -6,6 +6,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Made ESLint ignore generated Playwright output directories consistently so a clean Windows checkout does not require placeholder test artifacts.
 - Made Vercel's Production-environment domain-assignment setting the authoritative staged-deployment control, removed the misleading `github.autoAlias` configuration, and reject Preview targets from the no-rebuild promotion workflow.
 - Treat a successful empty Vercel promotion response as success instead of falsely failing after the production alias has moved.
 - Verify that the Production hostname points to the exact promoted deployment and retain the first owner-gated promotion evidence.
