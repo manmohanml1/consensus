@@ -73,6 +73,8 @@ Future deployable changes follow the promotion contract below. Most merges need 
 | Preview     | Exact pull-request artifact | Non-production provider resources           |
 | Production  | Approved immutable artifact | Production resources and retention controls |
 
+Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. They remain absent until CQ-201 provisioning approval, are restricted to Development/approved Preview scopes, and must not be copied into Production or pull-request jobs. CQ-202 defines the roles and first migration before application code consumes either variable.
+
 ## Promotion contract
 
 ```text
