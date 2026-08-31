@@ -117,6 +117,40 @@ jobs:
           if [ -s promotion.json ]; then
             jq --exit-status . promotion.json > /dev/null
           fi
+      - name: Verify the Production alias points to the exact deployment
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.deployment_id }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          PRODUCTION_URL: ${{ inputs.production_url }}
+          VERCEL_SCOPE_ID: ${{ secrets.VERCEL_ORG_ID || secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          production_host="${PRODUCTION_URL#https://}"
+          production_host="${production_host%/}"
+          deployment_api_url="https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID"
+          if [ -n "$VERCEL_SCOPE_ID" ]; then
+            encoded_scope_id="$(jq --raw-output --null-input --arg value "$VERCEL_SCOPE_ID" '$value | @uri')"
+            deployment_api_url="$deployment_api_url?teamId=$encoded_scope_id"
+          fi
+
+          alias_verified=false
+          for attempt in {1..10}; do
+            curl --fail --silent --show-error \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              "$deployment_api_url" \
+              --output promoted-deployment.json
+
+            jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' promoted-deployment.json
+            jq --exit-status --arg commit "$EXPECTED_COMMIT" '.meta.githubCommitSha == $commit' promoted-deployment.json
+            jq --exit-status '.target == "production" and .readyState == "READY"' promoted-deployment.json
+            if jq --exit-status --arg host "$production_host" '(.alias // []) | index($host) != null' promoted-deployment.json; then
+              alias_verified=true
+              break
+            fi
+            sleep 3
+          done
+          test "$alias_verified" = "true"
       - name: Smoke-check Production
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
@@ -128,4 +162,8 @@ jobs:
             --retry-delay 2 \
             "$PRODUCTION_URL" \
             --output /dev/null
-          echo "Promoted $deployment_host for $EXPECTED_COMMIT" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "Promoted $deployment_host for $EXPECTED_COMMIT"
+            echo "Verified deployment ID: ${{ steps.deployment.outputs.deployment_id }}"
+            echo "Verified Production URL: $PRODUCTION_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
