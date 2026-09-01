@@ -73,7 +73,7 @@ Future deployable changes follow the promotion contract below. Most merges need 
 | Preview     | Exact pull-request artifact | Non-production provider resources           |
 | Production  | Approved immutable artifact | Production resources and retention controls |
 
-Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. The provider-managed pooled and unpooled credentials are restricted to Development and Preview under CQ-201; the exact migration alias, least-privileged roles, first migration, and application consumption remain gated. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md).
+Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. Both exact names are configured as secrets only in Development and Preview under CQ-201. Least-privileged roles, the first migration, and application consumption remain gated. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md).
 
 ## Promotion contract
 
