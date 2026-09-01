@@ -1,7 +1,7 @@
 # ADR 0012: Neon PostgreSQL for non-production room persistence
 
 **Status:** Accepted for non-production only  
-**Decision owner:** Repository owner approval is still required before provisioning
+**Decision owner:** Repository owner approved non-production provisioning on 2026-08-31
 
 ## Context
 
@@ -17,8 +17,8 @@ environment after explicit owner approval. The application remains standard
 PostgreSQL: migrations use portable SQL and no Neon SDK, Auth product, branching
 API, or provider-specific SQL enters domain contracts.
 
-Neon's published Free plan currently includes 0.5 GB storage and 100 CU-hours per
-project each month, with compute scaling to zero when idle. Its six-hour restore
+Neon's published Free plan currently includes 0.5 GB storage, 100 CU-hours per
+project each month, and 5 GB monthly public network transfer, with compute scaling to zero when idle. Its six-hour restore
 window is adequate only for disposable development data, not a production recovery
 commitment. Current figures are evaluation evidence, not a contractual guarantee;
 the owner rechecks pricing, limits, and terms at provisioning and before any plan
@@ -77,5 +77,6 @@ the owner approves teardown.
 ## Sources checked 2026-08-31
 
 - [Neon pricing](https://neon.com/pricing)
+- [Neon network transfer](https://neon.com/docs/introduction/network-transfer)
 - [Supabase pricing](https://supabase.com/pricing)
 - [Supabase billing and quota details](https://supabase.com/docs/guides/platform/billing-on-supabase)

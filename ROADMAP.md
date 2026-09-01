@@ -25,7 +25,7 @@ Completion means the milestone contract and verification gates are satisfied. It
 
 ## Current execution state
 
-[CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14) completed the provider-neutral room protocol contracts in PR #111. [CQ-201 / GitHub #10](https://github.com/manmohanml1/consensus/issues/10) is now the active milestone 0.3 gate: ADR 0012 selects Neon PostgreSQL for disposable non-production use, but creating the project, adding its non-production secret, and running the first migration each require explicit owner approval. After that approval and provisioning evidence, [CQ-202 / GitHub #11](https://github.com/manmohanml1/consensus/issues/11) is the next implementation slice.
+[CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14) completed the provider-neutral room protocol contracts in PR #111. [CQ-201 / GitHub #10](https://github.com/manmohanml1/consensus/issues/10) is now the active milestone 0.3 gate: the owner approved and created a Free Neon PostgreSQL resource for Development and Preview on 2026-08-31; the exact secret names and read-only connectivity are verified. Recovery/teardown evidence and first-migration authorization remain open. After CQ-201 evidence is complete, [CQ-202 / GitHub #11](https://github.com/manmohanml1/consensus/issues/11) is the next implementation slice.
 
 The CI/CD, release-governance, security-reporting, and clean-Windows foundation corrections are merged. [CQ-198 / GitHub #114](https://github.com/manmohanml1/consensus/issues/114) remains open only for a separately authorized Production rollback-and-restore rehearsal; that operational exercise does not block provider-neutral planning but remains required before the governance work is called complete.
 
