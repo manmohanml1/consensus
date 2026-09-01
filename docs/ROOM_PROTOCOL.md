@@ -47,4 +47,4 @@ Validation diagnostics are for the trusted boundary and tests. Production respon
 
 ## Current non-scope
 
-This contract does not select or provision PostgreSQL, implement migrations, expose route handlers, issue capabilities, accept real rooms, or publish realtime events. Those remain CQ-201 through CQ-204 and milestone 0.4 work, with their owner and provider gates intact.
+This contract does not expose route handlers, accept real rooms, apply the schema to a shared provider, or publish realtime events. CQ-202 supplies portable migrations and CQ-203 supplies server-only capability primitives; CQ-204, CQ-206, and CQ-209 must consume those boundaries rather than redefine them. Shared-provider and Production gates remain intact.

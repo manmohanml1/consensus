@@ -15,6 +15,7 @@ If private reporting is unavailable, open a public issue containing no sensitive
 ## Security boundaries
 
 - Anonymous does not mean unauthenticated: every participant receives a short-lived, room-scoped, server-issued capability.
+- Raw capabilities are 256-bit one-time delivery values. Storage contains only an environment-keyed fingerprint; authorization also requires matching room, member, role, active status, and expiry.
 - The server owns room lifecycle, locked roster, accepted vote sequence, idempotency, and outcome calculation.
 - Realtime messages are untrusted hints until authorized and committed by the server.
 - Room codes are invitation handles, not authorization secrets.
