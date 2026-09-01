@@ -2,8 +2,8 @@
 
 Consensus remains zero-signup, but every state-changing room operation is
 authenticated. CQ-203 implements the server-only capability primitive in
-`packages/security`; public room creation, join, recovery, and command endpoints
-consume it in later issues.
+`packages/security`; CQ-204 consumes it for private command/projection routes,
+while public room creation, join, and recovery remain later issues.
 
 ## Token and storage contract
 
@@ -38,12 +38,12 @@ same `unauthorized-or-missing` public response. Do not disclose which check fail
 ## Browser transport
 
 The response uses `__Secure-consensus_room` with `HttpOnly`, `Secure`,
-`SameSite=Lax`, no `Domain`, and a path of `/api/rooms/<roomId>`. The same path is
+`SameSite=Lax`, no `Domain`, and a path of `/api/v1/rooms/<roomId>`. The same path is
 required when clearing it. Multiple room-path cookies may coexist without exposing
 capabilities to JavaScript, URLs, QR codes, analytics, or realtime payloads.
 
-Cookie authentication also requires trusted-origin/CSRF checks on state-changing
-requests in CQ-204. Friendly invitation codes locate a room but never authorize a
+Cookie-authenticated commands require a same-origin `Origin` match before body
+handling. Friendly invitation codes locate a room but never authorize a
 participant.
 
 ## Pepper rotation

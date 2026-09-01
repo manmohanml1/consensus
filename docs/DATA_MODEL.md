@@ -7,7 +7,7 @@ This logical model is provider-neutral. ADRs 0007, 0012, and 0013 authorize a po
 | Record       | Purpose                      | Key invariants                                                          |
 | ------------ | ---------------------------- | ----------------------------------------------------------------------- |
 | Room         | Temporary decision aggregate | Random id, human code, status, revision, expiry, ruleset version        |
-| Participant  | Room-scoped member           | Server-issued capability hash, display name, role, join/leave state     |
+| Participant  | Room-scoped member           | Capability hash, role, join/leave state, locked-voter eligibility       |
 | Constraint   | Hard feasibility rule        | Typed, validated, visibility-scoped, never reduced to preference        |
 | Candidate    | Normalized option            | Provider id/version, field provenance, freshness, coordinates minimized |
 | Vote         | Accepted reaction            | Unique room/participant/candidate, command id and sequence              |
@@ -21,6 +21,15 @@ a participant, constraint, candidate, command, vote, decision, or commitment
 cannot cross room boundaries. The database uniquely enforces one host, accepted
 aggregate revisions, participant command sequences, idempotency keys, and one
 vote per participant/candidate pair.
+
+Accepted commands store a SHA-256 fingerprint of the normalized command and the
+exact privacy-safe result projection. A matching retry returns that immutable
+result without rerunning the mutation; reuse of the same idempotency key with a
+different command fails. The room row is locked while the expected revision and
+participant sequence are checked, and the mutation, command record, projection
+outbox event, and new revision commit in one transaction. `eligible_voter` is
+snapshotted when the host locks the roster, so a later participant record cannot
+silently change decision eligibility.
 
 Participant `capability_hash` contains only the 32-byte keyed fingerprint defined
 by `packages/security`; raw capability material is delivered once and never

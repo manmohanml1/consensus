@@ -1,0 +1,167 @@
+openapi: 3.1.0
+info:
+  title: Consensus private room API
+  version: 0.3.0
+  description: Capability-scoped command and projection boundary.
+paths:
+  /api/v1/rooms/{roomId}/commands:
+    post:
+      summary: Apply one versioned room command
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomCommand"
+      responses:
+        "201":
+          description: Command accepted; response is the committed projection.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomProjection" }
+        "200":
+          description: Exact idempotent replay of the original accepted result.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+            Idempotency-Replayed:
+              schema: { type: string, const: "true" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomProjection" }
+        "400": { $ref: "#/components/responses/ProtocolError" }
+        "404": { $ref: "#/components/responses/ProtocolError" }
+        "409": { $ref: "#/components/responses/ProtocolError" }
+        "503": { $ref: "#/components/responses/ProtocolError" }
+  /api/v1/rooms/{roomId}/projection:
+    get:
+      summary: Read the authorized current room projection
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      responses:
+        "200":
+          description: Privacy-minimized current projection.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomProjection" }
+        "404": { $ref: "#/components/responses/ProtocolError" }
+        "503": { $ref: "#/components/responses/ProtocolError" }
+components:
+  parameters:
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[A-Za-z0-9_-]{8,64}$" }
+  headers:
+    NoStore:
+      schema: { type: string, example: "no-store, max-age=0" }
+  responses:
+    ProtocolError:
+      description: Safe versioned public error; unauthorized and missing are indistinguishable.
+      headers:
+        Cache-Control: { $ref: "#/components/headers/NoStore" }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/RoomProtocolError" }
+  schemas:
+    RoomCommand:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          protocolVersion,
+          commandId,
+          idempotencyKey,
+          roomId,
+          expectedRevision,
+          sequence,
+          issuedAt,
+          actor,
+          type,
+          payload,
+        ]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        commandId: { type: string }
+        idempotencyKey: { type: string }
+        roomId: { type: string }
+        expectedRevision: { type: integer, minimum: 0 }
+        sequence: { type: integer, minimum: 1 }
+        issuedAt: { type: string, format: date-time }
+        actor:
+          type: object
+          additionalProperties: false
+          required: [memberId, role]
+          properties:
+            memberId: { type: string }
+            role: { type: string, enum: [host, participant] }
+        type:
+          type: string
+          enum:
+            [
+              room.rename,
+              room.end,
+              roster.lock,
+              candidate.add,
+              candidate.remove,
+              vote.submit,
+              decision.resolve,
+              commitment.set,
+            ]
+        payload: { type: object }
+    RoomProjection:
+      type: object
+      description: Exact schema is runtime-validated by packages/domain; private ballots, constraint values, capabilities, and provider payloads are forbidden.
+      required:
+        [
+          protocolVersion,
+          roomId,
+          revision,
+          phase,
+          title,
+          targetAt,
+          createdAt,
+          expiresAt,
+          rosterLocked,
+          participants,
+          constraintIds,
+          candidates,
+          ballotProgress,
+          decision,
+        ]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        roomId: { type: string }
+        revision: { type: integer, minimum: 0 }
+        phase:
+          {
+            type: string,
+            enum: [lobby, candidate-review, voting, resolved, expired],
+          }
+        title: { type: string }
+        targetAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        rosterLocked: { type: boolean }
+        participants: { type: array, items: { type: object } }
+        constraintIds: { type: array, items: { type: string } }
+        candidates: { type: array, items: { type: object } }
+        ballotProgress: { type: array, items: { type: object } }
+        decision: { oneOf: [{ type: object }, { type: "null" }] }
+    RoomProtocolError:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion, code, message, retryable, correlationId]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        code: { type: string }
+        message: { type: string }
+        retryable: { type: boolean }
+        correlationId: { type: string }
+        currentRevision: { type: integer, minimum: 0 }

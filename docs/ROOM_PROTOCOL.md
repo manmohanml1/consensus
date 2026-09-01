@@ -11,7 +11,7 @@ Milestone 0.3 introduces a provider-neutral protocol before it introduces a data
 - Capabilities belong in an HTTP-only cookie or authorization transport selected by CQ-203. They are forbidden in command and projection payloads.
 - Friendly room codes locate invitations but grant no authority.
 - The server authenticates the capability, derives its room/member/role scope, and verifies that it matches the command actor before applying anything.
-- Parsing proves only shape and boundedness. Authorization, expected revision, participant sequence, room phase, and idempotency are enforced transactionally by CQ-204.
+- Parsing proves only shape and boundedness. Authorization, expected revision, participant sequence, room phase, and idempotency are enforced transactionally by the CQ-204 command store.
 - Commands and authorized projections are private, request-time data and must use `Cache-Control: no-store`.
 
 ## Command envelope
@@ -45,6 +45,15 @@ Public errors use stable codes, a safe message, correlation id, retryability, an
 
 Validation diagnostics are for the trusted boundary and tests. Production responses must not echo input values, capability material, internal database details, or provider errors.
 
-## Current non-scope
+## Implemented transport
 
-This contract does not expose route handlers, accept real rooms, apply the schema to a shared provider, or publish realtime events. CQ-202 supplies portable migrations and CQ-203 supplies server-only capability primitives; CQ-204, CQ-206, and CQ-209 must consume those boundaries rather than redefine them. Shared-provider and Production gates remain intact.
+`POST /api/v1/rooms/{roomId}/commands` accepts the command envelope and returns
+the committed projection. A first acceptance returns `201`; an exact retry
+returns `200` plus `Idempotency-Replayed: true`. `GET
+/api/v1/rooms/{roomId}/projection` returns the authorized current projection.
+Both are Node.js request-time routes with `Cache-Control: no-store`.
+
+Room creation, joining, recovery, shared-provider migration, realtime delivery,
+and Production activation remain out of scope. CQ-206 and CQ-209 must consume the
+same service boundary rather than redefine it. Shared-provider and Production
+gates remain intact.

@@ -31,7 +31,7 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
     const result = await client.query(
       "SELECT version FROM consensus_internal.schema_migrations ORDER BY version",
     );
-    expect(result.rows.map(({ version }) => version)).toEqual([1, 2]);
+    expect(result.rows.map(({ version }) => version)).toEqual([1, 2, 3]);
   });
 
   it("enforces room, participant, revision, foreign-key, and idempotency invariants", async () => {
@@ -50,17 +50,17 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
       VALUES ('room_00000001', 'candidate_0001', 'Sample', 'fixture');
 
       INSERT INTO consensus.commands
-        (room_id, command_id, participant_id, idempotency_key, command_type, expected_revision, accepted_revision, participant_sequence, issued_at)
+        (room_id, command_id, participant_id, idempotency_key, command_type, expected_revision, accepted_revision, participant_sequence, issued_at, payload_hash, result_projection)
       VALUES
-        ('room_00000001', 'command_000001', 'member_000001', 'idempotency-key-0001', 'vote.submit', 0, 1, 1, now());
+        ('room_00000001', 'command_000001', 'member_000001', 'idempotency-key-0001', 'vote.submit', 0, 1, 1, now(), decode(repeat('01', 32), 'hex'), '{}');
     `);
 
     await expect(
       client.query(`
         INSERT INTO consensus.commands
-          (room_id, command_id, participant_id, idempotency_key, command_type, expected_revision, accepted_revision, participant_sequence, issued_at)
+          (room_id, command_id, participant_id, idempotency_key, command_type, expected_revision, accepted_revision, participant_sequence, issued_at, payload_hash, result_projection)
         VALUES
-          ('room_00000001', 'command_000002', 'member_000001', 'idempotency-key-0001', 'vote.submit', 1, 2, 2, now());
+          ('room_00000001', 'command_000002', 'member_000001', 'idempotency-key-0001', 'vote.submit', 1, 2, 2, now(), decode(repeat('02', 32), 'hex'), '{}');
       `),
     ).rejects.toMatchObject({ code: "23505" });
 

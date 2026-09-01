@@ -35,7 +35,7 @@ Do not use a production provider or user room as automated test data.
 
 ## Disposable PostgreSQL migration suite
 
-CQ-202 adds an opt-in persistence suite that bootstraps NOLOGIN group roles,
+The persistence suite bootstraps NOLOGIN group roles,
 applies every ordered migration twice, verifies database constraints, and deletes
 the complete synthetic room aggregate. It accepts only
 `CONSENSUS_TEST_DATABASE_URL` and must target a disposable database owned by the
@@ -69,3 +69,11 @@ The current Windows development host has neither Docker nor `psql`, so
 disposable PostgreSQL runtime. GitHub Actions remains the authoritative disposable
 PostgreSQL path; the shared Neon database must not be substituted for a local or
 CI test database.
+
+CQ-204/CQ-210 extend that disposable suite with exact idempotent replay,
+conflicting-key rejection, stale-revision and sequence responses, atomic
+command/outbox evidence, cross-room authorization rejection, locked-roster
+integrity, and projection privacy checks. The web unit suite separately proves
+same-origin mutation enforcement, bounded bodies, route/body room agreement,
+`no-store` responses, and safe fail-closed behavior when server configuration is
+absent.

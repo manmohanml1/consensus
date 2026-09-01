@@ -185,7 +185,7 @@ export function serializeCapabilityCookie(
   );
   return [
     `${CAPABILITY_COOKIE_NAME}=${token}`,
-    `Path=/api/rooms/${encodeURIComponent(roomId)}`,
+    `Path=/api/v1/rooms/${encodeURIComponent(roomId)}`,
     `Max-Age=${maxAge}`,
     `Expires=${expiresAt.toUTCString()}`,
     "HttpOnly",
@@ -198,7 +198,7 @@ export function serializeClearedCapabilityCookie(roomId: string): string {
   assertIdentifier(roomId, "room");
   return [
     `${CAPABILITY_COOKIE_NAME}=`,
-    `Path=/api/rooms/${encodeURIComponent(roomId)}`,
+    `Path=/api/v1/rooms/${encodeURIComponent(roomId)}`,
     "Max-Age=0",
     "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
     "HttpOnly",

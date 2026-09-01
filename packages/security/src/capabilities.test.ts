@@ -139,7 +139,7 @@ describe("room capabilities", () => {
     );
 
     expect(cookie).toContain(`${CAPABILITY_COOKIE_NAME}=${token}`);
-    expect(cookie).toContain("Path=/api/rooms/room_00000001");
+    expect(cookie).toContain("Path=/api/v1/rooms/room_00000001");
     expect(cookie).toContain("Max-Age=7200");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");

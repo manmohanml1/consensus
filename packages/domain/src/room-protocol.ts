@@ -95,7 +95,8 @@ export type RoomProtocolErrorCode =
   | "room-locked"
   | "room-expired"
   | "command-conflict"
-  | "rate-limited";
+  | "rate-limited"
+  | "temporarily-unavailable";
 
 export interface RoomProtocolError {
   protocolVersion: typeof ROOM_PROTOCOL_VERSION;
@@ -1048,13 +1049,16 @@ export function createRoomProtocolError(
   const retryable =
     code === "stale-revision" ||
     code === "sequence-conflict" ||
-    code === "rate-limited";
+    code === "rate-limited" ||
+    code === "temporarily-unavailable";
   const message =
     code === "unauthorized-or-missing"
       ? "The room is unavailable."
       : code === "rate-limited"
         ? "Too many attempts. Try again later."
-        : "The room command could not be accepted.";
+        : code === "temporarily-unavailable"
+          ? "The room service is temporarily unavailable."
+          : "The room command could not be accepted.";
 
   return {
     protocolVersion: ROOM_PROTOCOL_VERSION,
