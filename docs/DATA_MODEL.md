@@ -22,6 +22,12 @@ cannot cross room boundaries. The database uniquely enforces one host, accepted
 aggregate revisions, participant command sequences, idempotency keys, and one
 vote per participant/candidate pair.
 
+Participant `capability_hash` contains only the 32-byte keyed fingerprint defined
+by `packages/security`; raw capability material is delivered once and never
+persisted. Reissuing or recovering a capability replaces the stored fingerprint,
+immediately invalidating the earlier token. Role, room, member status, and expiry
+remain separate database facts and must all match during authorization.
+
 ## Retention
 
 Unregistered room data is temporary. The initial policy is a two-hour active TTL, a 24-hour recovery window, and deletion within seven days. Production values require privacy review and verification. Aggregate product metrics must not retain room codes, names, precise coordinates, individual votes, or constraints.

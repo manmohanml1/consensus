@@ -75,6 +75,14 @@ Future deployable changes follow the promotion contract below. Most merges need 
 
 Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. Both exact names are configured as secrets only in Development and Preview under CQ-201. CQ-202 defines NOLOGIN `consensus_runtime` and `consensus_migrator` group roles; provider login roles receive membership out of band, and the runtime role receives no schema-creation privilege. Role creation, the first Neon migration, and application consumption remain gated. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md) and [the migration runbook](MIGRATIONS.md).
 
+CQ-203 reserves `CONSENSUS_CAPABILITY_PEPPER` for a server-only, independently
+generated 32-byte key encoded as base64url. It must differ by environment, remain
+outside browser bundles and logs, and be rotated only through a capability
+reissuance plan because changing it invalidates every outstanding room token.
+Defining the variable does not authorize creating it in Vercel; configuration is
+deferred until an approved non-production endpoint consumes the capability
+package.
+
 ## Promotion contract
 
 ```text

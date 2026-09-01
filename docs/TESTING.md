@@ -50,3 +50,22 @@ may enable the integration command only against its isolated PostgreSQL service;
 Vercel and Production URLs are forbidden as test inputs. Applying migrations to
 the shared Neon non-production resource remains a separate owner-authorized
 operation.
+
+## Local milestone 0.3 checks
+
+The capability suite is dependency-free and runs locally without a database:
+
+```powershell
+pnpm --filter @consensus/security test
+```
+
+It covers token entropy/shape, keyed fingerprints, safe logging behavior,
+one-time delivery, room/member/role/expiry/status rejection, and secure cookie
+attributes. `pnpm verify` additionally runs domain, persistence-unit, security,
+web, production-build, and Playwright desktop/mobile/reduced-motion checks.
+
+The current Windows development host has neither Docker nor `psql`, so
+`pnpm test:persistence` is not locally runnable there without installing a
+disposable PostgreSQL runtime. GitHub Actions remains the authoritative disposable
+PostgreSQL path; the shared Neon database must not be substituted for a local or
+CI test database.

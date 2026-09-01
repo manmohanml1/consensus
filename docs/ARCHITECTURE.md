@@ -5,6 +5,8 @@
 ```text
 apps/web/            Next.js application, accessible UI, server actions and route handlers
 packages/domain/     Deterministic constraints, scoring, outcome reasons, versioned contracts
+packages/security/   Server-only capability issuance, hashing, scope and transport primitives
+packages/persistence/Portable PostgreSQL migrations and persistence verification
 docs/                Product, architecture, security, operations, milestones and ADRs
 .github/             Contribution policy, issue intake and delivery automation
 ```
@@ -24,7 +26,7 @@ Realtime subscriber -> UI projection only
 Analytics adapter   -> minimized aggregate events only
 ```
 
-Milestone 0.1 implements only the browser shell and pure domain package. Target components do not imply that a provider has been selected or provisioned.
+Milestones 0.1–0.2 implement the browser shell and pure domain package. Milestone 0.3 adds provider-neutral persistence and server-only security packages before public room endpoints. Target components do not imply that a provider migration, Production resource, or public API is authorized.
 
 ## Module boundaries
 

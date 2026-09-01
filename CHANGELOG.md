@@ -14,6 +14,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Versioned 256-bit anonymous room capabilities with keyed one-way fingerprints, constant-time verification, one-time delivery wrappers, scoped secure-cookie serialization, and cross-room/member/role/expiry tests.
 - Portable, forward-only PostgreSQL room migrations, least-privilege group-role bootstrap, checksum-protected migration runner, and disposable integration coverage for CQ-202.
 - Owner-approved Free Neon PostgreSQL resource for disposable milestone 0.3 validation, connected only to Vercel Development and Preview with Neon Auth and deployment branches disabled.
 - Private vulnerability reporting with documented response targets and review-gated Dependabot security-fix pull requests.
