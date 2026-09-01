@@ -9,9 +9,10 @@
   "scripts": {
     "dev": "pnpm --filter @consensus/web dev",
     "build": "pnpm --filter @consensus/domain build && pnpm --filter @consensus/web build",
-    "lint": "pnpm --filter @consensus/web lint",
-    "typecheck": "pnpm --filter @consensus/domain typecheck && pnpm --filter @consensus/web typecheck",
-    "test": "pnpm --filter @consensus/domain test && pnpm --filter @consensus/web test",
+    "lint": "pnpm --filter @consensus/persistence lint && pnpm --filter @consensus/web lint",
+    "typecheck": "pnpm --filter @consensus/domain typecheck && pnpm --filter @consensus/persistence typecheck && pnpm --filter @consensus/web typecheck",
+    "test": "pnpm --filter @consensus/domain test && pnpm --filter @consensus/persistence test && pnpm --filter @consensus/web test",
+    "test:persistence": "pnpm --filter @consensus/persistence test:integration",
     "test:e2e": "pnpm --filter @consensus/web test:e2e",
     "backlog:check": "node scripts/sync-github-backlog.mjs",
     "backlog:sync": "node scripts/sync-github-backlog.mjs --apply",

@@ -22,6 +22,17 @@
 - Production promotion uses the Vercel REST API with environment-scoped credentials and does not rebuild the artifact.
 - GitHub Actions produces bounded CI artifacts; tagged releases add a checksum and GitHub provenance attestation.
 
+## Test-only database image
+
+- Persistence integration tests use the Docker Official Image for PostgreSQL
+  `18.6-alpine3.23`, pinned to the reviewed linux/amd64 manifest digest in the
+  quality workflow.
+- The service exists only for the bounded job, binds only to the runner, uses
+  trust authentication with synthetic data and no credential, receives no
+  repository or provider secret, and is discarded with the runner.
+- Dependabot does not update service-image digests automatically; CQ-202 records
+  the initial pin and future updates require a reviewed digest and migration suite.
+
 ## Provider dependencies
 
 Database, realtime, place, analytics, reservation, and payment providers are not selected by this record. Each requires its milestone ADR, licensing/cost review, data-flow update, threat-model update, retention plan, outage behavior, and explicit owner approval.
