@@ -5,7 +5,9 @@ import {
   CAPABILITY_HASH_BYTES,
   authorizeCapability,
   fingerprintCapability,
+  fingerprintRoomLocator,
   issueCapability,
+  issueRoomLocator,
   parseCapabilityPepper,
   serializeCapabilityCookie,
   serializeClearedCapabilityCookie,
@@ -56,6 +58,22 @@ describe("room capabilities", () => {
 
     expect(first).toEqual(second);
     expect(first).not.toEqual(withOtherPepper);
+  });
+
+  it("issues a shareable locator that is not a capability and stores only a keyed fingerprint", () => {
+    const first = issueRoomLocator(pepper);
+    const second = issueRoomLocator(pepper);
+
+    expect(first.locator).toMatch(/^r1\.[A-Za-z0-9_-]{22}$/);
+    expect(first.locator).not.toMatch(/^c1\./);
+    expect(first.locator).not.toBe(second.locator);
+    expect(first.hash).toEqual(fingerprintRoomLocator(first.locator, pepper));
+    expect(first.hash).not.toEqual(
+      fingerprintCapability(issue().takeToken(), pepper),
+    );
+    expect(() => fingerprintRoomLocator("r1.invalid", pepper)).toThrow(
+      "invalid",
+    );
   });
 
   it("redacts issued tokens from common logging and permits one delivery", () => {

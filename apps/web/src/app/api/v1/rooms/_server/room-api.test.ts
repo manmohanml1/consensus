@@ -1,7 +1,11 @@
 import { ROOM_PROTOCOL_VERSION } from "@consensus/domain";
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
-import { handleCommand, handleProjection } from "./room-api";
+import {
+  handleCommand,
+  handleProjection,
+  handleRoomCreation,
+} from "./room-api";
 
 const originalDatabaseUrl = process.env.CONSENSUS_DATABASE_URL;
 const originalPepper = process.env.CONSENSUS_CAPABILITY_PEPPER;
@@ -90,5 +94,24 @@ describe("room command HTTP boundary", () => {
       code: "temporarily-unavailable",
       retryable: true,
     });
+  });
+
+  it("keeps host authority out of the creation JSON response when unavailable", async () => {
+    delete process.env.CONSENSUS_DATABASE_URL;
+    delete process.env.CONSENSUS_CAPABILITY_PEPPER;
+    const response = await handleRoomCreation(
+      new NextRequest("https://example.test/api/v1/rooms", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          protocolVersion: ROOM_PROTOCOL_VERSION,
+          title: "Friday dinner",
+          hostDisplayName: "Maya",
+          targetAt: "2026-09-02T23:00:00.000Z",
+        }),
+      }),
+    );
+    expect(response.status).toBe(503);
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 });

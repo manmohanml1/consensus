@@ -6,10 +6,14 @@ export const CAPABILITY_RANDOM_BYTES = 32;
 export const CAPABILITY_HASH_BYTES = 32;
 export const CAPABILITY_MAX_TTL_MS = 24 * 60 * 60 * 1_000;
 export const CAPABILITY_COOKIE_NAME = "__Secure-consensus_room";
+export const ROOM_LOCATOR_VERSION = "r1" as const;
+export const ROOM_LOCATOR_RANDOM_BYTES = 16;
 
 const capabilityPattern = /^c1\.[A-Za-z0-9_-]{43}$/;
 const identifierPattern = /^[A-Za-z0-9_-]{8,64}$/;
 const domainSeparator = "consensus:room-capability:v1\0";
+const locatorDomainSeparator = "consensus:room-locator:v1\0";
+const locatorPattern = /^r1\.[A-Za-z0-9_-]{22}$/;
 const dummyCapability = "invalid-capability";
 const redacted = "[REDACTED]";
 
@@ -101,6 +105,36 @@ export function fingerprintCapability(
   }
   assertPepper(pepper);
   return fingerprintUntrusted(token, pepper);
+}
+
+/**
+ * Creates a random, shareable room locator. It is deliberately distinct from
+ * a capability: persistence receives only this keyed fingerprint, and knowing
+ * the locator never authenticates a caller.
+ */
+export function issueRoomLocator(pepper: Uint8Array): {
+  locator: string;
+  hash: Uint8Array;
+} {
+  assertPepper(pepper);
+  const locator = `${ROOM_LOCATOR_VERSION}.${randomBytes(ROOM_LOCATOR_RANDOM_BYTES).toString("base64url")}`;
+  return { locator, hash: fingerprintRoomLocator(locator, pepper) };
+}
+
+export function fingerprintRoomLocator(
+  locator: string,
+  pepper: Uint8Array,
+): Uint8Array {
+  if (!locatorPattern.test(locator)) {
+    throw new Error("Room locator is invalid.");
+  }
+  assertPepper(pepper);
+  return Uint8Array.from(
+    createHmac("sha256", pepper)
+      .update(locatorDomainSeparator)
+      .update(locator)
+      .digest(),
+  );
 }
 
 export function issueCapability(

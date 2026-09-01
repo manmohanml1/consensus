@@ -6,18 +6,18 @@ Room membership, private constraints, votes, result integrity, approximate locat
 
 ## Main threats and controls
 
-| Threat                          | Control                                                                                         |
-| ------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Room-code enumeration           | Random high-entropy room id behind friendly code, rate limits, expiry, indistinguishable errors |
-| Participant impersonation       | Server-issued capability stored hashed, rotated on recovery, scoped to one room/member          |
-| Forged/duplicate votes          | Server authorization, schema validation, command ids, participant sequences, unique constraints |
-| Split-brain outcome             | Transactional authority and one ruleset version; clients never finalize                         |
-| Constraint disclosure           | Private ownership, aggregate explanations, log redaction                                        |
-| Location leakage                | Coarsening, short retention, no analytics, minimum provider disclosure                          |
-| Provider SSRF/injection         | Allowlists, fixed endpoints, encoded queries, timeouts, response size/schema limits             |
-| Realtime flooding               | Per-IP/room/participant limits, message size bounds, backpressure and bans                      |
-| Malicious venue content         | Text sanitization, trusted image hosts, restrictive CSP, no raw HTML                            |
-| Stale data causes unsafe result | Provenance/freshness labels, open-status confidence, user confirmation before action            |
+| Threat                          | Control                                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Room-code enumeration           | 128-bit non-authoritative locator, keyed storage fingerprint, expiry, indistinguishable errors, and bounded attempts |
+| Participant impersonation       | Server-issued capability stored hashed, rotated on recovery, scoped to one room/member                               |
+| Forged/duplicate votes          | Server authorization, schema validation, command ids, participant sequences, unique constraints                      |
+| Split-brain outcome             | Transactional authority and one ruleset version; clients never finalize                                              |
+| Constraint disclosure           | Private ownership, aggregate explanations, log redaction                                                             |
+| Location leakage                | Coarsening, short retention, no analytics, minimum provider disclosure                                               |
+| Provider SSRF/injection         | Allowlists, fixed endpoints, encoded queries, timeouts, response size/schema limits                                  |
+| Realtime flooding               | Per-IP/room/participant limits, message size bounds, backpressure and bans                                           |
+| Malicious venue content         | Text sanitization, trusted image hosts, restrictive CSP, no raw HTML                                                 |
+| Stale data causes unsafe result | Provenance/freshness labels, open-status confidence, user confirmation before action                                 |
 
 Milestone 0.3 protocol payloads reject unknown fields, secret-like keys, role-incompatible commands, malformed identifiers and timestamps, incoherent projection states, and bodies over 16 KiB before command handling. Route handlers require a matching same-origin `Origin` for cookie-authenticated mutation, derive actor scope from the server-verified capability, and enforce revision, sequence, phase, locked-roster eligibility, and idempotency while holding the room transaction lock.
 
@@ -37,3 +37,11 @@ Authorized projections are constructed from selected normalized columns and
 validated again against the protocol. They expose constraint identifiers and
 aggregate ballot completion, never constraint values/owners, individual choices,
 capability fingerprints, provider references/payloads, or precise location.
+
+CQ-206 stores a locator only as a domain-separated HMAC-SHA-256 fingerprint;
+it has 128 random bits and cannot authenticate a caller. CQ-213 adds the first
+safe default: create attempts are limited to five per privacy-preserving source
+bucket per ten minutes and can be stopped with `CONSENSUS_ROOM_CREATION_ENABLED=false`.
+The limiter deliberately holds no raw IP address and is per runtime instance, so
+it is a free-tier circuit breaker rather than a claim of global DDoS protection.
+CQ-507 will add the durable cross-instance controls required for public beta.

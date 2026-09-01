@@ -4,6 +4,28 @@ info:
   version: 0.3.0
   description: Capability-scoped command and projection boundary.
 paths:
+  /api/v1/rooms:
+    post:
+      summary: Create a temporary room and issue the host capability cookie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRoomRequest" }
+      responses:
+        "201":
+          description: Room created. The host capability is delivered only via Set-Cookie.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+            Set-Cookie:
+              description: HTTP-only host capability scoped to the new room API path.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreateRoomResponse" }
+        "400": { $ref: "#/components/responses/ProtocolError" }
+        "429": { $ref: "#/components/responses/ProtocolError" }
+        "503": { $ref: "#/components/responses/ProtocolError" }
   /api/v1/rooms/{roomId}/commands:
     post:
       summary: Apply one versioned room command
@@ -70,6 +92,36 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/RoomProtocolError" }
   schemas:
+    CreateRoomRequest:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion, title, hostDisplayName, targetAt]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        title: { type: string, minLength: 1, maxLength: 80 }
+        hostDisplayName: { type: string, minLength: 1, maxLength: 48 }
+        targetAt:
+          {
+            type: string,
+            format: date-time,
+            description: UTC ISO-8601 timestamp,
+          }
+    CreateRoomResponse:
+      type: object
+      additionalProperties: false
+      required: [room, invitation]
+      properties:
+        room: { $ref: "#/components/schemas/RoomProjection" }
+        invitation:
+          type: object
+          additionalProperties: false
+          required: [locator, expiresAt]
+          properties:
+            locator:
+              type: string
+              pattern: "^r1\\.[A-Za-z0-9_-]{22}$"
+              description: Shareable locator only; it grants no authority.
+            expiresAt: { type: string, format: date-time }
     RoomCommand:
       type: object
       additionalProperties: false

@@ -86,6 +86,20 @@ export interface RoomProjection {
   };
 }
 
+/** Public, non-authoritative request made by the person creating a room. */
+export interface CreateRoomRequest {
+  protocolVersion: typeof ROOM_PROTOCOL_VERSION;
+  title: string;
+  hostDisplayName: string;
+  targetAt: string;
+}
+
+/** The friendly invitation locator may be shared, but grants no access itself. */
+export interface RoomInvitation {
+  locator: string;
+  expiresAt: string;
+}
+
 export type RoomProtocolErrorCode =
   | "invalid-request"
   | "unsupported-version"
@@ -570,6 +584,54 @@ export function parseRoomCommand(
       type,
       payload,
     } as RoomCommand,
+  };
+}
+
+export function parseCreateRoomRequest(
+  value: unknown,
+): RoomProtocolParseResult<CreateRoomRequest> {
+  const issues: RoomProtocolParseIssue[] = [];
+  if (!checkSerializedSize(value, issues)) return { success: false, issues };
+  scanUnsafeKeys(value, issues);
+  if (!isRecord(value)) {
+    pushIssue(issues, "$", "invalid-type", "Expected a room creation object.");
+    return { success: false, issues };
+  }
+  rejectUnknownKeys(
+    value,
+    ["protocolVersion", "title", "hostDisplayName", "targetAt"],
+    "$",
+    issues,
+  );
+  const protocolVersion = readString(value, "protocolVersion", "$", issues, {
+    max: 16,
+  });
+  if (protocolVersion && protocolVersion !== ROOM_PROTOCOL_VERSION) {
+    pushIssue(
+      issues,
+      "$.protocolVersion",
+      "invalid-value",
+      "Unsupported protocol version.",
+    );
+  }
+  const title = readString(value, "title", "$", issues, {
+    max: ROOM_PROTOCOL_LIMITS.maxRoomTitleLength,
+  });
+  const hostDisplayName = readString(value, "hostDisplayName", "$", issues, {
+    max: ROOM_PROTOCOL_LIMITS.maxDisplayNameLength,
+  });
+  const targetAt = readTimestamp(value, "targetAt", "$", issues);
+  if (issues.length > 0 || !title || !hostDisplayName || !targetAt) {
+    return { success: false, issues };
+  }
+  return {
+    success: true,
+    data: {
+      protocolVersion: ROOM_PROTOCOL_VERSION,
+      title,
+      hostDisplayName,
+      targetAt,
+    },
   };
 }
 

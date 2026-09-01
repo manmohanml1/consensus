@@ -6,7 +6,8 @@ All room reads and mutations are private request-time data and return `Cache-Con
 
 ## Commands
 
-- `POST /api/v1/rooms` — create draft room and host capability;
+- `POST /api/v1/rooms` — create a temporary room, issue its host capability by
+  HTTP-only cookie, and return a shareable non-authoritative invitation locator;
 - `POST /api/v1/rooms/{roomId}/participants` — join by invite capability;
 - `POST /api/v1/rooms/{roomId}/commands` — submit any versioned room command with compare-and-set revision, participant sequence, and idempotency semantics;
 - `POST /api/v1/rooms/{roomId}/lock` — lock roster and rules;
@@ -27,4 +28,13 @@ Errors contain a stable code, safe message, correlation id, and retryability. Un
 
 Parsing establishes shape and boundedness only. Every handler must separately authenticate the capability, authorize its room/member/role scope, enforce aggregate revision and participant sequence, apply idempotency, and commit the mutation with its outbox record in one transaction.
 
-The unified command and projection routes are implemented first. The action-oriented routes remain reserved compatibility surfaces for CQ-206 through CQ-209 and must delegate to the same command service rather than duplicate authority rules.
+`POST /api/v1/rooms` is implemented for CQ-206. It accepts only the bounded
+protocol version, room title, host display name, and UTC target time. The raw host
+capability is never in JSON: it is delivered once as a secure room-path cookie.
+The response locator has independent random entropy and is stored only as a
+domain-separated keyed fingerprint. It may be put in a QR/link but cannot read,
+join, or mutate a room on its own. Participant admission remains CQ-207.
+
+The command and projection routes remain the authoritative room service boundary.
+Reserved action-oriented compatibility routes for CQ-207 through CQ-209 must
+delegate to it rather than duplicate authority rules.

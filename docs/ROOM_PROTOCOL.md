@@ -31,7 +31,12 @@ Every command includes the protocol version, command id, idempotency key, room i
 
 Unknown fields, unsupported versions, invalid roles, invalid identifiers, malformed timestamps, secret-like keys, and payloads over 16 KiB fail before command handling. Limits are deliberately small because a room contains at most eight participants and twelve candidates.
 
-Room creation, invitation location, and join/recovery request contracts are delivered by CQ-206 and CQ-209 because their transport and capability issuance semantics are not ordinary room commands.
+`POST /api/v1/rooms` now delivers the CQ-206 creation contract: `protocolVersion`,
+`title`, `hostDisplayName`, and UTC `targetAt`. Its `201` response contains a
+validated projection and `{ invitation: { locator, expiresAt } }`; the host
+capability is delivered only through `Set-Cookie`. The locator is a random
+non-authoritative reference for a future QR/link; it is neither a capability nor
+a proof of membership. Join/recovery request contracts remain CQ-207 and CQ-209.
 
 ## Projection boundary
 
@@ -53,7 +58,7 @@ returns `200` plus `Idempotency-Replayed: true`. `GET
 /api/v1/rooms/{roomId}/projection` returns the authorized current projection.
 Both are Node.js request-time routes with `Cache-Control: no-store`.
 
-Room creation, joining, recovery, shared-provider migration, realtime delivery,
-and Production activation remain out of scope. CQ-206 and CQ-209 must consume the
-same service boundary rather than redefine it. Shared-provider and Production
-gates remain intact.
+Joining, recovery, shared-provider migration, realtime delivery, and Production
+activation remain out of scope. CQ-207 and CQ-209 must consume the same service
+boundary rather than redefine it. Shared-provider and Production gates remain
+intact.

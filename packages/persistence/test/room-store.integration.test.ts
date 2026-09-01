@@ -168,4 +168,45 @@ describeDatabase("transactional room command store", () => {
       store.getProjection("room_other_0001", hostToken, pepper),
     ).rejects.toMatchObject({ code: "unauthorized-or-missing" });
   });
+
+  it("creates a host-owned temporary room without persisting raw invitation authority", async () => {
+    const capability = issueCapability(
+      {
+        roomId: "room_created_0001",
+        memberId: "member_created_01",
+        role: "host",
+      },
+      new Date(Date.now() + 60 * 60 * 1_000),
+      pepper,
+    );
+    const projection = await store.createRoom({
+      roomId: "room_created_0001",
+      hostMemberId: "member_created_01",
+      title: "Created dinner",
+      hostDisplayName: "Maya",
+      targetAt: new Date(Date.now() + 30 * 60 * 1_000).toISOString(),
+      inviteCodeHash: Buffer.alloc(32, 7),
+      hostCapabilityHash: capability.hash,
+      capabilityExpiresAt: capability.expiresAt,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+      deletionDueAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000),
+    });
+
+    expect(projection).toMatchObject({
+      roomId: "room_created_0001",
+      phase: "lobby",
+      participants: [
+        { id: "member_created_01", displayName: "Maya", status: "active" },
+      ],
+    });
+    const stored = await admin.query(
+      "SELECT invite_code_hash, capability_hash FROM consensus.rooms JOIN consensus.participants ON rooms.id = participants.room_id WHERE rooms.id = $1",
+      ["room_created_0001"],
+    );
+    expect(stored.rows).toHaveLength(1);
+    expect(stored.rows[0]!.invite_code_hash).toEqual(Buffer.alloc(32, 7));
+    expect(stored.rows[0]!.capability_hash).toEqual(
+      Buffer.from(capability.hash),
+    );
+  });
 });
