@@ -62,7 +62,7 @@ The workflow adds no hosting product and no application runtime cost. GitHub Act
 
 The initial project link, Preview validation, owner-authorized merges, staged `main` candidate, exact-artifact promotion, and Production smoke review are complete. The public site remains a fixture-only reference deployment; it is not evidence that the 0.2 moderated-usability gate, 0.2.1 device gate, milestone 0.3 persistence work, or any product release is complete.
 
-Future deployable changes follow the promotion contract below. Most merges need no Production action: they may remain as staged candidates until the owner requests an exact promotion. The next product milestone work begins with separately approved non-production database provisioning under CQ-201; it does not place provider credentials or test data in Production.
+Future deployable changes follow the promotion contract below. Most merges need no Production action: they may remain as staged candidates until the owner requests an exact promotion. The owner approved CQ-201 non-production database provisioning on 2026-08-31. The resulting Free Neon resource is connected only to Vercel Preview and Development; it does not place provider credentials or test data in Production.
 
 ## Intended environments
 
@@ -73,7 +73,7 @@ Future deployable changes follow the promotion contract below. Most merges need 
 | Preview     | Exact pull-request artifact | Non-production provider resources           |
 | Production  | Approved immutable artifact | Production resources and retention controls |
 
-Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. They remain absent until CQ-201 provisioning approval, are restricted to Development/approved Preview scopes, and must not be copied into Production or pull-request jobs. CQ-202 defines the roles and first migration before application code consumes either variable.
+Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. The provider-managed pooled and unpooled credentials are restricted to Development and Preview under CQ-201; the exact migration alias, least-privileged roles, first migration, and application consumption remain gated. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md).
 
 ## Promotion contract
 

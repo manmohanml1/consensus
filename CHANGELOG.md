@@ -14,6 +14,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Owner-approved Free Neon PostgreSQL resource for disposable milestone 0.3 validation, connected only to Vercel Development and Preview with Neon Auth and deployment branches disabled.
 - Private vulnerability reporting with documented response targets and review-gated Dependabot security-fix pull requests.
 - ADR 0012 and a source-dated transactional database evaluation selecting Neon PostgreSQL for owner-approved, disposable non-production room persistence only.
 - Owner-gated merge and release governance, Conventional Commit enforcement, and a machine-checked Semantic Versioning release preflight.
