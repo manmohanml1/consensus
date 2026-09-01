@@ -26,10 +26,19 @@ Use no production or personal data. Record only environment names, provider proj
 identifier, approval date, migration version, and teardown date in the operating
 record—never the connection string or credentials.
 
+## Non-production environment contract
+
+Reserve these server-only names before CQ-202 adds a database client:
+
+- `CONSENSUS_DATABASE_URL`: pooled application connection used only by server-side room persistence in Development and explicitly approved Preview environments;
+- `CONSENSUS_MIGRATION_DATABASE_URL`: direct, least-privileged migration connection used only by an owner-approved migration command or protected workflow.
+
+Neither variable is public, exposed to browser bundles, available to pull-request jobs, or configured in Vercel Production during milestone 0.3. Local values belong only in an ignored developer environment file. Hosted values belong only in the matching non-production environment. CQ-202 must define separate runtime and migration roles, validate that missing configuration fails closed, and ensure logs expose neither URL.
+
 ## Teardown and recovery
 
 Teardown is an owner-approved, non-production-only action. First export a sanitized
-schema/fixture proof, verify a restore into a disposable target, revoke the Vercel
-environment variable, then delete the provider project. A teardown is not a
+schema/fixture proof, verify a restore into a disposable target, revoke both named
+environment variables, then delete the provider project. A teardown is not a
 production deletion plan; CQ-212 adds the production-grade migration, backup,
 restore, and teardown runbook after the schema exists.

@@ -2,7 +2,7 @@
 
 ## Local gate
 
-`pnpm verify` runs formatting, lint, strict type checking, unit tests, a production build, and the Playwright desktop/mobile/reduced-motion suite.
+`pnpm verify` checks release alignment, backlog structure, documentation links/state contracts, workflow policy, formatting, lint, strict type checking, unit tests, a production build, and the Playwright desktop/mobile/reduced-motion suite.
 
 Install the Chromium test runtime once with:
 

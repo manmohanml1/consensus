@@ -1,4 +1,6 @@
-# Issue-ready backlog
+# Curated implementation briefs
+
+This page links the detailed local briefs created during the initial foundation work. It is not the complete roadmap backlog. The authoritative 100-item catalog for 0.3.0 through 1.0.0 is [the planning backlog contract](planning/BACKLOG.md) and its adjacent JSON manifest.
 
 Each item is sized for an individual pull request unless marked Epic. Use the matching milestone contract for acceptance context.
 
@@ -16,6 +18,7 @@ Each item is sized for an individual pull request unless marked Epic. Use the ma
 - [CQ-104](issues/CQ-104-browser-acceptance.md) — Browser and accessibility acceptance suite
 - [CQ-105](issues/CQ-105-mobile-discovery-deck.md) — Mobile-first photo-led discovery deck
 - [CQ-106](issues/CQ-106-pwa-responsive-acceptance.md) — PWA installability and responsive acceptance
+- [CQ-107](issues/CQ-107-moderated-usability-acceptance.md) — Moderated decision-loop usability acceptance
 
 ## 0.3 Secure rooms
 

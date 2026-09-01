@@ -12,8 +12,10 @@ roadmap item
   -> CI and review
   -> preview gate when applicable
   -> explicit owner approval for this exact merge
-  -> production smoke check
   -> issue closes through the merged PR
+  -> optional, separately authorized production promotion
+  -> production smoke/log verification when promotion occurs
+  -> separately authorized tag and GitHub Release when requested
 ```
 
 ## Before implementation

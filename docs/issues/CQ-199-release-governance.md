@@ -3,7 +3,7 @@
 - GitHub issue: [#112](https://github.com/manmohanml1/consensus/issues/112)
 - Type: operations
 - Phase: 0.3.0 governance
-- Status: in progress
+- Status: complete on `main` through PR #121
 
 ## Outcome
 
@@ -17,7 +17,7 @@ Consensus follows Ghostwriter's repository-maintenance pattern: protected linear
 - GitHub accepts squash merges only and derives the `main` commit subject from the validated pull-request title.
 - Tag verification and GitHub Release publication use separate protected workflows and explicit owner approvals.
 - Package and changelog versions are checked locally and again before a tag can publish a release.
-- This implementation remains in an open PR until the owner explicitly authorizes its merge.
+- PR #121 was squash-merged only after explicit owner authorization; no tag or GitHub Release was created.
 
 ## Non-goals
 

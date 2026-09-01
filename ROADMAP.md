@@ -3,7 +3,7 @@
 | Version | Product proof                                                                              | Status     |
 | ------- | ------------------------------------------------------------------------------------------ | ---------- |
 | 0.1.0   | Repository contracts, decision-engine foundation, and accessible single-device slice       | Complete   |
-| 0.2.0   | Host-created food decision with manual/curated candidates and no account requirement       | Complete   |
+| 0.2.0   | Host-created food decision with manual/curated candidates and no account requirement       | Acceptance |
 | 0.2.1   | Mobile-first photo deck, optional swipe gestures, responsive adaptations, and PWA polish   | Acceptance |
 | 0.3.0   | Durable ephemeral rooms, locked rosters, participant capabilities, and reconnect semantics | Active     |
 | 0.4.0   | Authoritative realtime voting, idempotent events, recovery, and multi-device verification  | Planned    |
@@ -23,10 +23,12 @@ Completion means the milestone contract and verification gates are satisfied. It
 - Live nearby discovery enters through a provider adapter in 0.5. Fixture media demonstrates the interaction before licensed venue media is available.
 - Provider quotas, commercial terms, field provenance, attribution, and graceful degradation are release gates rather than implementation details.
 
-## Active issues
+## Current execution state
 
-[CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14) is the first milestone 0.3 implementation slice: versioned, provider-neutral room protocol contracts. [CQ-201 / GitHub #10](https://github.com/manmohanml1/consensus/issues/10) selects Neon PostgreSQL for disposable non-production use in ADR 0012, but cannot provision it without explicit owner approval.
+[CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14) completed the provider-neutral room protocol contracts in PR #111. [CQ-201 / GitHub #10](https://github.com/manmohanml1/consensus/issues/10) is now the active milestone 0.3 gate: ADR 0012 selects Neon PostgreSQL for disposable non-production use, but creating the project, adding its non-production secret, and running the first migration each require explicit owner approval. After that approval and provisioning evidence, [CQ-202 / GitHub #11](https://github.com/manmohanml1/consensus/issues/11) is the next implementation slice.
 
-[CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) remains an acceptance follow-up for physical iOS/Android installation evidence and the explicit Vercel access-control decision. The owner explicitly started 0.3 while that device-only evidence remains open; this does not mark CQ-106 complete or weaken its acceptance criteria.
+The CI/CD, release-governance, security-reporting, and clean-Windows foundation corrections are merged. [CQ-198 / GitHub #114](https://github.com/manmohanml1/consensus/issues/114) remains open only for a separately authorized Production rollback-and-restore rehearsal; that operational exercise does not block provider-neutral planning but remains required before the governance work is called complete.
+
+[CQ-107 / GitHub #129](https://github.com/manmohanml1/consensus/issues/129) and [CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) retain the moderated-usability and physical-device acceptance evidence for 0.2/0.2.1. The owner explicitly started 0.3 while those evidence-only gates remain open; therefore both roadmap rows remain `Acceptance`, not `Complete`.
 
 The complete 0.3–1.0 catalog contains 100 independently reviewable items in [docs/planning/BACKLOG.md](docs/planning/BACKLOG.md).
