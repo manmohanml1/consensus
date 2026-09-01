@@ -32,3 +32,21 @@ pnpm test:e2e
 ```
 
 Do not use a production provider or user room as automated test data.
+
+## Disposable PostgreSQL migration suite
+
+CQ-202 adds an opt-in persistence suite that bootstraps NOLOGIN group roles,
+applies every ordered migration twice, verifies database constraints, and deletes
+the complete synthetic room aggregate. It accepts only
+`CONSENSUS_TEST_DATABASE_URL` and must target a disposable database owned by the
+test process:
+
+```powershell
+pnpm test:persistence
+```
+
+The normal unit gate validates ordering and checksums without a connection. CI
+may enable the integration command only against its isolated PostgreSQL service;
+Vercel and Production URLs are forbidden as test inputs. Applying migrations to
+the shared Neon non-production resource remains a separate owner-authorized
+operation.

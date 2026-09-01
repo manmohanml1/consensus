@@ -14,6 +14,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Portable, forward-only PostgreSQL room migrations, least-privilege group-role bootstrap, checksum-protected migration runner, and disposable integration coverage for CQ-202.
 - Owner-approved Free Neon PostgreSQL resource for disposable milestone 0.3 validation, connected only to Vercel Development and Preview with Neon Auth and deployment branches disabled.
 - Private vulnerability reporting with documented response targets and review-gated Dependabot security-fix pull requests.
 - ADR 0012 and a source-dated transactional database evaluation selecting Neon PostgreSQL for owner-approved, disposable non-production room persistence only.
