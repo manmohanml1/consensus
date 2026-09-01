@@ -17,6 +17,12 @@ importers:
       '@consensus/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@consensus/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@consensus/security':
+        specifier: workspace:*
+        version: link:../../packages/security
       next:
         specifier: 16.3.3
         version: 16.3.3(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.62.1)(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -63,6 +69,12 @@ importers:
 
   packages/persistence:
     dependencies:
+      '@consensus/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@consensus/security':
+        specifier: workspace:*
+        version: link:../security
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -79,6 +91,9 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.68.0
+        version: 8.68.0(eslint@9.39.5(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
       vitest:
         specifier: ^4.0.0
         version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3))

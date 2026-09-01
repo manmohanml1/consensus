@@ -1,6 +1,6 @@
 # API outline
 
-The concrete OpenAPI contract begins with milestone 0.3. This document fixes resource semantics, not provider implementation. The versioned provider-neutral command, projection, and public-error shapes are defined in [ROOM_PROTOCOL.md](ROOM_PROTOCOL.md); OpenAPI must reference those semantics rather than create a parallel model.
+The concrete milestone 0.3 contract is recorded in [the room API OpenAPI document](openapi/room-api-v1.yaml). The versioned provider-neutral command, projection, and public-error shapes are defined in [ROOM_PROTOCOL.md](ROOM_PROTOCOL.md); implementations adapt those semantics rather than create a parallel model.
 
 All room reads and mutations are private request-time data and return `Cache-Control: no-store`. Capabilities are carried by the approved transport boundary and never appear in request or response bodies.
 
@@ -8,6 +8,7 @@ All room reads and mutations are private request-time data and return `Cache-Con
 
 - `POST /api/v1/rooms` — create draft room and host capability;
 - `POST /api/v1/rooms/{roomId}/participants` — join by invite capability;
+- `POST /api/v1/rooms/{roomId}/commands` — submit any versioned room command with compare-and-set revision, participant sequence, and idempotency semantics;
 - `POST /api/v1/rooms/{roomId}/lock` — lock roster and rules;
 - `POST /api/v1/rooms/{roomId}/candidates` — accept normalized host/provider candidates;
 - `POST /api/v1/rooms/{roomId}/votes` — submit idempotent ballot command;
@@ -25,3 +26,5 @@ All room reads and mutations are private request-time data and return `Cache-Con
 Errors contain a stable code, safe message, correlation id, and retryability. Unknown and unauthorized rooms return equivalent public responses. Validation errors identify fields without echoing sensitive values.
 
 Parsing establishes shape and boundedness only. Every handler must separately authenticate the capability, authorize its room/member/role scope, enforce aggregate revision and participant sequence, apply idempotency, and commit the mutation with its outbox record in one transaction.
+
+The unified command and projection routes are implemented first. The action-oriented routes remain reserved compatibility surfaces for CQ-206 through CQ-209 and must delegate to the same command service rather than duplicate authority rules.
