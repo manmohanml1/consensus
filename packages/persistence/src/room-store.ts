@@ -16,6 +16,7 @@ import {
   type StoredCapability,
 } from "@consensus/security";
 import pg, { type Pool, type PoolClient } from "pg";
+import { deleteDueRoomAggregates } from "./retention.mjs";
 
 export interface CommandResult {
   replayed: boolean;
@@ -47,6 +48,10 @@ export interface JoinRoomInput {
 export interface JoinRoomResult {
   roomId: string;
   projection: RoomProjection;
+}
+
+export interface RetentionSweepResult {
+  deleted: number;
 }
 
 export class RoomStoreError extends Error {
@@ -277,13 +282,16 @@ export class PostgresRoomStore {
         "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
       );
       const room = await this.loadRoom(client, roomId, false);
-      if (!room || room.expires_at.getTime() <= Date.now()) {
+      if (!room) {
+        await this.authenticate(client, roomId, token, pepper, true);
         throw new RoomStoreError("unauthorized-or-missing");
       }
       await this.authenticate(client, roomId, token, pepper, true);
       const projection = await this.buildProjection(client, room);
       await client.query("COMMIT");
-      return projection;
+      return room.expires_at.getTime() <= Date.now()
+        ? { ...projection, phase: "expired" }
+        : projection;
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;
@@ -301,7 +309,8 @@ export class PostgresRoomStore {
     try {
       await client.query("BEGIN");
       const room = await this.loadRoom(client, command.roomId, true);
-      if (!room || room.expires_at.getTime() <= Date.now()) {
+      if (!room) {
+        await this.authenticate(client, command.roomId, token, pepper);
         throw new RoomStoreError("unauthorized-or-missing");
       }
       const actor = await this.authenticate(
@@ -315,6 +324,9 @@ export class PostgresRoomStore {
         actor.role !== command.actor.role
       ) {
         throw new RoomStoreError("unauthorized-or-missing");
+      }
+      if (room.expires_at.getTime() <= Date.now()) {
+        throw new RoomStoreError("room-expired");
       }
 
       const payloadHash = commandHash(command);
@@ -410,6 +422,17 @@ export class PostgresRoomStore {
     }
   }
 
+  async deleteRoomsDueForDeletion(
+    limit = 100,
+    now = new Date(),
+  ): Promise<RetentionSweepResult> {
+    return deleteDueRoomAggregates(
+      this.pool,
+      limit,
+      now,
+    ) as Promise<RetentionSweepResult>;
+  }
+
   private async loadRoom(
     client: PoolClient,
     roomId: string,
@@ -490,6 +513,10 @@ export class PostgresRoomStore {
       case "room.end":
         await client.query(
           `UPDATE consensus.rooms SET phase = 'expired', ended_at = transaction_timestamp(),
+                  deletion_due_at = LEAST(
+                    deletion_due_at,
+                    transaction_timestamp() + interval '7 days'
+                  ),
                   revision = $2, updated_at = transaction_timestamp() WHERE id = $1`,
           [room.id, acceptedRevision],
         );

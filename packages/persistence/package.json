@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "migrate": "node src/migrate.mjs"
+    "test:recovery": "node src/rehearse-recovery.mjs",
+    "migrate": "node src/migrate.mjs",
+    "retention:delete": "node src/delete-expired.mjs"
   },
   "dependencies": {
     "@consensus/domain": "workspace:*",

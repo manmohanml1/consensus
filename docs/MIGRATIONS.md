@@ -51,9 +51,20 @@ The test database must be isolated, synthetic, non-production, and disposable. T
 suite creates the roles/schemas, applies migrations twice, exercises constraints,
 deletes a bounded room aggregate, and drops only the schemas it created.
 
+The persistence CI job then runs `test:recovery` against the same localhost test
+database. A second explicit guard, `CONSENSUS_RECOVERY_REHEARSAL=true`, is
+required. The rehearsal refuses remote hosts and database names without `test`,
+recreates the schemas, inserts one synthetic fixture, clones a consistent
+PostgreSQL template database, verifies all migration-ledger rows and the fixture,
+then deletes the restore database and both source schemas. Output contains only
+aggregate evidence. See the
+[database recovery and teardown runbook](operations/database-recovery-and-teardown.md)
+for shared-environment gates and forward recovery.
+
 ## First Neon migration gate
 
-Before requesting authorization, attach to the CQ-202 PR:
+Before requesting authorization for any shared migration, attach to its pull
+request or operating record:
 
 - green static/unit checks and disposable PostgreSQL integration evidence;
 - the exact migration file checksums and target commit;

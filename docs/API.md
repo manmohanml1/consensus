@@ -39,8 +39,17 @@ the host explicitly approves that member before commands are accepted. Pending
 capabilities may read the projection so the waiting screen can update. Missing,
 expired, full, and locked rooms deliberately share one public join failure.
 
+After the active TTL, a caller with a still-valid room capability receives a
+`200` projection whose phase is `expired`; this lets the client show a terminal
+state. Commands return `room-expired` only after successful capability
+authentication. Missing rooms, invalid capabilities, and expired capabilities
+remain indistinguishable. Retention deletion is an internal bounded worker, not
+a browser API.
+
 The command and projection routes remain authoritative. Roster changes use
 `participant.approve`, `participant.remove`, and `participant.leave` through the
 same command transaction. Locking snapshots active members; later departure does
-not silently shrink the electorate. Reserved CQ-208/CQ-209 compatibility routes
+not silently shrink the electorate. The reserved `DELETE` route is not
+implemented by CQ-208; hosts use the versioned, idempotent `room.end` command so
+termination follows the same transaction and revision rules. CQ-209 recovery
 must delegate to this boundary rather than duplicate authority rules.

@@ -24,7 +24,9 @@ If private reporting is unavailable, open a public issue containing no sensitive
 - Provider credentials, signing keys, database URLs, and service credentials remain server-only.
 - State-changing requests require origin validation, CSRF protection where cookies are used, schema validation, rate limits, and room/participant authorization.
 - Public place and room inputs are bounded and protected against SSRF, injection, enumeration, and abuse.
-- Expired rooms and their event data are deleted according to `docs/PRIVACY.md`.
+- Expired rooms reject mutations server-side. While a valid capability remains,
+  reads expose only the terminal projection; bounded idempotent sweeps delete the
+  complete room aggregate according to `docs/PRIVACY.md` and log counts only.
 - External GitHub Actions use immutable commit SHAs, checkout credentials are not persisted, and workflow write permissions are job-scoped.
 - Pull-request jobs never receive Vercel production credentials. Exact-project/current-main validation and the protected `production` environment guard promotion.
 - Release artifacts carry a SHA-256 checksum and GitHub build-provenance attestation; tags are annotated, immutable, and owner-authorized.

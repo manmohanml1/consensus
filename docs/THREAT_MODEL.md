@@ -14,6 +14,7 @@ Room membership, private constraints, votes, result integrity, approximate locat
 | Split-brain outcome             | Transactional authority and one ruleset version; clients never finalize                                              |
 | Constraint disclosure           | Private ownership, aggregate explanations, log redaction                                                             |
 | Location leakage                | Coarsening, short retention, no analytics, minimum provider disclosure                                               |
+| Post-expiry data exposure       | Authenticated terminal projection, 24-hour capability maximum, bounded aggregate deletion, count-only logs           |
 | Provider SSRF/injection         | Allowlists, fixed endpoints, encoded queries, timeouts, response size/schema limits                                  |
 | Realtime flooding               | Per-IP/room/participant limits, message size bounds, backpressure and bans                                           |
 | Malicious venue content         | Text sanitization, trusted image hosts, restrictive CSP, no raw HTML                                                 |
@@ -54,3 +55,10 @@ command. Roster lock snapshots only active members. A later leave/remove marks
 the participant departed but does not erase `eligible_voter`, preventing a host
 or dropout from silently changing quorum. Join responses deliberately collapse
 missing, expired, full, and concurrently locked rooms into the same public error.
+
+CQ-208 checks room expiry only after capability authentication. A still-authorized
+client can render the terminal `expired` phase, but missing rooms and invalid or
+expired capabilities remain indistinguishable. Natural expiry and `room.end`
+reject every later mutation. Retention sweeps lock a bounded deadline-ordered
+batch, delete the aggregate through foreign-key cascades, and expose counts only;
+concurrent and repeated runs cannot revive or partially reinterpret a room.

@@ -16,9 +16,17 @@ Do not send precise coordinates, display names, room codes, constraints, votes, 
 ## Retention and deletion
 
 - active room: two hours by default;
-- recovery state: up to 24 hours;
+- authenticated recovery/expired-state visibility: up to 24 hours from capability issuance;
 - deletion completed within seven days;
 - security logs: bounded retention with no content payloads;
 - aggregate metrics: retained only after k-anonymity/volume review.
 
-The host can end a room immediately. An account-based saved-group feature requires a separate consent and deletion design.
+Natural expiry is enforced by the server. An authenticated client receives an
+`expired` projection while its room capability remains valid; an unauthenticated
+caller still receives the same response as a missing room. The host can end a
+room immediately, and doing so may shorten but never extend the deletion
+deadline. A bounded worker deletes the complete aggregate at `deletion_due_at`;
+its logs contain counts only. Scheduling or enabling that worker in a shared
+environment requires explicit operational approval.
+
+An account-based saved-group feature requires a separate consent and deletion design.

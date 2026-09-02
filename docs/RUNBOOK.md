@@ -28,4 +28,17 @@ Rotate/revoke first, inspect use and logs, remove from active configuration and 
 
 ## Retention failure
 
-Pause affected ingestion if deletion backlog exceeds policy, run only bounded and verified cleanup targets, confirm deletion, and document the incident.
+Pause new room creation and joining if the deletion backlog exceeds policy. Do
+not issue ad hoc room-ID deletes. Diagnose the worker and database first, then
+run only the bounded retention command documented in
+[`operations/database-recovery-and-teardown.md`](operations/database-recovery-and-teardown.md).
+Confirm the aggregate count falls, record counts and timing without identifiers,
+and document the incident. A failed sweep is safe to retry; parallel workers use
+row locks and `SKIP LOCKED` so a due aggregate is claimed once.
+
+## Migration, restore, and provider teardown
+
+Use the [database recovery and teardown runbook](operations/database-recovery-and-teardown.md).
+Every shared migration, restore, credential change, and provider teardown is a
+separate owner gate. A successful disposable CI rehearsal is required evidence,
+not authorization to mutate Neon or Production.
