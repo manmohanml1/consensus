@@ -8,7 +8,8 @@ All room reads and mutations are private request-time data and return `Cache-Con
 
 - `POST /api/v1/rooms` — create a temporary room, issue its host capability by
   HTTP-only cookie, and return a shareable non-authoritative invitation locator;
-- `POST /api/v1/rooms/{roomId}/participants` — join by invite capability;
+- `POST /api/v1/rooms/join` — request admission with a non-authoritative
+  invitation locator and receive a pending participant capability;
 - `POST /api/v1/rooms/{roomId}/commands` — submit any versioned room command with compare-and-set revision, participant sequence, and idempotency semantics;
 - `POST /api/v1/rooms/{roomId}/lock` — lock roster and rules;
 - `POST /api/v1/rooms/{roomId}/candidates` — accept normalized host/provider candidates;
@@ -33,8 +34,13 @@ protocol version, room title, host display name, and UTC target time. The raw ho
 capability is never in JSON: it is delivered once as a secure room-path cookie.
 The response locator has independent random entropy and is stored only as a
 domain-separated keyed fingerprint. It may be put in a QR/link but cannot read,
-join, or mutate a room on its own. Participant admission remains CQ-207.
+join, or mutate a room on its own. CQ-207 admission creates a pending member;
+the host explicitly approves that member before commands are accepted. Pending
+capabilities may read the projection so the waiting screen can update. Missing,
+expired, full, and locked rooms deliberately share one public join failure.
 
-The command and projection routes remain the authoritative room service boundary.
-Reserved action-oriented compatibility routes for CQ-207 through CQ-209 must
-delegate to it rather than duplicate authority rules.
+The command and projection routes remain authoritative. Roster changes use
+`participant.approve`, `participant.remove`, and `participant.leave` through the
+same command transaction. Locking snapshots active members; later departure does
+not silently shrink the electorate. Reserved CQ-208/CQ-209 compatibility routes
+must delegate to this boundary rather than duplicate authority rules.

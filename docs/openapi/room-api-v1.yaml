@@ -26,6 +26,28 @@ paths:
         "400": { $ref: "#/components/responses/ProtocolError" }
         "429": { $ref: "#/components/responses/ProtocolError" }
         "503": { $ref: "#/components/responses/ProtocolError" }
+  /api/v1/rooms/join:
+    post:
+      summary: Request admission to a located room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JoinRoomRequest" }
+      responses:
+        "202":
+          description: Pending participant created; authority is delivered only via Set-Cookie.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+            Set-Cookie:
+              description: HTTP-only participant capability scoped to the located room API path.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomProjection" }
+        "404": { $ref: "#/components/responses/ProtocolError" }
+        "429": { $ref: "#/components/responses/ProtocolError" }
+        "503": { $ref: "#/components/responses/ProtocolError" }
   /api/v1/rooms/{roomId}/commands:
     post:
       summary: Apply one versioned room command
@@ -92,6 +114,14 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/RoomProtocolError" }
   schemas:
+    JoinRoomRequest:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion, locator, displayName]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        locator: { type: string, pattern: "^r1\\.[A-Za-z0-9_-]{22}$" }
+        displayName: { type: string, minLength: 1, maxLength: 48 }
     CreateRoomRequest:
       type: object
       additionalProperties: false
@@ -159,6 +189,9 @@ components:
             [
               room.rename,
               room.end,
+              participant.approve,
+              participant.remove,
+              participant.leave,
               roster.lock,
               candidate.add,
               candidate.remove,
@@ -201,7 +234,12 @@ components:
         createdAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
         rosterLocked: { type: boolean }
-        participants: { type: array, items: { type: object } }
+        participants:
+          type: array
+          items:
+            type: object
+            properties:
+              status: { type: string, enum: [pending, active, left] }
         constraintIds: { type: array, items: { type: string } }
         candidates: { type: array, items: { type: object } }
         ballotProgress: { type: array, items: { type: object } }

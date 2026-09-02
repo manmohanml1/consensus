@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   DECISION_RULESET_VERSION,
+  ROOM_PROTOCOL_LIMITS,
   ROOM_PROTOCOL_VERSION,
   parseRoomProjection,
   resolveDecision,
@@ -34,6 +35,20 @@ export interface CreateRoomInput {
   deletionDueAt: Date;
 }
 
+export interface JoinRoomInput {
+  roomId: string;
+  memberId: string;
+  displayName: string;
+  inviteCodeHash: Uint8Array;
+  capabilityHash: Uint8Array;
+  capabilityExpiresAt: Date;
+}
+
+export interface JoinRoomResult {
+  roomId: string;
+  projection: RoomProjection;
+}
+
 export class RoomStoreError extends Error {
   constructor(
     readonly code: RoomProtocolErrorCode,
@@ -59,7 +74,7 @@ interface ParticipantRow {
   id: string;
   display_name: string;
   role: "host" | "participant";
-  status: "active" | "left";
+  status: "pending" | "active" | "left";
   capability_hash: Buffer;
   capability_expires_at: Date;
   eligible_voter: boolean;
@@ -163,6 +178,94 @@ export class PostgresRoomStore {
     }
   }
 
+  async joinRoom(input: JoinRoomInput): Promise<JoinRoomResult> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const located = await client.query<RoomRow>(
+        `SELECT id, title, phase, revision, target_at, created_at, expires_at,
+                roster_locked_at
+           FROM consensus.rooms
+          WHERE id = $1 AND invite_code_hash = $2
+          FOR UPDATE`,
+        [input.roomId, Buffer.from(input.inviteCodeHash)],
+      );
+      const room = located.rows[0];
+      if (
+        !room ||
+        room.expires_at.getTime() <= Date.now() ||
+        room.roster_locked_at !== null ||
+        (room.phase !== "lobby" && room.phase !== "candidate-review")
+      ) {
+        throw new RoomStoreError("unauthorized-or-missing");
+      }
+      const count = await client.query<{ count: number }>(
+        `SELECT count(*)::int AS count
+           FROM consensus.participants
+          WHERE room_id = $1 AND status <> 'left'`,
+        [room.id],
+      );
+      if ((count.rows[0]?.count ?? 0) >= ROOM_PROTOCOL_LIMITS.maxParticipants) {
+        throw new RoomStoreError("room-locked");
+      }
+      await client.query(
+        `INSERT INTO consensus.participants
+           (room_id, id, display_name, role, status, capability_hash,
+            capability_expires_at)
+         VALUES ($1, $2, $3, 'participant', 'pending', $4, $5)`,
+        [
+          room.id,
+          input.memberId,
+          input.displayName,
+          Buffer.from(input.capabilityHash),
+          input.capabilityExpiresAt,
+        ],
+      );
+      const revision = Number(room.revision) + 1;
+      await this.advanceRevision(client, room.id, revision);
+      const updatedRoom = await this.loadRoom(client, room.id, false);
+      if (!updatedRoom) throw new Error("Joined room disappeared.");
+      const projection = await this.buildProjection(client, updatedRoom);
+      await client.query(
+        `INSERT INTO consensus.outbox_events
+           (id, room_id, aggregate_revision, event_type, event_version, payload)
+         VALUES ($1, $2, $3, 'room.participant.requested', $4, $5)`,
+        [
+          outboxEventId(room.id, `join_${input.memberId}`),
+          room.id,
+          revision,
+          ROOM_PROTOCOL_VERSION,
+          projection,
+        ],
+      );
+      await client.query("COMMIT");
+      return { roomId: room.id, projection };
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (error instanceof RoomStoreError) throw error;
+      if (error instanceof Error && "code" in error && error.code === "23505") {
+        throw new RoomStoreError("command-conflict");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async locateJoinableRoom(inviteCodeHash: Uint8Array): Promise<string> {
+    const result = await this.pool.query<{ id: string }>(
+      `SELECT id FROM consensus.rooms
+        WHERE invite_code_hash = $1
+          AND expires_at > statement_timestamp()
+          AND roster_locked_at IS NULL
+          AND phase IN ('lobby', 'candidate-review')`,
+      [Buffer.from(inviteCodeHash)],
+    );
+    const roomId = result.rows[0]?.id;
+    if (!roomId) throw new RoomStoreError("unauthorized-or-missing");
+    return roomId;
+  }
+
   async getProjection(
     roomId: string,
     token: unknown,
@@ -177,7 +280,7 @@ export class PostgresRoomStore {
       if (!room || room.expires_at.getTime() <= Date.now()) {
         throw new RoomStoreError("unauthorized-or-missing");
       }
-      await this.authenticate(client, roomId, token, pepper);
+      await this.authenticate(client, roomId, token, pepper, true);
       const projection = await this.buildProjection(client, room);
       await client.query("COMMIT");
       return projection;
@@ -262,7 +365,7 @@ export class PostgresRoomStore {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
           command.roomId,
-          outboxEventId(command.roomId, command.commandId),
+          command.commandId,
           actor.id,
           command.idempotencyKey,
           command.type,
@@ -279,7 +382,7 @@ export class PostgresRoomStore {
           (id, room_id, aggregate_revision, event_type, event_version, payload)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [
-          command.commandId,
+          outboxEventId(command.roomId, command.commandId),
           command.roomId,
           acceptedRevision,
           "room.projection.updated",
@@ -327,6 +430,7 @@ export class PostgresRoomStore {
     roomId: string,
     token: unknown,
     pepper: Uint8Array,
+    allowPending = false,
   ): Promise<ParticipantRow> {
     const result = await client.query<ParticipantRow>(
       `SELECT id, display_name, role, status, capability_hash,
@@ -342,7 +446,7 @@ export class PostgresRoomStore {
           token,
           pepper,
           asStoredCapability(roomId, participant),
-          { roomId },
+          { roomId, allowPending },
         )
       ) {
         return participant;
@@ -361,8 +465,14 @@ export class PostgresRoomStore {
   ): Promise<void> {
     if (room.phase === "expired") throw new RoomStoreError("room-expired");
     const hostOnly =
-      command.type !== "vote.submit" && command.type !== "commitment.set";
-    if (hostOnly !== (actor.role === "host")) {
+      command.type !== "vote.submit" &&
+      command.type !== "commitment.set" &&
+      command.type !== "participant.leave";
+    const participantOnly = command.type === "participant.leave";
+    if (
+      (hostOnly && actor.role !== "host") ||
+      (participantOnly && actor.role !== "participant")
+    ) {
       throw new RoomStoreError("unauthorized-or-missing");
     }
 
@@ -383,6 +493,53 @@ export class PostgresRoomStore {
                   revision = $2, updated_at = transaction_timestamp() WHERE id = $1`,
           [room.id, acceptedRevision],
         );
+        return;
+      case "participant.approve":
+        if (room.roster_locked_at !== null) {
+          throw new RoomStoreError("room-locked");
+        }
+        if (
+          (
+            await client.query(
+              `UPDATE consensus.participants
+                  SET status = 'active'
+                WHERE room_id = $1 AND id = $2 AND role = 'participant'
+                  AND status = 'pending'`,
+              [room.id, command.payload.participantId],
+            )
+          ).rowCount !== 1
+        ) {
+          throw new RoomStoreError("invalid-request");
+        }
+        await this.advanceRevision(client, room.id, acceptedRevision);
+        return;
+      case "participant.remove":
+        if (
+          (
+            await client.query(
+              `UPDATE consensus.participants
+                  SET status = 'left', left_at = transaction_timestamp()
+                WHERE room_id = $1 AND id = $2 AND role = 'participant'
+                  AND status IN ('pending', 'active')`,
+              [room.id, command.payload.participantId],
+            )
+          ).rowCount !== 1
+        ) {
+          throw new RoomStoreError("invalid-request");
+        }
+        await this.advanceRevision(client, room.id, acceptedRevision);
+        return;
+      case "participant.leave":
+        if (actor.status !== "active") {
+          throw new RoomStoreError("unauthorized-or-missing");
+        }
+        await client.query(
+          `UPDATE consensus.participants
+              SET status = 'left', left_at = transaction_timestamp()
+            WHERE room_id = $1 AND id = $2`,
+          [room.id, actor.id],
+        );
+        await this.advanceRevision(client, room.id, acceptedRevision);
         return;
       case "roster.lock":
         if (room.phase !== "lobby" && room.phase !== "candidate-review") {
@@ -615,7 +772,7 @@ export class PostgresRoomStore {
     const participants = await client.query<{
       id: string;
       display_name: string;
-      status: "active" | "left";
+      status: "pending" | "active" | "left";
       eligible_voter: boolean;
     }>(
       `SELECT id, display_name, status, eligible_voter

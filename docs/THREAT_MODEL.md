@@ -24,7 +24,9 @@ Milestone 0.3 protocol payloads reject unknown fields, secret-like keys, role-in
 CQ-203 capabilities contain 256 random bits and a version prefix. Storage keeps
 only an HMAC-SHA-256 fingerprint under an environment-specific server pepper.
 Verification always performs a fixed-length timing-safe hash comparison, then
-requires the same room, member, role, active status, and unexpired lifetime.
+requires the same room, member, role, permitted status, and unexpired lifetime.
+Pending participants may read only the bounded projection; command authorization
+still requires active membership.
 Malformed, missing, expired, revoked, cross-room, and cross-member attempts return
 the same authorization absence; route handlers later map that absence to the
 existing `unauthorized-or-missing` public error. Raw tokens are one-time delivery
@@ -45,3 +47,10 @@ bucket per ten minutes and can be stopped with `CONSENSUS_ROOM_CREATION_ENABLED=
 The limiter deliberately holds no raw IP address and is per runtime instance, so
 it is a free-tier circuit breaker rather than a claim of global DDoS protection.
 CQ-507 will add the durable cross-instance controls required for public beta.
+
+CQ-207 treats locator possession as a request for admission, not membership.
+Join creates a pending participant; host approval is a revisioned transactional
+command. Roster lock snapshots only active members. A later leave/remove marks
+the participant departed but does not erase `eligible_voter`, preventing a host
+or dropout from silently changing quorum. Join responses deliberately collapse
+missing, expired, full, and concurrently locked rooms into the same public error.

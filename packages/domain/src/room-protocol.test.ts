@@ -4,6 +4,7 @@ import {
   ROOM_PROTOCOL_VERSION,
   createRoomProtocolError,
   parseCreateRoomRequest,
+  parseJoinRoomRequest,
   parseRoomCommand,
   parseRoomProjection,
 } from "./room-protocol";
@@ -60,7 +61,11 @@ describe("room protocol commands", () => {
     const command = validVote();
     command.actor.role = "host";
 
-    const result = parseRoomCommand(command);
+    const result = parseRoomCommand({
+      ...command,
+      type: "participant.leave",
+      payload: {},
+    });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.issues).toContainEqual(
@@ -159,6 +164,50 @@ describe("room creation requests", () => {
         expect.arrayContaining(["unsafe-field", "invalid-value"]),
       );
     }
+  });
+});
+
+describe("room admission contracts", () => {
+  it("parses an invitation locator without treating it as authority", () => {
+    expect(
+      parseJoinRoomRequest({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        locator: `r1.${"A".repeat(22)}`,
+        displayName: "Sam",
+      }),
+    ).toMatchObject({ success: true });
+  });
+
+  it("rejects malformed locators and host authority in a join body", () => {
+    const result = parseJoinRoomRequest({
+      protocolVersion: ROOM_PROTOCOL_VERSION,
+      locator: "r1.short",
+      displayName: "Sam",
+      token: "never",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues.map(({ code }) => code)).toEqual(
+        expect.arrayContaining(["invalid-value", "unsafe-field"]),
+      );
+    }
+  });
+
+  it("keeps host approval and participant leave role-separated", () => {
+    const base = validVote();
+    const approval = parseRoomCommand({
+      ...base,
+      actor: { ...base.actor, role: "host" },
+      type: "participant.approve",
+      payload: { participantId: "member_pending01" },
+    });
+    const leave = parseRoomCommand({
+      ...base,
+      type: "participant.leave",
+      payload: {},
+    });
+    expect(approval).toMatchObject({ success: true });
+    expect(leave).toMatchObject({ success: true });
   });
 });
 

@@ -15,6 +15,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 ### Added
 
 - Transactional, idempotent room commands and capability-authorized privacy-minimized projections, with compare-and-set revisions, participant sequences, locked-voter snapshots, same-transaction outbox records, CSRF checks, and disposable PostgreSQL integration coverage.
+- Pending participant admission through non-authoritative locators, explicit host approval/removal and participant departure commands, immutable locked electorates, and duplicate lock/vote/resolve plus expiry-race evidence.
 - Versioned 256-bit anonymous room capabilities with keyed one-way fingerprints, constant-time verification, one-time delivery wrappers, scoped secure-cookie serialization, and cross-room/member/role/expiry tests.
 - Portable, forward-only PostgreSQL room migrations, least-privilege group-role bootstrap, checksum-protected migration runner, and disposable integration coverage for CQ-202.
 - Owner-approved Free Neon PostgreSQL resource for disposable milestone 0.3 validation, connected only to Vercel Development and Preview with Neon Auth and deployment branches disabled.

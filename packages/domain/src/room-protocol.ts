@@ -17,6 +17,9 @@ export type RoomPhase =
 export type RoomCommandType =
   | "room.rename"
   | "room.end"
+  | "participant.approve"
+  | "participant.remove"
+  | "participant.leave"
   | "roster.lock"
   | "candidate.add"
   | "candidate.remove"
@@ -43,6 +46,9 @@ interface RoomCommandBase<TType extends RoomCommandType, TPayload> {
 export type RoomCommand =
   | RoomCommandBase<"room.rename", { title: string }>
   | RoomCommandBase<"room.end", Record<string, never>>
+  | RoomCommandBase<"participant.approve", { participantId: string }>
+  | RoomCommandBase<"participant.remove", { participantId: string }>
+  | RoomCommandBase<"participant.leave", Record<string, never>>
   | RoomCommandBase<"roster.lock", Record<string, never>>
   | RoomCommandBase<"candidate.add", { candidateId: string }>
   | RoomCommandBase<"candidate.remove", { candidateId: string }>
@@ -66,7 +72,7 @@ export interface RoomProjection {
   participants: Array<{
     id: string;
     displayName: string;
-    status: "active" | "left";
+    status: "pending" | "active" | "left";
   }>;
   constraintIds: string[];
   candidates: Array<{
@@ -98,6 +104,12 @@ export interface CreateRoomRequest {
 export interface RoomInvitation {
   locator: string;
   expiresAt: string;
+}
+
+export interface JoinRoomRequest {
+  protocolVersion: typeof ROOM_PROTOCOL_VERSION;
+  locator: string;
+  displayName: string;
 }
 
 export type RoomProtocolErrorCode =
@@ -146,6 +158,9 @@ const forbiddenKeyPattern =
 const commandTypes: readonly RoomCommandType[] = [
   "room.rename",
   "room.end",
+  "participant.approve",
+  "participant.remove",
+  "participant.leave",
   "roster.lock",
   "candidate.add",
   "candidate.remove",
@@ -372,9 +387,10 @@ function parseCommandPayload(
   actorRole: RoomRole | undefined,
   issues: RoomProtocolParseIssue[],
 ): RoomCommand["payload"] | undefined {
-  const participantOnly = type === "vote.submit" || type === "commitment.set";
-  const requiredRole: RoomRole = participantOnly ? "participant" : "host";
-  if (actorRole && actorRole !== requiredRole) {
+  const eitherMemberRole = type === "vote.submit" || type === "commitment.set";
+  const requiredRole: RoomRole =
+    type === "participant.leave" ? "participant" : "host";
+  if (!eitherMemberRole && actorRole && actorRole !== requiredRole) {
     pushIssue(
       issues,
       "$.actor.role",
@@ -403,6 +419,17 @@ function parseCommandPayload(
       },
     );
     return candidateId ? { candidateId } : undefined;
+  }
+  if (type === "participant.approve" || type === "participant.remove") {
+    rejectUnknownKeys(payload, ["participantId"], "$.payload", issues);
+    const participantId = readString(
+      payload,
+      "participantId",
+      "$.payload",
+      issues,
+      { max: 64, pattern: identifierPattern },
+    );
+    return participantId ? { participantId } : undefined;
   }
   if (type === "vote.submit") {
     rejectUnknownKeys(
@@ -635,6 +662,54 @@ export function parseCreateRoomRequest(
   };
 }
 
+export function parseJoinRoomRequest(
+  value: unknown,
+): RoomProtocolParseResult<JoinRoomRequest> {
+  const issues: RoomProtocolParseIssue[] = [];
+  if (!checkSerializedSize(value, issues)) return { success: false, issues };
+  scanUnsafeKeys(value, issues);
+  if (!isRecord(value)) {
+    pushIssue(issues, "$", "invalid-type", "Expected a room join object.");
+    return { success: false, issues };
+  }
+  rejectUnknownKeys(
+    value,
+    ["protocolVersion", "locator", "displayName"],
+    "$",
+    issues,
+  );
+  const protocolVersion = readString(value, "protocolVersion", "$", issues, {
+    max: 16,
+  });
+  if (protocolVersion && protocolVersion !== ROOM_PROTOCOL_VERSION) {
+    pushIssue(
+      issues,
+      "$.protocolVersion",
+      "invalid-value",
+      "Unsupported protocol version.",
+    );
+  }
+  const locator = readString(value, "locator", "$", issues, {
+    max: 25,
+    pattern: /^r1\.[A-Za-z0-9_-]{22}$/,
+  });
+  const displayName = readString(value, "displayName", "$", issues, {
+    max: ROOM_PROTOCOL_LIMITS.maxDisplayNameLength,
+  });
+  if (
+    issues.length > 0 ||
+    protocolVersion !== ROOM_PROTOCOL_VERSION ||
+    !locator ||
+    !displayName
+  ) {
+    return { success: false, issues };
+  }
+  return {
+    success: true,
+    data: { protocolVersion, locator, displayName },
+  };
+}
+
 function readRecordArray(
   value: JsonRecord,
   key: string,
@@ -828,7 +903,9 @@ export function parseRoomProjection(
       max: 16,
     });
     const status =
-      statusValue === "active" || statusValue === "left"
+      statusValue === "pending" ||
+      statusValue === "active" ||
+      statusValue === "left"
         ? statusValue
         : undefined;
     if (statusValue && !status) {
