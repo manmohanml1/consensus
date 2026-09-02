@@ -62,3 +62,14 @@ expired capabilities remain indistinguishable. Natural expiry and `room.end`
 reject every later mutation. Retention sweeps lock a bounded deadline-ordered
 batch, delete the aggregate through foreign-key cascades, and expose counts only;
 concurrent and repeated runs cannot revive or partially reinterpret a room.
+
+CQ-209 permits host recovery only as an explicit transfer initiated by a current
+host. A 192-bit code lives for ten minutes, is stored only as a separately
+domain-keyed fingerprint, and is consumed in the same transaction that rotates
+the host capability and advances the aggregate revision. The prior cookie then
+fails immediately. Redemption is same-origin and bounded by privacy-preserving
+per-source/per-room attempt buckets; invalid, expired, replayed, wrong-room, and
+concurrently consumed codes share the same public absence. Codes are forbidden
+from URLs, QR codes, logs, analytics, and persistent client storage. Room
+locators cannot recover host authority, and complete loss of all host authority
+requires a future pre-enrolled identity proof rather than a weaker fallback.

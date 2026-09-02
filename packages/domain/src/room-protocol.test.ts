@@ -3,8 +3,10 @@ import {
   ROOM_PROTOCOL_LIMITS,
   ROOM_PROTOCOL_VERSION,
   createRoomProtocolError,
+  parseCreateHostRecoveryRequest,
   parseCreateRoomRequest,
   parseJoinRoomRequest,
+  parseRedeemHostRecoveryRequest,
   parseRoomCommand,
   parseRoomProjection,
 } from "./room-protocol";
@@ -208,6 +210,38 @@ describe("room admission contracts", () => {
     });
     expect(approval).toMatchObject({ success: true });
     expect(leave).toMatchObject({ success: true });
+  });
+});
+
+describe("host recovery contracts", () => {
+  it("accepts only the versioned initiation shape and bounded recovery code", () => {
+    expect(
+      parseCreateHostRecoveryRequest({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+      }),
+    ).toMatchObject({ success: true });
+    expect(
+      parseRedeemHostRecoveryRequest({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        recoveryCode: `hr1.${"A".repeat(32)}`,
+      }),
+    ).toMatchObject({ success: true });
+  });
+
+  it("rejects malformed, unknown, and capability-bearing recovery input", () => {
+    expect(
+      parseCreateHostRecoveryRequest({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        extra: true,
+      }),
+    ).toMatchObject({ success: false });
+    expect(
+      parseRedeemHostRecoveryRequest({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        recoveryCode: "hr1.short",
+        capability: "never",
+      }),
+    ).toMatchObject({ success: false });
   });
 });
 

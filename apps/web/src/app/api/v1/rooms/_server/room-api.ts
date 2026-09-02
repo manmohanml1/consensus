@@ -3,8 +3,10 @@ import {
   ROOM_PROTOCOL_LIMITS,
   ROOM_PROTOCOL_VERSION,
   createRoomProtocolError,
+  parseCreateHostRecoveryRequest,
   parseCreateRoomRequest,
   parseJoinRoomRequest,
+  parseRedeemHostRecoveryRequest,
   parseRoomCommand,
   type RoomProtocolErrorCode,
 } from "@consensus/domain";
@@ -14,6 +16,7 @@ import {
   CAPABILITY_COOKIE_NAME,
   fingerprintRoomLocator,
   issueCapability,
+  issueHostRecoveryCode,
   issueRoomLocator,
   parseCapabilityPepper,
   serializeCapabilityCookie,
@@ -30,9 +33,11 @@ const attempts = new Map<string, { startedAt: number; count: number }>();
 const CREATE_WINDOW_MS = 10 * 60 * 1_000;
 const CREATE_MAX_ATTEMPTS = 5;
 const JOIN_MAX_ATTEMPTS = 20;
+const RECOVERY_MAX_ATTEMPTS = 10;
 const MAX_CREATE_BUCKETS = 1_000;
 const ROOM_ACTIVE_TTL_MS = 2 * 60 * 60 * 1_000;
 const ROOM_DELETION_GRACE_MS = 7 * 24 * 60 * 60 * 1_000;
+const roomIdPattern = /^[A-Za-z0-9_-]{8,64}$/;
 
 function correlationId(): string {
   return `correlation_${randomUUID().replaceAll("-", "")}`;
@@ -85,9 +90,42 @@ function configuredStore(): {
 }
 
 function enabled(
-  name: "CONSENSUS_ROOM_CREATION_ENABLED" | "CONSENSUS_ROOM_JOIN_ENABLED",
+  name:
+    | "CONSENSUS_ROOM_CREATION_ENABLED"
+    | "CONSENSUS_ROOM_JOIN_ENABLED"
+    | "CONSENSUS_HOST_RECOVERY_ENABLED",
 ): boolean {
   return process.env[name] !== "false";
+}
+
+function mayRecover(
+  request: NextRequest,
+  roomId: string,
+  pepper: Uint8Array,
+): boolean {
+  const source =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  const bucketKey = createHmac("sha256", pepper)
+    .update("consensus:host-recovery-rate-limit:v1\0")
+    .update(source)
+    .update("\0")
+    .update(roomId)
+    .digest("base64url");
+  const now = Date.now();
+  const current = attempts.get(bucketKey);
+  if (!current || now - current.startedAt >= CREATE_WINDOW_MS) {
+    if (!current && attempts.size >= MAX_CREATE_BUCKETS) {
+      const oldest = attempts.keys().next().value;
+      if (oldest) attempts.delete(oldest);
+    }
+    attempts.set(bucketKey, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (current.count >= RECOVERY_MAX_ATTEMPTS) return false;
+  current.count += 1;
+  return true;
 }
 
 function sameOrigin(request: NextRequest): boolean {
@@ -333,6 +371,111 @@ export async function handleProjection(
   } catch (error) {
     if (error instanceof RoomStoreError) {
       return protocolErrorResponse(error.code, error.currentRevision);
+    }
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+}
+
+export async function handleCreateHostRecovery(
+  request: NextRequest,
+  roomId: string,
+): Promise<Response> {
+  if (!roomIdPattern.test(roomId)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+  if (!sameOrigin(request)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+  if (!enabled("CONSENSUS_HOST_RECOVERY_ENABLED")) {
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+  const value = await readJson(request);
+  const parsed =
+    value === null
+      ? { success: false as const }
+      : parseCreateHostRecoveryRequest(value);
+  if (!parsed.success) return protocolErrorResponse("invalid-request");
+  const configured = configuredStore();
+  if (!configured) return protocolErrorResponse("temporarily-unavailable");
+
+  const now = new Date();
+  const recovery = issueHostRecoveryCode(configured.pepper, now);
+  try {
+    await configured.store.createHostRecoveryChallenge(
+      roomId,
+      request.cookies.get(CAPABILITY_COOKIE_NAME)?.value,
+      configured.pepper,
+      recovery.hash,
+      recovery.expiresAt,
+      now,
+    );
+    return new Response(
+      JSON.stringify({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        recoveryCode: recovery.takeCode(),
+        expiresAt: recovery.expiresAt.toISOString(),
+      }),
+      { status: 201, headers: noStoreHeaders },
+    );
+  } catch (error) {
+    if (error instanceof RoomStoreError) {
+      return protocolErrorResponse(error.code);
+    }
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+}
+
+export async function handleRedeemHostRecovery(
+  request: NextRequest,
+  roomId: string,
+): Promise<Response> {
+  if (!roomIdPattern.test(roomId)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+  if (!sameOrigin(request)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+  if (!enabled("CONSENSUS_HOST_RECOVERY_ENABLED")) {
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+  const configured = configuredStore();
+  if (!configured) return protocolErrorResponse("temporarily-unavailable");
+  if (!mayRecover(request, roomId, configured.pepper)) {
+    return protocolErrorResponse("rate-limited");
+  }
+  const value = await readJson(request);
+  const parsed =
+    value === null
+      ? { success: false as const }
+      : parseRedeemHostRecoveryRequest(value);
+  if (!parsed.success) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+
+  const now = new Date();
+  try {
+    const result = await configured.store.recoverHost(
+      roomId,
+      parsed.data.recoveryCode,
+      configured.pepper,
+      now,
+    );
+    const { capability, ...responseBody } = result;
+    return new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: {
+        ...noStoreHeaders,
+        "Set-Cookie": serializeCapabilityCookie(
+          capability.takeToken(),
+          roomId,
+          capability.expiresAt,
+          now,
+        ),
+      },
+    });
+  } catch (error) {
+    if (error instanceof RoomStoreError) {
+      return protocolErrorResponse("unauthorized-or-missing");
     }
     return protocolErrorResponse("temporarily-unavailable");
   }

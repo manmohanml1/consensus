@@ -4,9 +4,12 @@ import {
   CAPABILITY_COOKIE_NAME,
   CAPABILITY_HASH_BYTES,
   authorizeCapability,
+  authorizeHostRecoveryCode,
   fingerprintCapability,
+  fingerprintHostRecoveryCode,
   fingerprintRoomLocator,
   issueCapability,
+  issueHostRecoveryCode,
   issueRoomLocator,
   parseCapabilityPepper,
   serializeCapabilityCookie,
@@ -87,6 +90,63 @@ describe("room capabilities", () => {
     expect(inspect(capability)).not.toContain(token);
     expect(inspect(capability)).not.toContain(scope.roomId);
     expect(() => capability.takeToken()).toThrow("already been consumed");
+  });
+
+  it("issues a short-lived one-use host recovery code under a separate hash domain", () => {
+    const recovery = issueHostRecoveryCode(pepper, now);
+    const code = recovery.takeCode();
+
+    expect(code).toMatch(/^hr1\.[A-Za-z0-9_-]{32}$/);
+    expect(recovery.expiresAt.toISOString()).toBe("2026-09-01T12:10:00.000Z");
+    expect(recovery.hash).toEqual(fingerprintHostRecoveryCode(code, pepper));
+    expect(recovery.hash).not.toEqual(
+      fingerprintCapability(issue().takeToken(), pepper),
+    );
+    expect(String(recovery)).toBe("[REDACTED]");
+    expect(inspect(recovery)).not.toContain(code);
+    expect(() => recovery.takeCode()).toThrow("already been consumed");
+  });
+
+  it("checks recovery codes in constant shape and rejects invalid, wrong-pepper, and expired attempts", () => {
+    const recovery = issueHostRecoveryCode(pepper, now);
+    const code = recovery.takeCode();
+
+    expect(
+      authorizeHostRecoveryCode(
+        code,
+        pepper,
+        recovery.hash,
+        recovery.expiresAt,
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      authorizeHostRecoveryCode(
+        "hr1.invalid",
+        pepper,
+        recovery.hash,
+        recovery.expiresAt,
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      authorizeHostRecoveryCode(
+        code,
+        otherPepper,
+        recovery.hash,
+        recovery.expiresAt,
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      authorizeHostRecoveryCode(
+        code,
+        pepper,
+        recovery.hash,
+        recovery.expiresAt,
+        recovery.expiresAt,
+      ),
+    ).toBe(false);
   });
 
   it("authorizes only the matching active room, member, role, hash, and expiry", () => {

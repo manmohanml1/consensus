@@ -3,7 +3,9 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   handleCommand,
+  handleCreateHostRecovery,
   handleProjection,
+  handleRedeemHostRecovery,
   handleRoomCreation,
   handleRoomJoin,
 } from "./room-api";
@@ -157,5 +159,80 @@ describe("room command HTTP boundary", () => {
     expect(await response.json()).toMatchObject({
       code: "unauthorized-or-missing",
     });
+  });
+
+  it("requires same-origin requests for both host recovery steps", async () => {
+    const initiation = await handleCreateHostRecovery(
+      new NextRequest(
+        "https://example.test/api/v1/rooms/room_12345678/recovery",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: "https://attacker.test",
+          },
+          body: JSON.stringify({ protocolVersion: ROOM_PROTOCOL_VERSION }),
+        },
+      ),
+      "room_12345678",
+    );
+    const redemption = await handleRedeemHostRecovery(
+      new NextRequest(
+        "https://example.test/api/v1/rooms/room_12345678/recovery/redeem",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: "https://attacker.test",
+          },
+          body: JSON.stringify({
+            protocolVersion: ROOM_PROTOCOL_VERSION,
+            recoveryCode: `hr1.${"A".repeat(32)}`,
+          }),
+        },
+      ),
+      "room_12345678",
+    );
+
+    expect(initiation.status).toBe(404);
+    expect(redemption.status).toBe(404);
+    expect(await initiation.json()).toMatchObject({
+      code: "unauthorized-or-missing",
+    });
+    expect(await redemption.json()).toMatchObject({
+      code: "unauthorized-or-missing",
+    });
+  });
+
+  it("bounds recovery guesses by privacy-preserving source and room buckets", async () => {
+    process.env.CONSENSUS_DATABASE_URL =
+      "postgresql://unused:unused@127.0.0.1:1/unused";
+    process.env.CONSENSUS_CAPABILITY_PEPPER = "A".repeat(43);
+    const attempt = () =>
+      handleRedeemHostRecovery(
+        new NextRequest(
+          "https://example.test/api/v1/rooms/room_rate_limit1/recovery/redeem",
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              origin: "https://example.test",
+              "x-forwarded-for": "192.0.2.10",
+            },
+            body: JSON.stringify({
+              protocolVersion: ROOM_PROTOCOL_VERSION,
+              recoveryCode: "invalid",
+            }),
+          },
+        ),
+        "room_rate_limit1",
+      );
+
+    for (let index = 0; index < 10; index += 1) {
+      await expect(attempt()).resolves.toMatchObject({ status: 404 });
+    }
+    const limited = await attempt();
+    expect(limited.status).toBe(429);
+    expect(await limited.json()).toMatchObject({ code: "rate-limited" });
   });
 });

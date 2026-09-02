@@ -31,7 +31,7 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
     const result = await client.query(
       "SELECT version FROM consensus_internal.schema_migrations ORDER BY version",
     );
-    expect(result.rows.map(({ version }) => version)).toEqual([1, 2, 3, 4]);
+    expect(result.rows.map(({ version }) => version)).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("enforces room, participant, revision, foreign-key, and idempotency invariants", async () => {
@@ -48,6 +48,11 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
 
       INSERT INTO consensus.candidates (room_id, id, name, source)
       VALUES ('room_00000001', 'candidate_0001', 'Sample', 'fixture');
+
+      INSERT INTO consensus.host_recovery_challenges
+        (room_id, host_member_id, code_hash, expires_at)
+      VALUES
+        ('room_00000001', 'member_000001', decode(repeat('03', 32), 'hex'), now() + interval '10 minutes');
 
       INSERT INTO consensus.commands
         (room_id, command_id, participant_id, idempotency_key, command_type, expected_revision, accepted_revision, participant_sequence, issued_at, payload_hash, result_projection)
@@ -108,7 +113,13 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
       "DELETE FROM consensus.rooms WHERE id = 'room_00000001'",
     );
 
-    for (const table of ["participants", "candidates", "commands", "votes"]) {
+    for (const table of [
+      "participants",
+      "candidates",
+      "commands",
+      "votes",
+      "host_recovery_challenges",
+    ]) {
       const result = await client.query(
         `SELECT count(*)::int AS count FROM consensus.${table}`,
       );

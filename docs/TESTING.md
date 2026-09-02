@@ -22,7 +22,10 @@ pnpm --filter @consensus/web exec playwright install chromium
 
 Milestone 0.2.1 also validates install metadata and generated icons, plus horizontal-overflow and primary-action availability at 320, 390, 768, 1024, and 1440 CSS pixels. Manual HTTPS install and device checks follow [PWA.md](PWA.md); automation does not substitute for iOS/Android home-screen verification.
 
-Browser projects use bounded parallelism so image-heavy responsive journeys do not create development-server startup races on constrained CI runners. Increasing worker count requires repeated evidence that the full suite remains stable.
+Browser projects run through one worker so image-heavy responsive journeys do
+not race development-server hydration on constrained local and CI runners. The
+24-test suite remains small enough for deterministic serialization. Increasing
+worker count requires repeated evidence that the complete gate remains stable.
 
 Set `PLAYWRIGHT_BASE_URL` to an immutable HTTPS Preview origin to run the same suite without starting the local development server:
 
@@ -82,6 +85,13 @@ CQ-208 integration coverage authenticates a naturally expired room, verifies its
 terminal projection, rejects concurrent mutations without changing revision or
 title, and runs concurrent plus repeated retention sweeps. The deletion assertion
 covers every room-owned table, including stored projections and outbox payloads.
+
+CQ-209 adds security tests for recovery-code entropy, domain separation,
+redaction, expiry, and constant-shape rejection; web tests for same-origin and
+bounded per-source/per-room attempts; and disposable PostgreSQL races proving
+exactly one redemption wins, the old host capability fails immediately, the new
+capability succeeds, command sequencing is preserved, and the challenge is
+consumed with the revision/outbox update.
 
 CQ-212 adds a destructive rehearsal that can run only against a localhost
 database whose name contains `test` and only with an explicit environment guard.

@@ -11,6 +11,10 @@ All room reads and mutations are private request-time data and return `Cache-Con
 - `POST /api/v1/rooms/join` — request admission with a non-authoritative
   invitation locator and receive a pending participant capability;
 - `POST /api/v1/rooms/{roomId}/commands` — submit any versioned room command with compare-and-set revision, participant sequence, and idempotency semantics;
+- `POST /api/v1/rooms/{roomId}/recovery` — with current host authority, issue
+  one ten-minute transfer code for entry on a replacement browser;
+- `POST /api/v1/rooms/{roomId}/recovery/redeem` — consume the one-time code,
+  rotate host authority atomically, and return the host identity/next sequence;
 - `POST /api/v1/rooms/{roomId}/lock` — lock roster and rules;
 - `POST /api/v1/rooms/{roomId}/candidates` — accept normalized host/provider candidates;
 - `POST /api/v1/rooms/{roomId}/votes` — submit idempotent ballot command;
@@ -46,10 +50,16 @@ authentication. Missing rooms, invalid capabilities, and expired capabilities
 remain indistinguishable. Retention deletion is an internal bounded worker, not
 a browser API.
 
+Recovery is an explicit host-authorized device transfer, not an invitation-code
+takeover. The initiation response is the only protocol response permitted to
+carry the short-lived `hr1.*` transfer secret; it is no-store and the value is
+forbidden from URLs, QR codes, logs, analytics, and persistence. Redemption sets
+the replacement host capability only as an HTTP-only cookie. Missing, malformed,
+expired, reused, wrong-room, and concurrently consumed codes are indistinguishable.
+
 The command and projection routes remain authoritative. Roster changes use
 `participant.approve`, `participant.remove`, and `participant.leave` through the
 same command transaction. Locking snapshots active members; later departure does
 not silently shrink the electorate. The reserved `DELETE` route is not
 implemented by CQ-208; hosts use the versioned, idempotent `room.end` command so
-termination follows the same transaction and revision rules. CQ-209 recovery
-must delegate to this boundary rather than duplicate authority rules.
+termination follows the same transaction and revision rules.
