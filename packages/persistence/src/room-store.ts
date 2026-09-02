@@ -12,7 +12,11 @@ import {
   type RoomProtocolErrorCode,
 } from "@consensus/domain";
 import {
+  CAPABILITY_MAX_TTL_MS,
   authorizeCapability,
+  authorizeHostRecoveryCode,
+  issueCapability,
+  type IssuedCapability,
   type StoredCapability,
 } from "@consensus/security";
 import pg, { type Pool, type PoolClient } from "pg";
@@ -52,6 +56,16 @@ export interface JoinRoomResult {
 
 export interface RetentionSweepResult {
   deleted: number;
+}
+
+export interface HostRecoveryResult {
+  capability: IssuedCapability;
+  actor: {
+    memberId: string;
+    role: "host";
+    nextSequence: number;
+  };
+  projection: RoomProjection;
 }
 
 export class RoomStoreError extends Error {
@@ -292,6 +306,151 @@ export class PostgresRoomStore {
       return room.expires_at.getTime() <= Date.now()
         ? { ...projection, phase: "expired" }
         : projection;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createHostRecoveryChallenge(
+    roomId: string,
+    token: unknown,
+    pepper: Uint8Array,
+    codeHash: Uint8Array,
+    codeExpiresAt: Date,
+    now = new Date(),
+  ): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const room = await this.loadRoom(client, roomId, true);
+      if (!room) {
+        await this.authenticate(client, roomId, token, pepper);
+        throw new RoomStoreError("unauthorized-or-missing");
+      }
+      const actor = await this.authenticate(client, roomId, token, pepper);
+      if (actor.role !== "host") {
+        throw new RoomStoreError("unauthorized-or-missing");
+      }
+      if (room.expires_at.getTime() <= now.getTime()) {
+        throw new RoomStoreError("room-expired");
+      }
+      await client.query(
+        `INSERT INTO consensus.host_recovery_challenges
+           (room_id, host_member_id, code_hash, expires_at)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (room_id) DO UPDATE SET
+           host_member_id = EXCLUDED.host_member_id,
+           code_hash = EXCLUDED.code_hash,
+           expires_at = EXCLUDED.expires_at,
+           created_at = transaction_timestamp()`,
+        [roomId, actor.id, Buffer.from(codeHash), codeExpiresAt],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async recoverHost(
+    roomId: string,
+    recoveryCode: unknown,
+    pepper: Uint8Array,
+    now = new Date(),
+  ): Promise<HostRecoveryResult> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const room = await this.loadRoom(client, roomId, true);
+      const challenge = room
+        ? await client.query<{
+            host_member_id: string;
+            code_hash: Buffer;
+            expires_at: Date;
+          }>(
+            `SELECT host_member_id, code_hash, expires_at
+               FROM consensus.host_recovery_challenges
+              WHERE room_id = $1`,
+            [roomId],
+          )
+        : null;
+      const stored = challenge?.rows[0];
+      const authorized = authorizeHostRecoveryCode(
+        recoveryCode,
+        pepper,
+        stored?.code_hash ?? null,
+        stored?.expires_at ?? null,
+        now,
+      );
+      if (
+        !room ||
+        !stored ||
+        !authorized ||
+        room.expires_at.getTime() <= now.getTime()
+      ) {
+        throw new RoomStoreError("unauthorized-or-missing");
+      }
+
+      const capabilityExpiresAt = new Date(
+        now.getTime() + CAPABILITY_MAX_TTL_MS,
+      );
+      const capability = issueCapability(
+        { roomId, memberId: stored.host_member_id, role: "host" },
+        capabilityExpiresAt,
+        pepper,
+        now,
+      );
+      const rotated = await client.query<{ last_sequence: string }>(
+        `UPDATE consensus.participants
+            SET capability_hash = $3, capability_expires_at = $4
+          WHERE room_id = $1 AND id = $2 AND role = 'host' AND status = 'active'
+          RETURNING last_sequence`,
+        [
+          roomId,
+          stored.host_member_id,
+          Buffer.from(capability.hash),
+          capabilityExpiresAt,
+        ],
+      );
+      const host = rotated.rows[0];
+      if (!host) throw new RoomStoreError("unauthorized-or-missing");
+
+      await client.query(
+        "DELETE FROM consensus.host_recovery_challenges WHERE room_id = $1",
+        [roomId],
+      );
+      const revision = Number(room.revision) + 1;
+      await this.advanceRevision(client, roomId, revision);
+      const updatedRoom = await this.loadRoom(client, roomId, false);
+      if (!updatedRoom) throw new Error("Recovered room disappeared.");
+      const projection = await this.buildProjection(client, updatedRoom);
+      await client.query(
+        `INSERT INTO consensus.outbox_events
+           (id, room_id, aggregate_revision, event_type, event_version, payload)
+         VALUES ($1, $2, $3, 'room.host.recovered', $4, $5)`,
+        [
+          outboxEventId(roomId, `recovery_${revision}`),
+          roomId,
+          revision,
+          ROOM_PROTOCOL_VERSION,
+          projection,
+        ],
+      );
+      await client.query("COMMIT");
+      return {
+        capability,
+        actor: {
+          memberId: stored.host_member_id,
+          role: "host",
+          nextSequence: Number(host.last_sequence) + 1,
+        },
+        projection,
+      };
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;

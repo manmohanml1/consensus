@@ -6,6 +6,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Serialized the small Playwright browser matrix to prevent recurring local and
+  constrained-runner hydration races during the release gate.
 - Reconciled roadmap, milestone, deployment, governance, and operational records with merged `main`, and added a required documentation-state validator to prevent recurring drift.
 - Made ESLint ignore generated Playwright output directories consistently so a clean Windows checkout does not require placeholder test artifacts.
 - Made Vercel's Production-environment domain-assignment setting the authoritative staged-deployment control, removed the misleading `github.autoAlias` configuration, and reject Preview targets from the no-rebuild promotion workflow.
@@ -14,6 +16,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Host-authorized, ten-minute, one-use recovery transfers that atomically rotate
+  host capability authority, revoke the prior cookie, and preserve command
+  sequencing without accounts.
 - Authenticated natural-expiry projections, irreversible expiry enforcement,
   bounded idempotent aggregate deletion, and comprehensive retention race/cascade
   coverage for CQ-208.

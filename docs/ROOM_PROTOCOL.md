@@ -46,7 +46,12 @@ projection but cannot execute commands. Capabilities live for at most 24 hours;
 the room stops accepting mutations after its two-hour active TTL. During the
 remaining capability lifetime, an authenticated read reports an `expired`
 projection while unauthorized and missing rooms remain indistinguishable.
-Capability replacement/recovery remains CQ-209.
+CQ-209 recovery is a host-authorized browser transfer: the current host creates
+one ten-minute `hr1.*` code, and the replacement browser redeems it to rotate the
+host cookie. The secret is never a room locator, command, projection, URL, or QR
+value. Redemption preserves the host member and its command sequence while the
+transaction consumes the challenge, replaces the capability fingerprint,
+advances the revision, and appends the committed projection.
 
 ## Projection boundary
 
@@ -70,7 +75,5 @@ Both are Node.js request-time routes with `Cache-Control: no-store`.
 
 CQ-208 adds bounded aggregate deletion behind an explicit operational switch;
 it does not expose a public deletion endpoint or schedule provider work.
-Capability recovery, shared-provider migration, realtime delivery, and
-Production activation remain out of scope. CQ-209 must consume the same service
-boundary rather than redefine it. Shared-provider and Production gates remain
-intact.
+Shared-provider migration, realtime delivery, and Production activation remain
+out of scope. Shared-provider and Production gates remain intact.

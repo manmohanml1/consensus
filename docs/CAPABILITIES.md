@@ -17,8 +17,29 @@ while public room creation, join, and recovery remain later issues.
   the token may only place it in the response cookie; it must not log, persist,
   analyze, or return it in a protocol body.
 - Rotation issues a new token and transactionally replaces the participant row's
-  fingerprint/expiry. The previous token then fails. Recovery policy and endpoint
-  authorization are delivered by CQ-209.
+  fingerprint/expiry. The previous token then fails.
+
+## Host recovery transfer
+
+CQ-209 implements recovery as an explicit transfer from a currently authorized
+host browser to a replacement browser. The host requests a `hr1.*` code with 192
+random bits; only a separately domain-keyed fingerprint is stored, and the code
+expires after ten minutes. Redeeming it consumes the challenge and replaces the
+host participant's capability fingerprint in the same transaction. The old
+cookie fails immediately, concurrent redemption has one winner, and a new
+challenge replaces any earlier unredeemed challenge.
+
+The one-time code is returned only by the authenticated, no-store initiation
+response so the host can enter it on the replacement browser. It must never be
+placed in a URL, QR code, log, analytics event, persistent browser storage, or
+room payload. Redemption is same-origin, bounded, per-source/per-room rate
+limited, and maps malformed, missing, expired, reused, and wrong-room attempts to
+the same public absence.
+
+This is not recovery after every authorized host device and the transfer code
+have both been lost. Supporting that case requires an account, a pre-enrolled
+recovery factor, or another trusted identity proof and is deliberately deferred;
+an invitation locator alone can never take over a room.
 
 ## Authorization contract
 

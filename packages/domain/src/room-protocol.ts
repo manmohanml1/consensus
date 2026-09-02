@@ -112,6 +112,15 @@ export interface JoinRoomRequest {
   displayName: string;
 }
 
+export interface CreateHostRecoveryRequest {
+  protocolVersion: typeof ROOM_PROTOCOL_VERSION;
+}
+
+export interface RedeemHostRecoveryRequest {
+  protocolVersion: typeof ROOM_PROTOCOL_VERSION;
+  recoveryCode: string;
+}
+
 export type RoomProtocolErrorCode =
   | "invalid-request"
   | "unsupported-version"
@@ -708,6 +717,76 @@ export function parseJoinRoomRequest(
     success: true,
     data: { protocolVersion, locator, displayName },
   };
+}
+
+export function parseCreateHostRecoveryRequest(
+  value: unknown,
+): RoomProtocolParseResult<CreateHostRecoveryRequest> {
+  const issues: RoomProtocolParseIssue[] = [];
+  if (!checkSerializedSize(value, issues)) return { success: false, issues };
+  scanUnsafeKeys(value, issues);
+  if (!isRecord(value)) {
+    pushIssue(
+      issues,
+      "$",
+      "invalid-type",
+      "Expected a recovery request object.",
+    );
+    return { success: false, issues };
+  }
+  rejectUnknownKeys(value, ["protocolVersion"], "$", issues);
+  const protocolVersion = readString(value, "protocolVersion", "$", issues, {
+    max: 16,
+  });
+  if (protocolVersion && protocolVersion !== ROOM_PROTOCOL_VERSION) {
+    pushIssue(
+      issues,
+      "$.protocolVersion",
+      "invalid-value",
+      "Unsupported protocol version.",
+    );
+  }
+  return issues.length === 0 && protocolVersion === ROOM_PROTOCOL_VERSION
+    ? { success: true, data: { protocolVersion } }
+    : { success: false, issues };
+}
+
+export function parseRedeemHostRecoveryRequest(
+  value: unknown,
+): RoomProtocolParseResult<RedeemHostRecoveryRequest> {
+  const issues: RoomProtocolParseIssue[] = [];
+  if (!checkSerializedSize(value, issues)) return { success: false, issues };
+  scanUnsafeKeys(value, issues);
+  if (!isRecord(value)) {
+    pushIssue(
+      issues,
+      "$",
+      "invalid-type",
+      "Expected a recovery redemption object.",
+    );
+    return { success: false, issues };
+  }
+  rejectUnknownKeys(value, ["protocolVersion", "recoveryCode"], "$", issues);
+  const protocolVersion = readString(value, "protocolVersion", "$", issues, {
+    max: 16,
+  });
+  if (protocolVersion && protocolVersion !== ROOM_PROTOCOL_VERSION) {
+    pushIssue(
+      issues,
+      "$.protocolVersion",
+      "invalid-value",
+      "Unsupported protocol version.",
+    );
+  }
+  const recoveryCode = readString(value, "recoveryCode", "$", issues, {
+    max: 36,
+    pattern: /^hr1\.[A-Za-z0-9_-]{32}$/,
+  });
+  return issues.length === 0 &&
+    protocolVersion === ROOM_PROTOCOL_VERSION &&
+    recoveryCode
+    ? { success: true, data: { protocolVersion, recoveryCode } }
+    : { success: false, issues };
 }
 
 function readRecordArray(

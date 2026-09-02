@@ -8,12 +8,17 @@ export const CAPABILITY_MAX_TTL_MS = 24 * 60 * 60 * 1_000;
 export const CAPABILITY_COOKIE_NAME = "__Secure-consensus_room";
 export const ROOM_LOCATOR_VERSION = "r1" as const;
 export const ROOM_LOCATOR_RANDOM_BYTES = 16;
+export const HOST_RECOVERY_VERSION = "hr1" as const;
+export const HOST_RECOVERY_RANDOM_BYTES = 24;
+export const HOST_RECOVERY_TTL_MS = 10 * 60 * 1_000;
 
 const capabilityPattern = /^c1\.[A-Za-z0-9_-]{43}$/;
 const identifierPattern = /^[A-Za-z0-9_-]{8,64}$/;
 const domainSeparator = "consensus:room-capability:v1\0";
 const locatorDomainSeparator = "consensus:room-locator:v1\0";
 const locatorPattern = /^r1\.[A-Za-z0-9_-]{22}$/;
+const recoveryDomainSeparator = "consensus:host-recovery:v1\0";
+const recoveryPattern = /^hr1\.[A-Za-z0-9_-]{32}$/;
 const dummyCapability = "invalid-capability";
 const redacted = "[REDACTED]";
 
@@ -86,6 +91,47 @@ export class IssuedCapability {
   }
 }
 
+export class IssuedHostRecoveryCode {
+  #code: string | null;
+  #hash: Uint8Array;
+  #expiresAtMs: number;
+
+  constructor(code: string, hash: Uint8Array, expiresAt: Date) {
+    this.#code = code;
+    this.#hash = Uint8Array.from(hash);
+    this.#expiresAtMs = expiresAt.getTime();
+  }
+
+  get hash(): Uint8Array {
+    return Uint8Array.from(this.#hash);
+  }
+
+  get expiresAt(): Date {
+    return new Date(this.#expiresAtMs);
+  }
+
+  takeCode(): string {
+    if (this.#code === null) {
+      throw new Error("Host recovery code has already been consumed.");
+    }
+    const code = this.#code;
+    this.#code = null;
+    return code;
+  }
+
+  toJSON() {
+    return { code: redacted };
+  }
+
+  toString() {
+    return redacted;
+  }
+
+  [inspect.custom]() {
+    return this.toJSON();
+  }
+}
+
 export function parseCapabilityPepper(value: string | undefined): Uint8Array {
   if (!value || !/^[A-Za-z0-9_-]{43}$/.test(value)) {
     throw new Error("Capability pepper configuration is invalid.");
@@ -136,6 +182,54 @@ export function fingerprintRoomLocator(
       .update(locator)
       .digest(),
   );
+}
+
+export function issueHostRecoveryCode(
+  pepper: Uint8Array,
+  now = new Date(),
+): IssuedHostRecoveryCode {
+  assertPepper(pepper);
+  const code = `${HOST_RECOVERY_VERSION}.${randomBytes(HOST_RECOVERY_RANDOM_BYTES).toString("base64url")}`;
+  const expiresAt = new Date(now.getTime() + HOST_RECOVERY_TTL_MS);
+  return new IssuedHostRecoveryCode(
+    code,
+    fingerprintHostRecoveryCode(code, pepper),
+    expiresAt,
+  );
+}
+
+export function fingerprintHostRecoveryCode(
+  code: string,
+  pepper: Uint8Array,
+): Uint8Array {
+  if (!recoveryPattern.test(code)) {
+    throw new Error("Host recovery code is invalid.");
+  }
+  assertPepper(pepper);
+  return fingerprintRecoveryCandidate(code, pepper);
+}
+
+export function authorizeHostRecoveryCode(
+  code: unknown,
+  pepper: Uint8Array,
+  storedHash: Uint8Array | null,
+  expiresAt: Date | null,
+  now = new Date(),
+): boolean {
+  assertPepper(pepper);
+  const candidate =
+    typeof code === "string" && recoveryPattern.test(code)
+      ? code
+      : "invalid-recovery-code";
+  const candidateHash = Buffer.from(
+    fingerprintRecoveryCandidate(candidate, pepper),
+  );
+  const expectedHash =
+    storedHash?.byteLength === CAPABILITY_HASH_BYTES
+      ? Buffer.from(storedHash)
+      : Buffer.alloc(CAPABILITY_HASH_BYTES);
+  const matches = timingSafeEqual(candidateHash, expectedHash);
+  return Boolean(matches && expiresAt && expiresAt.getTime() > now.getTime());
 }
 
 export function issueCapability(
@@ -246,6 +340,18 @@ export function serializeClearedCapabilityCookie(roomId: string): string {
 function fingerprintUntrusted(token: string, pepper: Uint8Array): Uint8Array {
   return Uint8Array.from(
     createHmac("sha256", pepper).update(domainSeparator).update(token).digest(),
+  );
+}
+
+function fingerprintRecoveryCandidate(
+  code: string,
+  pepper: Uint8Array,
+): Uint8Array {
+  return Uint8Array.from(
+    createHmac("sha256", pepper)
+      .update(recoveryDomainSeparator)
+      .update(code)
+      .digest(),
   );
 }
 

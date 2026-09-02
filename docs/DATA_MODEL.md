@@ -4,16 +4,17 @@ This logical model is provider-neutral. ADRs 0007, 0012, and 0013 authorize a po
 
 ## Core records
 
-| Record       | Purpose                      | Key invariants                                                          |
-| ------------ | ---------------------------- | ----------------------------------------------------------------------- |
-| Room         | Temporary decision aggregate | Random id, human code, status, revision, expiry, ruleset version        |
-| Participant  | Room-scoped member           | Capability hash, role, join/leave state, locked-voter eligibility       |
-| Constraint   | Hard feasibility rule        | Typed, validated, visibility-scoped, never reduced to preference        |
-| Candidate    | Normalized option            | Provider id/version, field provenance, freshness, coordinates minimized |
-| Vote         | Accepted reaction            | Unique room/participant/candidate, command id and sequence              |
-| Decision     | Immutable resolution         | Winning candidate, eligible roster, ruleset, reason codes, scores       |
-| Commitment   | Post-result response         | In/unsure/out with timestamp; cannot rewrite decision                   |
-| Outbox event | Durable projection message   | Unique event id, aggregate revision, publish state                      |
+| Record                  | Purpose                      | Key invariants                                                          |
+| ----------------------- | ---------------------------- | ----------------------------------------------------------------------- |
+| Room                    | Temporary decision aggregate | Random id, human code, status, revision, expiry, ruleset version        |
+| Participant             | Room-scoped member           | Capability hash, role, join/leave state, locked-voter eligibility       |
+| Host recovery challenge | Short-lived transfer proof   | One keyed code hash per room, host-bound, expiring, cascade-owned       |
+| Constraint              | Hard feasibility rule        | Typed, validated, visibility-scoped, never reduced to preference        |
+| Candidate               | Normalized option            | Provider id/version, field provenance, freshness, coordinates minimized |
+| Vote                    | Accepted reaction            | Unique room/participant/candidate, command id and sequence              |
+| Decision                | Immutable resolution         | Winning candidate, eligible roster, ruleset, reason codes, scores       |
+| Commitment              | Post-result response         | In/unsure/out with timestamp; cannot rewrite decision                   |
+| Outbox event            | Durable projection message   | Unique event id, aggregate revision, publish state                      |
 
 The physical model lives in ordered SQL under `packages/persistence/migrations`.
 Room identifiers are aggregate keys; child records use composite foreign keys so
@@ -36,6 +37,10 @@ by `packages/security`; raw capability material is delivered once and never
 persisted. Reissuing or recovering a capability replaces the stored fingerprint,
 immediately invalidating the earlier token. Role, room, member status, and expiry
 remain separate database facts and must all match during authorization.
+`host_recovery_challenges` holds only the separately domain-keyed fingerprint of
+one ten-minute transfer code. Successful redemption deletes that row while
+replacing the host participant fingerprint and advancing the aggregate in one
+transaction.
 
 ## Retention
 
@@ -46,7 +51,7 @@ room expiry deadline. `room.end` can shorten but cannot extend that deadline.
 
 Deletion selects a bounded deadline-ordered batch with row locks and
 `SKIP LOCKED`, then deletes the room root. Foreign-key cascades remove
-participants and capability fingerprints, constraints, candidates and provider
+participants and capability fingerprints, host recovery challenges, constraints, candidates and provider
 references, commands and stored projections, votes, decisions, commitments, and
 outbox payloads in the same statement. Concurrent or repeated sweeps are
 idempotent and expose counts only. Production values require privacy review and

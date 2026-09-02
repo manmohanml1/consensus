@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { ROOM_PROTOCOL_VERSION, type RoomCommand } from "@consensus/domain";
-import { issueCapability } from "@consensus/security";
+import { issueCapability, issueHostRecoveryCode } from "@consensus/security";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { applyMigrations, loadMigrations } from "../src/migrations.mjs";
@@ -208,6 +208,90 @@ describeDatabase("transactional room command store", () => {
     expect(stored.rows[0]!.capability_hash).toEqual(
       Buffer.from(capability.hash),
     );
+  });
+
+  it("redeems one short-lived host transfer and atomically revokes prior authority", async () => {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1_000);
+    const original = issueCapability(
+      {
+        roomId: "room_recovery_001",
+        memberId: "member_recovery_01",
+        role: "host",
+      },
+      expiresAt,
+      pepper,
+    );
+    const originalToken = original.takeToken();
+    await store.createRoom({
+      roomId: "room_recovery_001",
+      hostMemberId: "member_recovery_01",
+      title: "Recovery dinner",
+      hostDisplayName: "Host",
+      targetAt: new Date(Date.now() + 30 * 60 * 1_000).toISOString(),
+      inviteCodeHash: Buffer.alloc(32, 71),
+      hostCapabilityHash: original.hash,
+      capabilityExpiresAt: expiresAt,
+      expiresAt,
+      deletionDueAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000),
+    });
+
+    const recovery = issueHostRecoveryCode(pepper);
+    const recoveryCode = recovery.takeCode();
+    await store.createHostRecoveryChallenge(
+      "room_recovery_001",
+      originalToken,
+      pepper,
+      recovery.hash,
+      recovery.expiresAt,
+    );
+    const attempts = await Promise.allSettled([
+      store.recoverHost("room_recovery_001", recoveryCode, pepper),
+      store.recoverHost("room_recovery_001", recoveryCode, pepper),
+    ]);
+    const succeeded = attempts.filter(
+      (
+        attempt,
+      ): attempt is PromiseFulfilledResult<
+        Awaited<ReturnType<typeof store.recoverHost>>
+      > => attempt.status === "fulfilled",
+    );
+    const rejected = attempts.filter(
+      (attempt): attempt is PromiseRejectedResult =>
+        attempt.status === "rejected",
+    );
+    expect(succeeded).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]?.reason).toMatchObject({
+      code: "unauthorized-or-missing",
+    });
+    const recovered = succeeded[0]!.value;
+    const replacementToken = recovered.capability.takeToken();
+
+    expect(recovered).toMatchObject({
+      actor: {
+        memberId: "member_recovery_01",
+        role: "host",
+        nextSequence: 1,
+      },
+      projection: { revision: 1 },
+    });
+    await expect(
+      store.getProjection("room_recovery_001", originalToken, pepper),
+    ).rejects.toMatchObject({ code: "unauthorized-or-missing" });
+    await expect(
+      store.getProjection("room_recovery_001", replacementToken, pepper),
+    ).resolves.toMatchObject({ revision: 1 });
+    await expect(
+      store.recoverHost("room_recovery_001", recoveryCode, pepper),
+    ).rejects.toMatchObject({ code: "unauthorized-or-missing" });
+
+    const evidence = await admin.query(
+      `SELECT
+         (SELECT count(*)::int FROM consensus.host_recovery_challenges WHERE room_id = $1) AS challenges,
+         (SELECT count(*)::int FROM consensus.outbox_events WHERE room_id = $1 AND event_type = 'room.host.recovered') AS events`,
+      ["room_recovery_001"],
+    );
+    expect(evidence.rows[0]).toEqual({ challenges: 0, events: 1 });
   });
 
   it("serializes join, approval, roster lock, and dropout without changing the electorate", async () => {
@@ -491,6 +575,12 @@ describeDatabase("transactional room command store", () => {
         ('room_retention_01', 'constraint_ret_01', 'member_retention1',
          'allergy', '{"sensitive":"value"}');
 
+      INSERT INTO consensus.host_recovery_challenges
+        (room_id, host_member_id, code_hash, expires_at)
+      VALUES
+        ('room_retention_01', 'member_retention1',
+         decode(repeat('44', 32), 'hex'), now() - interval '8 days');
+
       INSERT INTO consensus.candidates
         (room_id, id, name, source, field_provenance, constraint_evidence)
       VALUES
@@ -555,6 +645,7 @@ describeDatabase("transactional room command store", () => {
       "decisions",
       "commitments",
       "outbox_events",
+      "host_recovery_challenges",
     ]) {
       const remaining = await admin.query(
         `SELECT count(*)::int AS count FROM consensus.${table} WHERE room_id = $1`,

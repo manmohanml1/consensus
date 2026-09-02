@@ -26,6 +26,7 @@ Each item is sized for an individual pull request unless marked Epic. Use the ma
 - [CQ-202](issues/CQ-202-room-schema.md) — Room schema and forward migrations
 - [CQ-203](issues/CQ-203-capabilities.md) — Anonymous capability lifecycle
 - [CQ-204](issues/CQ-204-command-api.md) — Idempotent command/projection API
+- [CQ-209](issues/CQ-209-host-recovery.md) — Host recovery and capability rotation
 
 ## 0.4 Realtime
 

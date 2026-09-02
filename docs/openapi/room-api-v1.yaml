@@ -95,6 +95,52 @@ paths:
               schema: { $ref: "#/components/schemas/RoomProjection" }
         "404": { $ref: "#/components/responses/ProtocolError" }
         "503": { $ref: "#/components/responses/ProtocolError" }
+  /api/v1/rooms/{roomId}/recovery:
+    post:
+      summary: Create a short-lived host-authorized transfer challenge
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateHostRecoveryRequest" }
+      responses:
+        "201":
+          description: One-time recovery code issued for explicit transfer to another browser.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HostRecoveryChallenge" }
+        "400": { $ref: "#/components/responses/ProtocolError" }
+        "404": { $ref: "#/components/responses/ProtocolError" }
+        "409": { $ref: "#/components/responses/ProtocolError" }
+        "503": { $ref: "#/components/responses/ProtocolError" }
+  /api/v1/rooms/{roomId}/recovery/redeem:
+    post:
+      summary: Redeem a one-time transfer and atomically rotate host authority
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RedeemHostRecoveryRequest" }
+      responses:
+        "200":
+          description: Host authority rotated; the prior host cookie is immediately invalid.
+          headers:
+            Cache-Control: { $ref: "#/components/headers/NoStore" }
+            Set-Cookie:
+              description: Replacement HTTP-only host capability scoped to this room.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HostRecoveryResult" }
+        "404": { $ref: "#/components/responses/ProtocolError" }
+        "429": { $ref: "#/components/responses/ProtocolError" }
+        "503": { $ref: "#/components/responses/ProtocolError" }
 components:
   parameters:
     RoomId:
@@ -114,6 +160,44 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/RoomProtocolError" }
   schemas:
+    CreateHostRecoveryRequest:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+    RedeemHostRecoveryRequest:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion, recoveryCode]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        recoveryCode:
+          type: string
+          pattern: "^hr1\\.[A-Za-z0-9_-]{32}$"
+          description: One-time ten-minute transfer secret; never place it in a URL, QR code, log, or analytics event.
+    HostRecoveryChallenge:
+      type: object
+      additionalProperties: false
+      required: [protocolVersion, recoveryCode, expiresAt]
+      properties:
+        protocolVersion: { type: string, const: "1.0.0" }
+        recoveryCode: { type: string, pattern: "^hr1\\.[A-Za-z0-9_-]{32}$" }
+        expiresAt: { type: string, format: date-time }
+    HostRecoveryResult:
+      type: object
+      additionalProperties: false
+      required: [actor, projection]
+      properties:
+        actor:
+          type: object
+          additionalProperties: false
+          required: [memberId, role, nextSequence]
+          properties:
+            memberId: { type: string }
+            role: { type: string, const: host }
+            nextSequence: { type: integer, minimum: 1 }
+        projection: { $ref: "#/components/schemas/RoomProjection" }
     JoinRoomRequest:
       type: object
       additionalProperties: false
