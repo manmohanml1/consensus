@@ -21,6 +21,19 @@ export interface CommandResult {
   projection: RoomProjection;
 }
 
+export interface CreateRoomInput {
+  roomId: string;
+  hostMemberId: string;
+  title: string;
+  hostDisplayName: string;
+  targetAt: string;
+  inviteCodeHash: Uint8Array;
+  hostCapabilityHash: Uint8Array;
+  capabilityExpiresAt: Date;
+  expiresAt: Date;
+  deletionDueAt: Date;
+}
+
 export class RoomStoreError extends Error {
   constructor(
     readonly code: RoomProtocolErrorCode,
@@ -100,6 +113,54 @@ export class PostgresRoomStore {
 
   async close(): Promise<void> {
     await this.pool.end();
+  }
+
+  async createRoom(input: CreateRoomInput): Promise<RoomProjection> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `INSERT INTO consensus.rooms
+           (id, invite_code_hash, title, protocol_version, ruleset_version,
+            target_at, expires_at, deletion_due_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          input.roomId,
+          Buffer.from(input.inviteCodeHash),
+          input.title,
+          ROOM_PROTOCOL_VERSION,
+          DECISION_RULESET_VERSION,
+          input.targetAt,
+          input.expiresAt,
+          input.deletionDueAt,
+        ],
+      );
+      await client.query(
+        `INSERT INTO consensus.participants
+           (room_id, id, display_name, role, capability_hash, capability_expires_at)
+         VALUES ($1, $2, $3, 'host', $4, $5)`,
+        [
+          input.roomId,
+          input.hostMemberId,
+          input.hostDisplayName,
+          Buffer.from(input.hostCapabilityHash),
+          input.capabilityExpiresAt,
+        ],
+      );
+      const room = await this.loadRoom(client, input.roomId, false);
+      if (!room) throw new Error("Created room was not found.");
+      const projection = await this.buildProjection(client, room);
+      await client.query("COMMIT");
+      return projection;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      if (error instanceof Error && "code" in error && error.code === "23505") {
+        throw new RoomStoreError("temporarily-unavailable");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async getProjection(

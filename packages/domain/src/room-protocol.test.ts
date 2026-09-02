@@ -3,6 +3,7 @@ import {
   ROOM_PROTOCOL_LIMITS,
   ROOM_PROTOCOL_VERSION,
   createRoomProtocolError,
+  parseCreateRoomRequest,
   parseRoomCommand,
   parseRoomProjection,
 } from "./room-protocol";
@@ -126,6 +127,36 @@ describe("room protocol commands", () => {
     if (!result.success) {
       expect(result.issues.map(({ path }) => path)).toEqual(
         expect.arrayContaining(["$.expectedRevision", "$.sequence"]),
+      );
+    }
+  });
+});
+
+describe("room creation requests", () => {
+  const validCreation = () => ({
+    protocolVersion: ROOM_PROTOCOL_VERSION,
+    title: "Friday dinner",
+    hostDisplayName: "Maya",
+    targetAt: "2026-09-02T23:00:00.000Z",
+  });
+
+  it("parses a bounded creation request without transport authority", () => {
+    expect(parseCreateRoomRequest(validCreation())).toEqual({
+      success: true,
+      data: validCreation(),
+    });
+  });
+
+  it("rejects capabilities, unknown fields, and non-UTC time", () => {
+    const result = parseCreateRoomRequest({
+      ...validCreation(),
+      capability: "never-in-a-body",
+      targetAt: "2026-09-02T23:00:00.000+01:00",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.issues.map(({ code }) => code)).toEqual(
+        expect.arrayContaining(["unsafe-field", "invalid-value"]),
       );
     }
   });
