@@ -73,3 +73,11 @@ concurrently consumed codes share the same public absence. Codes are forbidden
 from URLs, QR codes, logs, analytics, and persistent client storage. Room
 locators cannot recover host authority, and complete loss of all host authority
 requires a future pre-enrolled identity proof rather than a weaker fallback.
+
+Production script execution uses a fresh per-request CSP nonce with
+`strict-dynamic`; `unsafe-inline` is absent from `script-src`. Next.js receives
+the same policy through the request boundary so its framework bootstrap scripts
+receive the nonce automatically. Development alone adds `unsafe-eval` for React
+debugging. The nonce requirement deliberately trades static HTML caching for a
+strict script boundary; browser tests verify unique nonces and successful
+hydration.

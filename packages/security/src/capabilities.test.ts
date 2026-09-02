@@ -206,6 +206,62 @@ describe("room capabilities", () => {
     expect(authorizeCapability(token, pepper, null, scope, now)).toBeNull();
   });
 
+  it("never authorizes a neighboring generated capability scope", () => {
+    for (let seed = 1; seed <= 64; seed += 1) {
+      const generatedScope: CapabilityScope = {
+        roomId: `room_${seed.toString().padStart(8, "0")}`,
+        memberId: `member_${seed.toString().padStart(8, "0")}`,
+        role: seed % 2 === 0 ? "host" : "participant",
+      };
+      const issued = issueCapability(generatedScope, expiresAt, pepper, now);
+      const token = issued.takeToken();
+      const record: StoredCapability = {
+        ...generatedScope,
+        hash: issued.hash,
+        expiresAt,
+        status: "active",
+      };
+
+      expect(
+        authorizeCapability(token, pepper, record, generatedScope, now),
+        `seed=${seed}`,
+      ).toEqual(generatedScope);
+      expect(
+        authorizeCapability(
+          token,
+          pepper,
+          record,
+          { ...generatedScope, roomId: `${generatedScope.roomId}_other` },
+          now,
+        ),
+        `room seed=${seed}`,
+      ).toBeNull();
+      expect(
+        authorizeCapability(
+          token,
+          pepper,
+          record,
+          { ...generatedScope, memberId: `${generatedScope.memberId}_other` },
+          now,
+        ),
+        `member seed=${seed}`,
+      ).toBeNull();
+      expect(
+        authorizeCapability(
+          token,
+          pepper,
+          record,
+          {
+            ...generatedScope,
+            role: generatedScope.role === "host" ? "participant" : "host",
+          },
+          now,
+        ),
+        `role seed=${seed}`,
+      ).toBeNull();
+    }
+  });
+
   it("allows pending members to read only when the caller explicitly opts in", () => {
     const capability = issue();
     const token = capability.takeToken();

@@ -102,4 +102,57 @@ describe("resolveDecision", () => {
     });
     expect(normal).toEqual(reversed);
   });
+
+  it("preserves the result across deterministic candidate permutations", () => {
+    const expected = resolveDecision(baseInput);
+
+    for (let seed = 1; seed <= 64; seed += 1) {
+      const shuffled = [...candidates];
+      let state = seed;
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        state = (state * 16_807) % 2_147_483_647;
+        const swapIndex = state % (index + 1);
+        [shuffled[index], shuffled[swapIndex]] = [
+          shuffled[swapIndex]!,
+          shuffled[index]!,
+        ];
+      }
+
+      expect(resolveDecision({ ...baseInput, candidates: shuffled })).toEqual(
+        expected,
+      );
+    }
+  });
+
+  it("never selects a hard-constraint failure across varied preferences", () => {
+    for (let seed = 1; seed <= 64; seed += 1) {
+      const unsafe = {
+        ...candidates[0]!,
+        constraintEvidence: {
+          vegetarian: seed % 2 === 0 ? false : ("unknown" as const),
+          accessible: true,
+        },
+      };
+      const safe = candidates[1]!;
+      const result = resolveDecision({
+        ...baseInput,
+        candidates: seed % 3 === 0 ? [safe, unsafe] : [unsafe, safe],
+        ballots: {
+          a: {
+            garden: { preference: "prefer", mustPick: seed % 2 === 0 },
+            noodle: { preference: seed % 5 === 0 ? "avoid" : "accept" },
+          },
+          b: {
+            garden: { preference: "prefer", mustPick: true },
+            noodle: { preference: seed % 7 === 0 ? "avoid" : "accept" },
+          },
+        },
+      });
+
+      expect(result.status, `seed=${seed}`).toBe("decided");
+      if (result.status === "decided") {
+        expect(result.winnerCandidateId, `seed=${seed}`).toBe("noodle");
+      }
+    }
+  });
 });

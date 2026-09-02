@@ -1,6 +1,8 @@
 import { DecisionWorkflow } from "@/components/decision-workflow";
+import { connection } from "next/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  await connection();
   return (
     <main>
       <section className="hero" aria-labelledby="hero-title">

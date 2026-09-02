@@ -24,6 +24,9 @@ If private reporting is unavailable, open a public issue containing no sensitive
 - Provider credentials, signing keys, database URLs, and service credentials remain server-only.
 - State-changing requests require origin validation, CSRF protection where cookies are used, schema validation, rate limits, and room/participant authorization.
 - Public place and room inputs are bounded and protected against SSRF, injection, enumeration, and abuse.
+- Production HTML receives a fresh cryptographic CSP nonce per request;
+  `script-src` uses that nonce with `strict-dynamic` and never permits
+  `unsafe-inline`. This intentionally makes the application shell dynamic.
 - Expired rooms reject mutations server-side. While a valid capability remains,
   reads expose only the terminal projection; bounded idempotent sweeps delete the
   complete room aggregate according to `docs/PRIVACY.md` and log counts only.
