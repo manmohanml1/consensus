@@ -39,7 +39,19 @@ remain separate database facts and must all match during authorization.
 
 ## Retention
 
-Unregistered room data is temporary. The initial policy is a two-hour active TTL, a 24-hour recovery window, and deletion within seven days. Production values require privacy review and verification. Aggregate product metrics must not retain room codes, names, precise coordinates, individual votes, or constraints.
+Unregistered room data is temporary. The initial policy is a two-hour active
+TTL, authenticated expired-state visibility for no longer than the 24-hour
+capability lifetime, and aggregate deletion no later than seven days after the
+room expiry deadline. `room.end` can shorten but cannot extend that deadline.
+
+Deletion selects a bounded deadline-ordered batch with row locks and
+`SKIP LOCKED`, then deletes the room root. Foreign-key cascades remove
+participants and capability fingerprints, constraints, candidates and provider
+references, commands and stored projections, votes, decisions, commitments, and
+outbox payloads in the same statement. Concurrent or repeated sweeps are
+idempotent and expose counts only. Production values require privacy review and
+verification. Aggregate product metrics must not retain room codes, names,
+precise coordinates, individual votes, or constraints.
 
 ## Migration rules
 

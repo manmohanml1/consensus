@@ -87,7 +87,7 @@ paths:
         - $ref: "#/components/parameters/RoomId"
       responses:
         "200":
-          description: Privacy-minimized current projection.
+          description: Privacy-minimized current projection; an authenticated room past its active TTL reports phase `expired` while the capability remains valid.
           headers:
             Cache-Control: { $ref: "#/components/headers/NoStore" }
           content:
@@ -107,7 +107,7 @@ components:
       schema: { type: string, example: "no-store, max-age=0" }
   responses:
     ProtocolError:
-      description: Safe versioned public error; unauthorized and missing are indistinguishable.
+      description: Safe versioned public error; unauthorized and missing are indistinguishable, while `room-expired` is returned only after capability authentication.
       headers:
         Cache-Control: { $ref: "#/components/headers/NoStore" }
       content:

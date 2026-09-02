@@ -10,6 +10,7 @@ import {
 } from "@consensus/domain";
 import { PostgresRoomStore, RoomStoreError } from "@consensus/persistence";
 import {
+  CAPABILITY_MAX_TTL_MS,
   CAPABILITY_COOKIE_NAME,
   fingerprintRoomLocator,
   issueCapability,
@@ -30,6 +31,8 @@ const CREATE_WINDOW_MS = 10 * 60 * 1_000;
 const CREATE_MAX_ATTEMPTS = 5;
 const JOIN_MAX_ATTEMPTS = 20;
 const MAX_CREATE_BUCKETS = 1_000;
+const ROOM_ACTIVE_TTL_MS = 2 * 60 * 60 * 1_000;
+const ROOM_DELETION_GRACE_MS = 7 * 24 * 60 * 60 * 1_000;
 
 function correlationId(): string {
   return `correlation_${randomUUID().replaceAll("-", "")}`;
@@ -173,12 +176,13 @@ export async function handleRoomCreation(
     return protocolErrorResponse("rate-limited");
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1_000);
+  const expiresAt = new Date(now.getTime() + ROOM_ACTIVE_TTL_MS);
+  const capabilityExpiresAt = new Date(now.getTime() + CAPABILITY_MAX_TTL_MS);
   const roomId = `room_${randomUUID().replaceAll("-", "")}`;
   const memberId = `member_${randomUUID().replaceAll("-", "")}`;
   const capability = issueCapability(
     { roomId, memberId, role: "host" },
-    expiresAt,
+    capabilityExpiresAt,
     configured.pepper,
     now,
   );
@@ -192,9 +196,9 @@ export async function handleRoomCreation(
       targetAt: parsed.data.targetAt,
       inviteCodeHash: locator.hash,
       hostCapabilityHash: capability.hash,
-      capabilityExpiresAt: expiresAt,
+      capabilityExpiresAt,
       expiresAt,
-      deletionDueAt: new Date(expiresAt.getTime() + 7 * 24 * 60 * 60 * 1_000),
+      deletionDueAt: new Date(expiresAt.getTime() + ROOM_DELETION_GRACE_MS),
     });
     const token = capability.takeToken();
     return new Response(
@@ -212,7 +216,7 @@ export async function handleRoomCreation(
           "Set-Cookie": serializeCapabilityCookie(
             token,
             roomId,
-            expiresAt,
+            capabilityExpiresAt,
             now,
           ),
         },
@@ -272,13 +276,13 @@ export async function handleRoomJoin(request: NextRequest): Promise<Response> {
   }
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1_000);
+  const capabilityExpiresAt = new Date(now.getTime() + CAPABILITY_MAX_TTL_MS);
   const memberId = `member_${randomUUID().replaceAll("-", "")}`;
   try {
     const roomId = await configured.store.locateJoinableRoom(locatorHash);
     const capability = issueCapability(
       { roomId, memberId, role: "participant" },
-      expiresAt,
+      capabilityExpiresAt,
       configured.pepper,
       now,
     );
@@ -288,7 +292,7 @@ export async function handleRoomJoin(request: NextRequest): Promise<Response> {
       displayName: parsed.data.displayName,
       inviteCodeHash: locatorHash,
       capabilityHash: capability.hash,
-      capabilityExpiresAt: expiresAt,
+      capabilityExpiresAt,
     });
     return new Response(JSON.stringify(result.projection), {
       status: 202,
@@ -297,7 +301,7 @@ export async function handleRoomJoin(request: NextRequest): Promise<Response> {
         "Set-Cookie": serializeCapabilityCookie(
           capability.takeToken(),
           result.roomId,
-          expiresAt,
+          capabilityExpiresAt,
           now,
         ),
       },

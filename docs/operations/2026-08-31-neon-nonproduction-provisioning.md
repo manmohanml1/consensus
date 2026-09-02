@@ -75,11 +75,15 @@ Production environment consumed the old credential.
 
 ## Remaining gates
 
-- Define separate least-privileged runtime and migration roles in CQ-202 before
-  the first migration.
-- Obtain separate owner authorization for the first migration.
-- Verify recovery and teardown with disposable schema/fixtures. Teardown remains
-  a destructive, separately authorized action.
+- CQ-202 defines separate least-privileged runtime and migration roles; create
+  and verify their provider-managed login memberships only as part of an
+  explicitly authorized first-migration operation.
+- Obtain separate owner authorization for the first migration, naming the target
+  and exact commit.
+- CQ-212 adds a localhost-only disposable schema/fixture recovery and teardown
+  rehearsal plus the shared-provider runbook. Its CI evidence does not authorize
+  a Neon restore or teardown; each remains a destructive, separately authorized
+  action.
 
 CQ-201 remains open until recovery/teardown evidence is complete. No Production
 deployment, tag, release, migration, schema, or application code change is

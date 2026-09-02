@@ -51,6 +51,12 @@ DRAFT -> LOBBY -> ROSTER_LOCKED -> CANDIDATES_READY -> VOTING
 
 Transitions are compare-and-set operations against a room revision. Duplicate commands return the existing result. Invalid transitions fail visibly.
 
+The two-hour wall-clock TTL is also authoritative: after it passes, authenticated
+reads project `EXPIRED` even if the stored phase has not been materialized, and
+all commands fail before mutation. `room.end` reaches the same terminal state
+through the command transaction. A separate bounded worker deletes the aggregate
+after its retention deadline; expiry never depends on that worker running.
+
 ## Authority and realtime
 
 Clients submit commands with participant capability, room revision, command id, and participant sequence. The server authenticates, validates, commits, computes any resulting transition, and appends an outbox event in one transaction. Realtime publishes the committed projection. Clients reconcile from the server after reconnect; they never elect a master client.

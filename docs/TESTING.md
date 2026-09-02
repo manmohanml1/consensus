@@ -77,3 +77,15 @@ integrity, and projection privacy checks. The web unit suite separately proves
 same-origin mutation enforcement, bounded bodies, route/body room agreement,
 `no-store` responses, and safe fail-closed behavior when server configuration is
 absent.
+
+CQ-208 integration coverage authenticates a naturally expired room, verifies its
+terminal projection, rejects concurrent mutations without changing revision or
+title, and runs concurrent plus repeated retention sweeps. The deletion assertion
+covers every room-owned table, including stored projections and outbox payloads.
+
+CQ-212 adds a destructive rehearsal that can run only against a localhost
+database whose name contains `test` and only with an explicit environment guard.
+It verifies a consistent PostgreSQL database clone contains the exact migration
+ledger and synthetic fixture, then verifies deletion of the restore database and
+source application schemas. Shared provider credentials are never available to
+this CI job.

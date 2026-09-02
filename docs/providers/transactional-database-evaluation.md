@@ -42,5 +42,7 @@ Neither variable is public, exposed to browser bundles, available to pull-reques
 Teardown is an owner-approved, non-production-only action. First export a sanitized
 schema/fixture proof, verify a restore into a disposable target, revoke both named
 environment variables, then delete the provider project. A teardown is not a
-production deletion plan; CQ-212 adds the production-grade migration, backup,
-restore, and teardown runbook after the schema exists.
+production deletion plan. CQ-212 adds the provider-neutral migration, backup,
+restore, and teardown runbook plus a disposable CI rehearsal. A Production-grade
+recovery promise still requires measured RPO/RTO, paid-capacity review, and a
+separately authorized provider rehearsal.

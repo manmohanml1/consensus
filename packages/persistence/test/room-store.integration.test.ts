@@ -431,9 +431,13 @@ describeDatabase("transactional room command store", () => {
     });
     await admin.query(
       `UPDATE consensus.rooms
-          SET expires_at = created_at + interval '1 millisecond'
+          SET created_at = transaction_timestamp() - interval '3 hours',
+              expires_at = transaction_timestamp() - interval '1 hour'
         WHERE id = 'room_expiry_race1'`,
     );
+    await expect(
+      store.getProjection("room_expiry_race1", expiringToken, pepper),
+    ).resolves.toMatchObject({ phase: "expired", revision: 0 });
     const expiredCommand = {
       ...makeCommand("room.rename", { title: "Too late" }, 0, 1),
       roomId: "room_expiry_race1",
@@ -448,12 +452,198 @@ describeDatabase("transactional room command store", () => {
     expect(expired).toEqual([
       expect.objectContaining({
         status: "rejected",
-        reason: expect.objectContaining({ code: "unauthorized-or-missing" }),
+        reason: expect.objectContaining({ code: "room-expired" }),
       }),
       expect.objectContaining({
         status: "rejected",
-        reason: expect.objectContaining({ code: "unauthorized-or-missing" }),
+        reason: expect.objectContaining({ code: "room-expired" }),
       }),
     ]);
+
+    const unchanged = await admin.query(
+      `SELECT title, revision::int AS revision
+         FROM consensus.rooms
+        WHERE id = 'room_expiry_race1'`,
+    );
+    expect(unchanged.rows[0]).toEqual({ title: "Expiry race", revision: 0 });
+  });
+
+  it("deletes each due aggregate once, including every sensitive child record", async () => {
+    await admin.query(`
+      INSERT INTO consensus.rooms
+        (id, invite_code_hash, title, protocol_version, ruleset_version,
+         target_at, expires_at, deletion_due_at, created_at)
+      VALUES
+        ('room_retention_01', decode('41', 'hex'), 'Delete me', '1.0.0', '1.0.0',
+         now() - interval '9 days', now() - interval '8 days',
+         now() - interval '1 day', now() - interval '10 days');
+
+      INSERT INTO consensus.participants
+        (room_id, id, display_name, role, capability_hash, capability_expires_at,
+         eligible_voter)
+      VALUES
+        ('room_retention_01', 'member_retention1', 'Private name', 'host',
+         decode('42', 'hex'), now() - interval '8 days', true);
+
+      INSERT INTO consensus.constraints
+        (room_id, id, participant_id, kind, value)
+      VALUES
+        ('room_retention_01', 'constraint_ret_01', 'member_retention1',
+         'allergy', '{"sensitive":"value"}');
+
+      INSERT INTO consensus.candidates
+        (room_id, id, name, source, field_provenance, constraint_evidence)
+      VALUES
+        ('room_retention_01', 'candidate_ret_01', 'Private candidate', 'fixture',
+         '{"provider":"private"}', '{"constraint_ret_01":true}');
+
+      INSERT INTO consensus.commands
+        (room_id, command_id, participant_id, idempotency_key, command_type,
+         expected_revision, accepted_revision, participant_sequence, issued_at,
+         payload_hash, result_projection)
+      VALUES
+        ('room_retention_01', 'command_ret_0001', 'member_retention1',
+         'retention:fixture:1', 'vote.submit', 0, 1, 1, now() - interval '8 days',
+         decode(repeat('43', 32), 'hex'), '{"private":"projection"}');
+
+      INSERT INTO consensus.votes
+        (room_id, participant_id, candidate_id, command_id, preference, must_pick)
+      VALUES
+        ('room_retention_01', 'member_retention1', 'candidate_ret_01',
+         'command_ret_0001', 'prefer', false);
+
+      INSERT INTO consensus.decisions
+        (room_id, winner_candidate_id, status, eligible_participant_ids,
+         ruleset_version, reason_codes, scores, resolved_revision)
+      VALUES
+        ('room_retention_01', 'candidate_ret_01', 'decided',
+         '["member_retention1"]', '1.0.0', '["consensus"]',
+         '{"private":"scores"}', 1);
+
+      INSERT INTO consensus.commitments
+        (room_id, participant_id, decision_revision, response)
+      VALUES ('room_retention_01', 'member_retention1', 1, 'in');
+
+      INSERT INTO consensus.outbox_events
+        (id, room_id, aggregate_revision, event_type, event_version, payload)
+      VALUES
+        ('event_retention_01', 'room_retention_01', 1,
+         'room.projection.updated', '1.0.0', '{"private":"event"}');
+    `);
+
+    const sweeps = await Promise.all([
+      store.deleteRoomsDueForDeletion(1),
+      store.deleteRoomsDueForDeletion(1),
+    ]);
+    expect(sweeps.reduce((total, result) => total + result.deleted, 0)).toBe(1);
+    await expect(store.deleteRoomsDueForDeletion(1)).resolves.toEqual({
+      deleted: 0,
+    });
+
+    const room = await admin.query(
+      "SELECT count(*)::int AS count FROM consensus.rooms WHERE id = $1",
+      ["room_retention_01"],
+    );
+    expect(room.rows[0]?.count).toBe(0);
+
+    for (const table of [
+      "participants",
+      "constraints",
+      "candidates",
+      "commands",
+      "votes",
+      "decisions",
+      "commitments",
+      "outbox_events",
+    ]) {
+      const remaining = await admin.query(
+        `SELECT count(*)::int AS count FROM consensus.${table} WHERE room_id = $1`,
+        ["room_retention_01"],
+      );
+      expect(remaining.rows[0]?.count).toBe(0);
+    }
+  });
+
+  it("ends a room irreversibly and only shortens its deletion deadline", async () => {
+    const capabilityExpiresAt = new Date(Date.now() + 60 * 60 * 1_000);
+    const capability = issueCapability(
+      {
+        roomId: "room_end_lifecycle1",
+        memberId: "member_end_host1",
+        role: "host",
+      },
+      capabilityExpiresAt,
+      pepper,
+    );
+    const token = capability.takeToken();
+    const originalDeletionDueAt = new Date(
+      Date.now() + 8 * 24 * 60 * 60 * 1_000,
+    );
+    await store.createRoom({
+      roomId: "room_end_lifecycle1",
+      hostMemberId: "member_end_host1",
+      title: "End lifecycle",
+      hostDisplayName: "Host",
+      targetAt: new Date(Date.now() + 30 * 60 * 1_000).toISOString(),
+      inviteCodeHash: Buffer.alloc(32, 61),
+      hostCapabilityHash: capability.hash,
+      capabilityExpiresAt,
+      expiresAt: capabilityExpiresAt,
+      deletionDueAt: originalDeletionDueAt,
+    });
+    const endCommand = {
+      protocolVersion: ROOM_PROTOCOL_VERSION,
+      commandId: "command_end_room1",
+      idempotencyKey: "room-end:lifecycle:1",
+      roomId: "room_end_lifecycle1",
+      expectedRevision: 0,
+      sequence: 1,
+      issuedAt: new Date().toISOString(),
+      actor: { memberId: "member_end_host1", role: "host" as const },
+      type: "room.end",
+      payload: {},
+    } satisfies RoomCommand;
+
+    const endedAt = Date.now();
+    await expect(
+      store.executeCommand(endCommand, token, pepper),
+    ).resolves.toMatchObject({
+      replayed: false,
+      projection: { phase: "expired", revision: 1 },
+    });
+    await expect(
+      store.executeCommand(endCommand, token, pepper),
+    ).resolves.toMatchObject({
+      replayed: true,
+      projection: { phase: "expired", revision: 1 },
+    });
+    const persisted = await admin.query<{ deletion_due_at: Date }>(
+      "SELECT deletion_due_at FROM consensus.rooms WHERE id = $1",
+      ["room_end_lifecycle1"],
+    );
+    const shortened = persisted.rows[0]!.deletion_due_at.getTime();
+    expect(shortened).toBeLessThan(originalDeletionDueAt.getTime());
+    expect(shortened).toBeGreaterThanOrEqual(
+      endedAt + 7 * 24 * 60 * 60 * 1_000,
+    );
+    expect(shortened).toBeLessThanOrEqual(
+      Date.now() + 7 * 24 * 60 * 60 * 1_000,
+    );
+
+    await expect(
+      store.executeCommand(
+        {
+          ...endCommand,
+          commandId: "command_after_end1",
+          idempotencyKey: "room-end:lifecycle:2",
+          expectedRevision: 1,
+          sequence: 2,
+          type: "room.rename",
+          payload: { title: "Revived" },
+        },
+        token,
+        pepper,
+      ),
+    ).rejects.toMatchObject({ code: "room-expired" });
   });
 });

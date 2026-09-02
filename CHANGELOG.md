@@ -14,6 +14,12 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Authenticated natural-expiry projections, irreversible expiry enforcement,
+  bounded idempotent aggregate deletion, and comprehensive retention race/cascade
+  coverage for CQ-208.
+- A localhost-only disposable PostgreSQL snapshot/restore/teardown rehearsal and
+  owner-gated migration, recovery, retention, and provider teardown runbook for
+  CQ-212.
 - Transactional, idempotent room commands and capability-authorized privacy-minimized projections, with compare-and-set revisions, participant sequences, locked-voter snapshots, same-transaction outbox records, CSRF checks, and disposable PostgreSQL integration coverage.
 - Pending participant admission through non-authoritative locators, explicit host approval/removal and participant departure commands, immutable locked electorates, and duplicate lock/vote/resolve plus expiry-race evidence.
 - Versioned 256-bit anonymous room capabilities with keyed one-way fingerprints, constant-time verification, one-time delivery wrappers, scoped secure-cookie serialization, and cross-room/member/role/expiry tests.

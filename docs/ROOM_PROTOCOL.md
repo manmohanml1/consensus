@@ -42,7 +42,11 @@ non-authoritative reference for a future QR/link; it is neither a capability nor
 a proof of membership. `POST /api/v1/rooms/join` accepts that locator and a
 bounded display name, creates a pending participant, returns `202`, and delivers
 participant authority only as a room-path cookie. Pending authority may read the
-projection but cannot execute commands. Recovery remains CQ-209.
+projection but cannot execute commands. Capabilities live for at most 24 hours;
+the room stops accepting mutations after its two-hour active TTL. During the
+remaining capability lifetime, an authenticated read reports an `expired`
+projection while unauthorized and missing rooms remain indistinguishable.
+Capability replacement/recovery remains CQ-209.
 
 ## Projection boundary
 
@@ -64,6 +68,9 @@ returns `200` plus `Idempotency-Replayed: true`. `GET
 /api/v1/rooms/{roomId}/projection` returns the authorized current projection.
 Both are Node.js request-time routes with `Cache-Control: no-store`.
 
-Recovery, shared-provider migration, realtime delivery, and Production
-activation remain out of scope. CQ-209 must consume the same service boundary
-rather than redefine it. Shared-provider and Production gates remain intact.
+CQ-208 adds bounded aggregate deletion behind an explicit operational switch;
+it does not expose a public deletion endpoint or schedule provider work.
+Capability recovery, shared-provider migration, realtime delivery, and
+Production activation remain out of scope. CQ-209 must consume the same service
+boundary rather than redefine it. Shared-provider and Production gates remain
+intact.
