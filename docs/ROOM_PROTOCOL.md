@@ -18,19 +18,19 @@ Milestone 0.3 introduces a provider-neutral protocol before it introduces a data
 
 Every command includes the protocol version, command id, idempotency key, room id, expected aggregate revision, actor sequence, UTC issue time, actor scope, command type, and a type-specific payload.
 
-| Command               | Required role | Purpose                                                  |
-| --------------------- | ------------- | -------------------------------------------------------- |
-| `room.rename`         | Host          | Change the bounded room title before policy disallows it |
-| `room.end`            | Host          | End the room and begin its deletion lifecycle            |
-| `participant.approve` | Host          | Admit one pending participant before roster lock         |
-| `participant.remove`  | Host          | Mark a pending or active participant as departed         |
-| `participant.leave`   | Participant   | Leave without rewriting a locked electorate              |
-| `roster.lock`         | Host          | Snapshot eligible voters before voting starts            |
-| `candidate.add`       | Host          | Add a normalized candidate reference                     |
-| `candidate.remove`    | Host          | Remove a candidate when the room phase permits           |
-| `vote.submit`         | Participant   | Submit one idempotent preference command                 |
-| `decision.resolve`    | Host          | Request authoritative resolution after completion checks |
-| `commitment.set`      | Participant   | Record post-decision intent separately from the ballot   |
+| Command               | Required role       | Purpose                                                  |
+| --------------------- | ------------------- | -------------------------------------------------------- |
+| `room.rename`         | Host                | Change the bounded room title before policy disallows it |
+| `room.end`            | Host                | End the room and begin its deletion lifecycle            |
+| `participant.approve` | Host                | Admit one pending participant before roster lock         |
+| `participant.remove`  | Host                | Mark a pending or active participant as departed         |
+| `participant.leave`   | Participant         | Leave without rewriting a locked electorate              |
+| `roster.lock`         | Host                | Snapshot eligible voters before voting starts            |
+| `candidate.add`       | Host                | Add a normalized candidate reference                     |
+| `candidate.remove`    | Host                | Remove a candidate when the room phase permits           |
+| `vote.submit`         | Host or participant | Submit one idempotent preference command                 |
+| `decision.resolve`    | Host                | Request authoritative resolution after completion checks |
+| `commitment.set`      | Host or participant | Record post-decision intent separately from the ballot   |
 
 Unknown fields, unsupported versions, invalid roles, invalid identifiers, malformed timestamps, secret-like keys, and payloads over 16 KiB fail before command handling. Limits are deliberately small because a room contains at most eight participants and twelve candidates.
 
