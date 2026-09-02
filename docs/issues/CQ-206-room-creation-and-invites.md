@@ -16,6 +16,8 @@ projection plus a shareable `r1.*` locator and expiry.
   membership. CQ-207 owns participant admission and roster lifecycle.
 - Creation bodies reject secret-like fields, unknown fields, oversized content,
   non-UTC timestamps, and unsupported protocol versions.
+- Anonymous creation requires a matching same-origin `Origin`, preventing a
+  third-party site from silently spending the room-creation quota.
 - Missing capability/database configuration fails closed with a safe 503.
 
 ## Evidence

@@ -82,6 +82,11 @@ function enabled(name: "CONSENSUS_ROOM_CREATION_ENABLED"): boolean {
   return process.env[name] !== "false";
 }
 
+function sameOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  return origin !== null && origin === new URL(request.url).origin;
+}
+
 /** Per-instance privacy-preserving circuit breaker; durable/global limits are CQ-507 work. */
 function mayCreate(request: NextRequest, pepper: Uint8Array): boolean {
   const forwarded = request.headers
@@ -136,6 +141,9 @@ async function readJson(request: NextRequest): Promise<unknown | null> {
 export async function handleRoomCreation(
   request: NextRequest,
 ): Promise<Response> {
+  if (!sameOrigin(request)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
   if (!enabled("CONSENSUS_ROOM_CREATION_ENABLED")) {
     return protocolErrorResponse("temporarily-unavailable");
   }
@@ -240,8 +248,7 @@ export async function handleCommand(
   request: NextRequest,
   roomId: string,
 ): Promise<Response> {
-  const requestOrigin = request.headers.get("origin");
-  if (!requestOrigin || requestOrigin !== new URL(request.url).origin) {
+  if (!sameOrigin(request)) {
     return protocolErrorResponse("unauthorized-or-missing");
   }
   if (!request.headers.get("content-type")?.startsWith("application/json")) {

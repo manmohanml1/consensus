@@ -102,7 +102,10 @@ describe("room command HTTP boundary", () => {
     const response = await handleRoomCreation(
       new NextRequest("https://example.test/api/v1/rooms", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          origin: "https://example.test",
+        },
         body: JSON.stringify({
           protocolVersion: ROOM_PROTOCOL_VERSION,
           title: "Friday dinner",
@@ -113,5 +116,24 @@ describe("room command HTTP boundary", () => {
     );
     expect(response.status).toBe(503);
     expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("rejects cross-origin anonymous creation", async () => {
+    const response = await handleRoomCreation(
+      new NextRequest("https://example.test/api/v1/rooms", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://attacker.test",
+        },
+        body: JSON.stringify({
+          protocolVersion: ROOM_PROTOCOL_VERSION,
+          title: "Friday dinner",
+          hostDisplayName: "Maya",
+          targetAt: "2026-09-02T23:00:00.000Z",
+        }),
+      }),
+    );
+    expect(response.status).toBe(404);
   });
 });
