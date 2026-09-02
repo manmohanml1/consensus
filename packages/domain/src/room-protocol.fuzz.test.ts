@@ -10,8 +10,13 @@ import {
 
 const DEFAULT_CASES = 256;
 const MAX_CASES = 10_000;
+const environment = (
+  globalThis as {
+    process?: { env?: Readonly<Record<string, string | undefined>> };
+  }
+).process?.env;
 const requestedCases = Number.parseInt(
-  process.env.CONSENSUS_FUZZ_CASES ?? `${DEFAULT_CASES}`,
+  environment?.CONSENSUS_FUZZ_CASES ?? `${DEFAULT_CASES}`,
   10,
 );
 const fuzzCases = Number.isSafeInteger(requestedCases)
