@@ -28,13 +28,14 @@ export interface CapabilityScope {
 export interface StoredCapability extends CapabilityScope {
   hash: Uint8Array;
   expiresAt: Date;
-  status: "active" | "left";
+  status: "pending" | "active" | "left";
 }
 
 export interface CapabilityExpectation {
   roomId: string;
   memberId?: string;
   role?: CapabilityRole;
+  allowPending?: boolean;
 }
 
 export class IssuedCapability {
@@ -190,7 +191,8 @@ export function authorizeCapability(
   );
   const active = Boolean(
     stored &&
-    stored.status === "active" &&
+    (stored.status === "active" ||
+      (expected.allowPending === true && stored.status === "pending")) &&
     stored.expiresAt.getTime() > now.getTime(),
   );
 

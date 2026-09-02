@@ -209,4 +209,251 @@ describeDatabase("transactional room command store", () => {
       Buffer.from(capability.hash),
     );
   });
+
+  it("serializes join, approval, roster lock, and dropout without changing the electorate", async () => {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1_000);
+    const host = issueCapability(
+      {
+        roomId: "room_roster_0001",
+        memberId: "member_roster_host",
+        role: "host",
+      },
+      expiresAt,
+      pepper,
+    );
+    const hostToken = host.takeToken();
+    await store.createRoom({
+      roomId: "room_roster_0001",
+      hostMemberId: "member_roster_host",
+      title: "Roster dinner",
+      hostDisplayName: "Host",
+      targetAt: new Date(Date.now() + 30 * 60 * 1_000).toISOString(),
+      inviteCodeHash: Buffer.alloc(32, 9),
+      hostCapabilityHash: host.hash,
+      capabilityExpiresAt: expiresAt,
+      expiresAt,
+      deletionDueAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000),
+    });
+    const participant = issueCapability(
+      {
+        roomId: "room_roster_0001",
+        memberId: "member_roster_guest",
+        role: "participant",
+      },
+      expiresAt,
+      pepper,
+    );
+    const participantToken = participant.takeToken();
+    const joined = await store.joinRoom({
+      roomId: "room_roster_0001",
+      memberId: "member_roster_guest",
+      displayName: "Guest",
+      inviteCodeHash: Buffer.alloc(32, 9),
+      capabilityHash: participant.hash,
+      capabilityExpiresAt: expiresAt,
+    });
+    expect(joined.projection.participants.at(-1)?.status).toBe("pending");
+    await expect(
+      store.getProjection("room_roster_0001", participantToken, pepper),
+    ).resolves.toMatchObject({ revision: 1 });
+
+    const command = (
+      type: RoomCommand["type"],
+      payload: RoomCommand["payload"],
+      expectedRevision: number,
+      sequence: number,
+      actor: RoomCommand["actor"],
+    ) =>
+      ({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        commandId: `command_roster_${expectedRevision}_${sequence}`,
+        idempotencyKey: `room-roster:${expectedRevision}:${sequence}`,
+        roomId: "room_roster_0001",
+        expectedRevision,
+        sequence,
+        issuedAt: new Date().toISOString(),
+        actor,
+        type,
+        payload,
+      }) as RoomCommand;
+
+    await store.executeCommand(
+      command(
+        "participant.approve",
+        { participantId: "member_roster_guest" },
+        1,
+        1,
+        { memberId: "member_roster_host", role: "host" },
+      ),
+      hostToken,
+      pepper,
+    );
+    await store.executeCommand(
+      command("roster.lock", {}, 2, 2, {
+        memberId: "member_roster_host",
+        role: "host",
+      }),
+      hostToken,
+      pepper,
+    );
+    const left = await store.executeCommand(
+      command("participant.leave", {}, 3, 1, {
+        memberId: "member_roster_guest",
+        role: "participant",
+      }),
+      participantToken,
+      pepper,
+    );
+    expect(left.projection.participants).toContainEqual(
+      expect.objectContaining({ id: "member_roster_guest", status: "left" }),
+    );
+    expect(
+      left.projection.ballotProgress.map(({ participantId }) => participantId),
+    ).toEqual(["member_roster_host", "member_roster_guest"]);
+    await expect(
+      store.joinRoom({
+        roomId: "room_roster_0001",
+        memberId: "member_roster_late",
+        displayName: "Late",
+        inviteCodeHash: Buffer.alloc(32, 9),
+        capabilityHash: Buffer.alloc(32, 8),
+        capabilityExpiresAt: expiresAt,
+      }),
+    ).rejects.toMatchObject({ code: "unauthorized-or-missing" });
+  });
+
+  it("serializes duplicate lock, vote, resolve, and expiry races", async () => {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1_000);
+    const host = issueCapability(
+      {
+        roomId: "room_races_00001",
+        memberId: "member_races_host",
+        role: "host",
+      },
+      expiresAt,
+      pepper,
+    );
+    const token = host.takeToken();
+    await store.createRoom({
+      roomId: "room_races_00001",
+      hostMemberId: "member_races_host",
+      title: "Race dinner",
+      hostDisplayName: "Host",
+      targetAt: new Date(Date.now() + 30 * 60 * 1_000).toISOString(),
+      inviteCodeHash: Buffer.alloc(32, 12),
+      hostCapabilityHash: host.hash,
+      capabilityExpiresAt: expiresAt,
+      expiresAt,
+      deletionDueAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000),
+    });
+    await admin.query(
+      `INSERT INTO consensus.candidates
+         (room_id, id, name, source, field_provenance, constraint_evidence)
+       VALUES ('room_races_00001', 'candidate_race_01', 'Race Cafe', 'fixture',
+               '{}', '{}')`,
+    );
+    const makeCommand = (
+      type: RoomCommand["type"],
+      payload: RoomCommand["payload"],
+      revision: number,
+      sequence: number,
+    ) =>
+      ({
+        protocolVersion: ROOM_PROTOCOL_VERSION,
+        commandId: `command_race_${revision}_${sequence}`,
+        idempotencyKey: `room-race:${revision}:${sequence}`,
+        roomId: "room_races_00001",
+        expectedRevision: revision,
+        sequence,
+        issuedAt: new Date().toISOString(),
+        actor: { memberId: "member_races_host", role: "host" },
+        type,
+        payload,
+      }) as RoomCommand;
+
+    for (const command of [
+      makeCommand("roster.lock", {}, 0, 1),
+      makeCommand(
+        "vote.submit",
+        {
+          candidateId: "candidate_race_01",
+          preference: "prefer",
+          mustPick: false,
+        },
+        1,
+        2,
+      ),
+      makeCommand("decision.resolve", {}, 2, 3),
+    ]) {
+      const results = await Promise.all([
+        store.executeCommand(command, token, pepper),
+        store.executeCommand(command, token, pepper),
+      ]);
+      expect(results.filter(({ replayed }) => replayed)).toHaveLength(1);
+      expect(results.filter(({ replayed }) => !replayed)).toHaveLength(1);
+    }
+    const evidence = await admin.query(
+      `SELECT
+         (SELECT count(*)::int FROM consensus.commands WHERE room_id = $1) AS commands,
+         (SELECT count(*)::int FROM consensus.votes WHERE room_id = $1) AS votes,
+         (SELECT count(*)::int FROM consensus.decisions WHERE room_id = $1) AS decisions,
+         (SELECT revision::int FROM consensus.rooms WHERE id = $1) AS revision`,
+      ["room_races_00001"],
+    );
+    expect(evidence.rows[0]).toEqual({
+      commands: 3,
+      votes: 1,
+      decisions: 1,
+      revision: 3,
+    });
+
+    const expiring = issueCapability(
+      {
+        roomId: "room_expiry_race1",
+        memberId: "member_expiry_host",
+        role: "host",
+      },
+      expiresAt,
+      pepper,
+    );
+    const expiringToken = expiring.takeToken();
+    await store.createRoom({
+      roomId: "room_expiry_race1",
+      hostMemberId: "member_expiry_host",
+      title: "Expiry race",
+      hostDisplayName: "Host",
+      targetAt: new Date(Date.now() + 30 * 60 * 1_000).toISOString(),
+      inviteCodeHash: Buffer.alloc(32, 13),
+      hostCapabilityHash: expiring.hash,
+      capabilityExpiresAt: expiresAt,
+      expiresAt,
+      deletionDueAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000),
+    });
+    await admin.query(
+      `UPDATE consensus.rooms
+          SET expires_at = created_at + interval '1 millisecond'
+        WHERE id = 'room_expiry_race1'`,
+    );
+    const expiredCommand = {
+      ...makeCommand("room.rename", { title: "Too late" }, 0, 1),
+      roomId: "room_expiry_race1",
+      commandId: "command_expired_01",
+      idempotencyKey: "room-expired:rename:1",
+      actor: { memberId: "member_expiry_host", role: "host" as const },
+    } as RoomCommand;
+    const expired = await Promise.allSettled([
+      store.executeCommand(expiredCommand, expiringToken, pepper),
+      store.executeCommand(expiredCommand, expiringToken, pepper),
+    ]);
+    expect(expired).toEqual([
+      expect.objectContaining({
+        status: "rejected",
+        reason: expect.objectContaining({ code: "unauthorized-or-missing" }),
+      }),
+      expect.objectContaining({
+        status: "rejected",
+        reason: expect.objectContaining({ code: "unauthorized-or-missing" }),
+      }),
+    ]);
+  });
 });

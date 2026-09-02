@@ -4,12 +4,14 @@ import {
   ROOM_PROTOCOL_VERSION,
   createRoomProtocolError,
   parseCreateRoomRequest,
+  parseJoinRoomRequest,
   parseRoomCommand,
   type RoomProtocolErrorCode,
 } from "@consensus/domain";
 import { PostgresRoomStore, RoomStoreError } from "@consensus/persistence";
 import {
   CAPABILITY_COOKIE_NAME,
+  fingerprintRoomLocator,
   issueCapability,
   issueRoomLocator,
   parseCapabilityPepper,
@@ -26,6 +28,7 @@ let store: PostgresRoomStore | undefined;
 const attempts = new Map<string, { startedAt: number; count: number }>();
 const CREATE_WINDOW_MS = 10 * 60 * 1_000;
 const CREATE_MAX_ATTEMPTS = 5;
+const JOIN_MAX_ATTEMPTS = 20;
 const MAX_CREATE_BUCKETS = 1_000;
 
 function correlationId(): string {
@@ -78,7 +81,9 @@ function configuredStore(): {
   }
 }
 
-function enabled(name: "CONSENSUS_ROOM_CREATION_ENABLED"): boolean {
+function enabled(
+  name: "CONSENSUS_ROOM_CREATION_ENABLED" | "CONSENSUS_ROOM_JOIN_ENABLED",
+): boolean {
   return process.env[name] !== "false";
 }
 
@@ -216,6 +221,91 @@ export async function handleRoomCreation(
   } catch (error) {
     if (error instanceof RoomStoreError)
       return protocolErrorResponse(error.code);
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+}
+
+export async function handleRoomJoin(request: NextRequest): Promise<Response> {
+  if (!sameOrigin(request)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+  if (!enabled("CONSENSUS_ROOM_JOIN_ENABLED")) {
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+  const value = await readJson(request);
+  const parsed =
+    value === null ? { success: false as const } : parseJoinRoomRequest(value);
+  if (!parsed.success) return protocolErrorResponse("unauthorized-or-missing");
+  const configured = configuredStore();
+  if (!configured) return protocolErrorResponse("temporarily-unavailable");
+
+  const source =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  const locatorHash = fingerprintRoomLocator(
+    parsed.data.locator,
+    configured.pepper,
+  );
+  const joinBucket = createHmac("sha256", configured.pepper)
+    .update("consensus:join-rate-limit:v1\0")
+    .update(source)
+    .update(locatorHash)
+    .digest("base64url");
+  const nowMs = Date.now();
+  const current = attempts.get(joinBucket);
+  if (
+    current &&
+    nowMs - current.startedAt < CREATE_WINDOW_MS &&
+    current.count >= JOIN_MAX_ATTEMPTS
+  ) {
+    return protocolErrorResponse("rate-limited");
+  }
+  if (!current || nowMs - current.startedAt >= CREATE_WINDOW_MS) {
+    if (!current && attempts.size >= MAX_CREATE_BUCKETS) {
+      const oldest = attempts.keys().next().value;
+      if (oldest) attempts.delete(oldest);
+    }
+    attempts.set(joinBucket, { startedAt: nowMs, count: 1 });
+  } else {
+    current.count += 1;
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1_000);
+  const memberId = `member_${randomUUID().replaceAll("-", "")}`;
+  try {
+    const roomId = await configured.store.locateJoinableRoom(locatorHash);
+    const capability = issueCapability(
+      { roomId, memberId, role: "participant" },
+      expiresAt,
+      configured.pepper,
+      now,
+    );
+    const result = await configured.store.joinRoom({
+      roomId,
+      memberId,
+      displayName: parsed.data.displayName,
+      inviteCodeHash: locatorHash,
+      capabilityHash: capability.hash,
+      capabilityExpiresAt: expiresAt,
+    });
+    return new Response(JSON.stringify(result.projection), {
+      status: 202,
+      headers: {
+        ...noStoreHeaders,
+        "Set-Cookie": serializeCapabilityCookie(
+          capability.takeToken(),
+          result.roomId,
+          expiresAt,
+          now,
+        ),
+      },
+    });
+  } catch (error) {
+    if (error instanceof RoomStoreError) {
+      return protocolErrorResponse("unauthorized-or-missing");
+    }
     return protocolErrorResponse("temporarily-unavailable");
   }
 }

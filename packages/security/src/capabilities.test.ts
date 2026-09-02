@@ -146,6 +146,23 @@ describe("room capabilities", () => {
     expect(authorizeCapability(token, pepper, null, scope, now)).toBeNull();
   });
 
+  it("allows pending members to read only when the caller explicitly opts in", () => {
+    const capability = issue();
+    const token = capability.takeToken();
+    const pending = { ...stored(capability.hash), status: "pending" as const };
+
+    expect(authorizeCapability(token, pepper, pending, scope, now)).toBeNull();
+    expect(
+      authorizeCapability(
+        token,
+        pepper,
+        pending,
+        { ...scope, allowPending: true },
+        now,
+      ),
+    ).toEqual(scope);
+  });
+
   it("serializes a room-path-scoped secure cookie and deterministic clearing cookie", () => {
     const capability = issue();
     const token = capability.takeToken();

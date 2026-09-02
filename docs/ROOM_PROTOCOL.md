@@ -18,16 +18,19 @@ Milestone 0.3 introduces a provider-neutral protocol before it introduces a data
 
 Every command includes the protocol version, command id, idempotency key, room id, expected aggregate revision, actor sequence, UTC issue time, actor scope, command type, and a type-specific payload.
 
-| Command            | Required role | Purpose                                                  |
-| ------------------ | ------------- | -------------------------------------------------------- |
-| `room.rename`      | Host          | Change the bounded room title before policy disallows it |
-| `room.end`         | Host          | End the room and begin its deletion lifecycle            |
-| `roster.lock`      | Host          | Snapshot eligible voters before voting starts            |
-| `candidate.add`    | Host          | Add a normalized candidate reference                     |
-| `candidate.remove` | Host          | Remove a candidate when the room phase permits           |
-| `vote.submit`      | Participant   | Submit one idempotent preference command                 |
-| `decision.resolve` | Host          | Request authoritative resolution after completion checks |
-| `commitment.set`   | Participant   | Record post-decision intent separately from the ballot   |
+| Command               | Required role | Purpose                                                  |
+| --------------------- | ------------- | -------------------------------------------------------- |
+| `room.rename`         | Host          | Change the bounded room title before policy disallows it |
+| `room.end`            | Host          | End the room and begin its deletion lifecycle            |
+| `participant.approve` | Host          | Admit one pending participant before roster lock         |
+| `participant.remove`  | Host          | Mark a pending or active participant as departed         |
+| `participant.leave`   | Participant   | Leave without rewriting a locked electorate              |
+| `roster.lock`         | Host          | Snapshot eligible voters before voting starts            |
+| `candidate.add`       | Host          | Add a normalized candidate reference                     |
+| `candidate.remove`    | Host          | Remove a candidate when the room phase permits           |
+| `vote.submit`         | Participant   | Submit one idempotent preference command                 |
+| `decision.resolve`    | Host          | Request authoritative resolution after completion checks |
+| `commitment.set`      | Participant   | Record post-decision intent separately from the ballot   |
 
 Unknown fields, unsupported versions, invalid roles, invalid identifiers, malformed timestamps, secret-like keys, and payloads over 16 KiB fail before command handling. Limits are deliberately small because a room contains at most eight participants and twelve candidates.
 
@@ -36,7 +39,10 @@ Unknown fields, unsupported versions, invalid roles, invalid identifiers, malfor
 validated projection and `{ invitation: { locator, expiresAt } }`; the host
 capability is delivered only through `Set-Cookie`. The locator is a random
 non-authoritative reference for a future QR/link; it is neither a capability nor
-a proof of membership. Join/recovery request contracts remain CQ-207 and CQ-209.
+a proof of membership. `POST /api/v1/rooms/join` accepts that locator and a
+bounded display name, creates a pending participant, returns `202`, and delivers
+participant authority only as a room-path cookie. Pending authority may read the
+projection but cannot execute commands. Recovery remains CQ-209.
 
 ## Projection boundary
 
@@ -58,7 +64,6 @@ returns `200` plus `Idempotency-Replayed: true`. `GET
 /api/v1/rooms/{roomId}/projection` returns the authorized current projection.
 Both are Node.js request-time routes with `Cache-Control: no-store`.
 
-Joining, recovery, shared-provider migration, realtime delivery, and Production
-activation remain out of scope. CQ-207 and CQ-209 must consume the same service
-boundary rather than redefine it. Shared-provider and Production gates remain
-intact.
+Recovery, shared-provider migration, realtime delivery, and Production
+activation remain out of scope. CQ-209 must consume the same service boundary
+rather than redefine it. Shared-provider and Production gates remain intact.

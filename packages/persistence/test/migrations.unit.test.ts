@@ -8,7 +8,7 @@ describe("migration discovery", () => {
   it("loads repository migrations in a contiguous order with checksums", async () => {
     const migrations = await loadMigrations();
 
-    expect(migrations.map(({ version }) => version)).toEqual([1, 2, 3]);
+    expect(migrations.map(({ version }) => version)).toEqual([1, 2, 3, 4]);
     expect(
       migrations.every(({ checksum }) => /^[a-f0-9]{64}$/.test(checksum)),
     ).toBe(true);

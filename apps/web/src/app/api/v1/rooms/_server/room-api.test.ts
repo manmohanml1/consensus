@@ -5,6 +5,7 @@ import {
   handleCommand,
   handleProjection,
   handleRoomCreation,
+  handleRoomJoin,
 } from "./room-api";
 
 const originalDatabaseUrl = process.env.CONSENSUS_DATABASE_URL;
@@ -135,5 +136,26 @@ describe("room command HTTP boundary", () => {
       }),
     );
     expect(response.status).toBe(404);
+  });
+
+  it("rejects cross-origin joins without revealing locator validity", async () => {
+    const response = await handleRoomJoin(
+      new NextRequest("https://example.test/api/v1/rooms/join", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://attacker.test",
+        },
+        body: JSON.stringify({
+          protocolVersion: ROOM_PROTOCOL_VERSION,
+          locator: "r1.short",
+          displayName: "Sam",
+        }),
+      }),
+    );
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({
+      code: "unauthorized-or-missing",
+    });
   });
 });

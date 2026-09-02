@@ -4,6 +4,11 @@ CQ-202 uses portable PostgreSQL SQL and a small checksum-protected runner in
 `packages/persistence`. This runbook describes the contract; it does not authorize
 any provider mutation.
 
+Migration `0004_participant_roster_lifecycle.sql` adds the explicit `pending`
+participant state and a partial pending-roster index. It is forward-only and
+must pass the same separately authorized shared-provider gate as earlier files;
+its presence in a PR does not authorize applying it to Neon.
+
 ## Roles and credentials
 
 - An administrator runs `migrations/bootstrap/roles.sql` once. It creates only
