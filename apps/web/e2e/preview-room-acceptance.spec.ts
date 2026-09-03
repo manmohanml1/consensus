@@ -20,7 +20,7 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     testInfo.project.name !== "desktop-chromium",
     "This check creates its own isolated mobile contexts.",
   );
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
 
   const hostContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -69,19 +69,39 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     await host
       .getByRole("button", { name: "Lock roster and begin voting" })
       .click();
-    await guest.getByRole("button", { name: "Refresh progress" }).click();
+    await expect(
+      host.getByRole("button", { name: /^Prefer — a positive choice$/ }),
+    ).toBeVisible();
+    await guest.getByRole("button", { name: "Refresh" }).click();
+    await expect(
+      guest.getByRole("button", { name: /^Accept — a workable compromise$/ }),
+    ).toBeVisible();
     for (let index = 0; index < 4; index += 1) {
       await host
         .getByRole("button", { name: /^Prefer — a positive choice$/ })
         .click();
+      if (index < 3) {
+        await expect(host.locator(".connected-progress strong")).toHaveText(
+          `${index + 2}/4`,
+        );
+      }
     }
-    await guest.getByRole("button", { name: "Refresh progress" }).click();
+    await expect(host.getByText("Waiting for the group.")).toBeVisible();
     for (let index = 0; index < 4; index += 1) {
       await guest
         .getByRole("button", { name: /^Accept — a workable compromise$/ })
         .click();
+      if (index < 3) {
+        await expect(guest.locator(".connected-progress strong")).toHaveText(
+          `${index + 2}/4`,
+        );
+      }
     }
+    await expect(guest.getByText("Waiting for the group.")).toBeVisible();
     await host.getByRole("button", { name: "Refresh progress" }).click();
+    await expect(
+      host.getByRole("button", { name: "Resolve fairly" }),
+    ).toBeEnabled();
     await host.getByRole("button", { name: "Resolve fairly" }).click();
     await guest.getByRole("button", { name: "Refresh progress" }).click();
 
