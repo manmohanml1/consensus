@@ -34,7 +34,12 @@ existing `unauthorized-or-missing` public error. Raw tokens are one-time deliver
 values, redacted from ordinary serialization/inspection, excluded from protocol
 payloads, and carried only in an HTTP-only secure room-path cookie.
 
-The complete secure-room review is the milestone 0.3 exit gate in CQ-214. Independent review is repeated before public beta and public launch.
+The complete secure-room review is the milestone 0.3 exit gate in CQ-214. The
+[recorded exit review](issues/CQ-214-secure-room-exit-review.md) conditionally
+passes the backend application-security surface. CQ-212's hosted
+recovery/teardown evidence is complete; the milestone remains blocked until
+CQ-215's connected two-browser journey is complete. Independent review is
+repeated before public beta and public launch.
 
 Authorized projections are constructed from selected normalized columns and
 validated again against the protocol. They expose constraint identifiers and

@@ -3,7 +3,7 @@
 - GitHub issue: [#114](https://github.com/manmohanml1/consensus/issues/114)
 - Type: security and operations
 - Phase: 0.3.0 governance
-- Status: blocked on an owner-authorized rollback rehearsal
+- Status: complete; live Production rollback rehearsal is deferred to CQ-908
 
 ## Outcome
 
@@ -17,7 +17,7 @@ Consensus has architecture-appropriate DevSecOps controls: immutable workflow de
 - Vercel merge and promotion behavior matches the repository records.
 - Owner setup, verification, rollback, cost, and secrets are documented.
 - Container, Kubernetes, Terraform, automatic publishing, and duplicate scanners remain deferred until justified.
-- PR #113 was merged only after explicit owner authorization. The staged Production promotion completed on 2026-08-31 and is recorded in `docs/operations/2026-08-31-production-promotion.md`. The remaining acceptance proof is a separately owner-authorized rollback-and-restore rehearsal.
+- PR #113 was merged only after explicit owner authorization. The staged Production promotion completed on 2026-08-31 and is recorded in `docs/operations/2026-08-31-production-promotion.md`. A live Production rollback was never required by CQ-198's acceptance criteria and remains correctly deferred to CQ-908's final disaster-recovery rehearsal and a separate exact owner authorization.
 
 ## References
 

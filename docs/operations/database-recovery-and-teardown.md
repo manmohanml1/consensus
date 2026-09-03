@@ -37,6 +37,15 @@ This proves schema/fixture recoverability and destructive teardown mechanics. It
 does not prove a hosted provider backup, cross-region recovery, or Production
 RPO/RTO.
 
+## Hosted non-production rehearsal
+
+The owner-authorized Neon rehearsal on 2026-09-03 created one temporary child
+branch from the current shared non-production `main` recovery point, verified
+the five migration ledger entries, runtime role separation, one synthetic
+aggregate, cascade deletion, and zero follow-up counts, then deleted only that
+temporary branch. The default branch and provider project remained active. See
+[the non-secret evidence record](2026-09-03-neon-hosted-recovery-rehearsal.md).
+
 ## Before an authorized shared migration
 
 1. Record the exact environment, commit SHA, ordered migration names/checksums,

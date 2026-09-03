@@ -3,9 +3,9 @@
 **CQ:** CQ-201 / GitHub #10  
 **Owner authorization:** 2026-08-31  
 **Provisioning date:** 2026-08-31 (America/New_York)  
-**Status:** In progress; the first owner-authorized shared migration completed on
-2026-09-02 (America/New_York). Runtime activation, restore evidence, and teardown
-remain separately gated.
+**Status:** Provider selection, provisioning, migration, least-privilege runtime
+access, protected Preview activation, and hosted restore-branch rehearsal are
+complete. Deleting the provider project remains a separate destructive gate.
 
 ## Resource
 
@@ -48,7 +48,9 @@ the managed unpooled value. Vercel stores it as a Secret in two entries:
 There is no Production entry.
 
 No current values are recorded in Git, documentation, issue comments, terminal
-logs, or CI. The application does not consume these variables yet.
+logs, or CI. Preview consumes the pooled URL through the server-only room API;
+Development has the URL but no shared capability pepper, and Production has no
+application database values.
 
 ## Connectivity evidence
 
@@ -102,17 +104,21 @@ room data was inserted during this schema-only operation.
 
 ## Remaining gates
 
-- Provision and verify a distinct pooled runtime login with only
-  `consensus_runtime` membership before enabling application use of
-  `CONSENSUS_DATABASE_URL`. That runtime activation remains separately owner
-  authorized.
+- A distinct pooled login named `consensus_runtime_app` now inherits only
+  `consensus_runtime`. Verification recorded login enabled, superuser/database
+  creation/role creation disabled, `consensus_migrator` membership absent,
+  database connect present, database and `public` schema creation absent, and
+  `consensus` schema usage present.
+- The owner-authorized protected Preview smoke created one synthetic lobby room,
+  returned HTTP `201`, and then deleted the aggregate and its cascaded test rows;
+  the follow-up count was zero. See the dedicated activation record.
 - CQ-212 adds a localhost-only disposable schema/fixture recovery and teardown
-  rehearsal plus the shared-provider runbook. Its CI evidence does not authorize
-  a Neon restore or teardown; each remains a destructive, separately authorized
-  action.
+  rehearsal plus the shared-provider runbook. Its separately authorized hosted
+  rehearsal was completed on 2026-09-03 and deleted only its temporary branch.
 
-CQ-201 remains open until recovery/teardown evidence is complete. No Production
-deployment, tag, release, migration, schema, or application code change is
+CQ-201 provider selection and non-production activation and CQ-212 hosted
+restore-branch evidence are complete. No full provider-project teardown,
+Production deployment, tag, release, or Production application configuration is
 authorized by this record.
 
 ## Sources checked 2026-08-31

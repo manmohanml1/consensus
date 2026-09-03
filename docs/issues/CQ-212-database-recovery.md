@@ -4,6 +4,9 @@
 **Type:** operations  
 **Depends on:** CQ-201, CQ-202
 
+**Status:** complete; provider-neutral and hosted Neon restore/teardown evidence
+verified
+
 Keep database changes forward-only and make restore/teardown procedures
 repeatable without exposing credentials or room data.
 
@@ -26,3 +29,12 @@ The CI rehearsal proves the provider-neutral procedure against disposable data.
 Applying migrations to the shared Neon project, creating a provider recovery
 point, running a shared restore, deleting the Neon resource, configuring
 Production, or promoting Production each requires its own explicit authorization.
+
+The owner authorized a hosted rehearsal on 2026-09-03. A temporary child branch
+of shared non-production `main` inherited the current PostgreSQL recovery point,
+verified migrations 0001–0005 and least-privilege runtime separation, created and
+deleted one synthetic room aggregate, and was then permanently deleted. The
+branch list returned to the single default `main` branch. See
+[the hosted recovery record](../operations/2026-09-03-neon-hosted-recovery-rehearsal.md).
+This evidence does not authorize deleting the Neon project or changing
+Production.

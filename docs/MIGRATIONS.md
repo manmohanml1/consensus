@@ -88,6 +88,11 @@ through 0005 then committed with their repository checksums in the migration
 ledger. The non-secret operational evidence is recorded in
 [the provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md).
 
-This proves schema application only. It does not authorize a separate pooled
-runtime login, application consumption of the database URL, restore, teardown,
-Preview promotion, Production credentials, a tag, or a release.
+That operation proved schema application only. The owner later authorized a
+distinct least-privilege runtime login, protected Preview smoke, and hosted
+restore-branch rehearsal; their non-secret evidence is recorded in the
+[runtime activation record](operations/2026-09-03-neon-preview-runtime-activation.md)
+and
+[hosted recovery record](operations/2026-09-03-neon-hosted-recovery-rehearsal.md).
+Neither operation authorizes deleting the provider project, Production
+credentials, Production promotion, a tag, or a release.
