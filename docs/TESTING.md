@@ -99,3 +99,29 @@ It verifies a consistent PostgreSQL database clone contains the exact migration
 ledger and synthetic fixture, then verifies deletion of the restore database and
 source application schemas. Shared provider credentials are never available to
 this CI job.
+
+## Deterministic boundary fuzzing
+
+The required `pnpm verify` gate runs 256 dependency-free, deterministic JSON
+cases through every public room-protocol parser. It also checks a named
+regression corpus for oversized, deeply nested, prototype-shaped, and
+authentication-material inputs. Every assertion reports the generating seed;
+when a failure is found, reduce it to the smallest JSON value and add that value
+to `regressionCorpus` in `packages/domain/src/room-protocol.fuzz.test.ts` before
+fixing the parser.
+
+The weekly `Consensus Security Fuzz` workflow and its manual dispatch run the
+same bounded harness with 10,000 cases. A local reproduction can use the exact
+same depth:
+
+```powershell
+$env:CONSENSUS_FUZZ_CASES = "10000"
+pnpm --filter @consensus/domain test -- room-protocol.fuzz.test.ts
+```
+
+Decision properties additionally vary candidate order and preference pressure
+while proving that hard constraints dominate scoring. Capability properties vary
+room, member, and role scopes and prove that only the exact stored scope is
+authorized. Duplicate-command, stale-revision, and sequence-conflict semantics
+remain covered against disposable PostgreSQL because they depend on transactional
+state rather than input parsing.

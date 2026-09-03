@@ -66,6 +66,12 @@ Future deployable changes follow the promotion contract below. Most merges need 
 
 ## Intended environments
 
+The application HTML is dynamically rendered because the strict script CSP uses
+a unique request nonce. Static assets remain cacheable, but HTML must not be
+converted back to static generation or edge-cached without a reviewed hash/SRI
+design. Production `script-src` excludes `unsafe-inline`; Development adds only
+`unsafe-eval` for framework debugging.
+
 | Environment | Purpose                     | Data boundary                               |
 | ----------- | --------------------------- | ------------------------------------------- |
 | Development | Local domain/UI work        | Sample fixtures only until 0.3              |

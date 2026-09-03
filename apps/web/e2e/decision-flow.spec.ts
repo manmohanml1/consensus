@@ -107,6 +107,13 @@ test("publishes the deployment security-header baseline", async ({
   const headers = response.headers();
 
   expect(headers["content-security-policy"]).toContain("default-src 'self'");
+  const nonce = headers["content-security-policy"].match(
+    /script-src 'self' 'nonce-([A-Za-z0-9+/=]+)' 'strict-dynamic'/,
+  );
+  expect(nonce?.[1]).toBeTruthy();
+  expect(headers["content-security-policy"]).not.toContain(
+    "script-src 'self' 'unsafe-inline'",
+  );
   expect(headers["cross-origin-opener-policy"]).toBe("same-origin");
   expect(headers["cross-origin-resource-policy"]).toBe("same-origin");
   expect(headers["permissions-policy"]).toContain("geolocation=()");
@@ -115,6 +122,13 @@ test("publishes the deployment security-header baseline", async ({
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["x-frame-options"]).toBe("DENY");
   expect(headers["x-permitted-cross-domain-policies"]).toBe("none");
+
+  const nextResponse = await request.get("/");
+  const nextNonce = nextResponse
+    .headers()
+    ["content-security-policy"].match(/'nonce-([A-Za-z0-9+/=]+)'/)?.[1];
+  expect(nextNonce).toBeTruthy();
+  expect(nextNonce).not.toBe(nonce?.[1]);
 });
 
 test("keeps the setup action within supported responsive widths", async ({

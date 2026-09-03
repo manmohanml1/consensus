@@ -6,6 +6,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Replaced Production `script-src 'unsafe-inline'` with a unique per-request
+  nonce and `strict-dynamic`, with browser regression coverage.
 - Serialized the small Playwright browser matrix to prevent recurring local and
   constrained-runner hydration races during the release gate.
 - Reconciled roadmap, milestone, deployment, governance, and operational records with merged `main`, and added a required documentation-state validator to prevent recurring drift.
