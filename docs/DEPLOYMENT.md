@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. The fixture-only reference application is live at `https://consensus-web-navy.vercel.app/`. No database, realtime integration, custom domain, production data, or application-runtime secret has been created. GitHub's protected `production` environment contains only the Vercel deployment credentials described below.
+Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. The public site at `https://consensus-web-navy.vercel.app/` remains a fixture-only reference deployment. A shared **non-production** Neon database has been provisioned and migrations `0001`–`0005` are applied; its server-only connection-secret names exist only in Vercel Development and Preview. There is still no distinct pooled runtime login, capability pepper, realtime integration, custom domain, production database/data, or Production application-runtime secret. Consequently private room APIs fail closed and Production remains fixture-only. GitHub's protected `production` environment contains only the Vercel deployment credentials described below.
 
 The 2026-08-28 deployment audit found that Vercel Git integration created Preview deployments for pull-request commits and automatically created Production deployments for merged `main` commits. That behavior did not match the earlier manual-promotion documentation. ADR 0011 corrects the boundary: pull requests retain automatic Previews, and the Vercel project setting **Production → Branch Tracking → Auto-assign Custom Production Domains** remains disabled so merged `main` builds are staged Production candidates. Only the owner-dispatched promotion workflow may move the production alias. This provider-side setting—not `vercel.json`—is the authoritative control.
 
@@ -13,7 +13,7 @@ The project currently uses these settings:
 1. Link `manmohanml1/consensus` to the Vercel project named `consensus-web`.
 2. Set the Vercel Root Directory to `apps/web`. The app-local `vercel.json` selects the Next.js framework while Vercel discovers the workspace lockfile and framework build defaults.
 3. Keep `main` as the Vercel production build branch and use pull-request branches for Preview deployments. In **Settings → Environments → Production → Branch Tracking**, disable **Auto-assign Custom Production Domains**. Vercel then creates a staged Production deployment for `main` without moving the production alias.
-4. Do not add database, place, realtime, analytics, or production secrets for milestone 0.2; the current build uses fixtures only.
+4. Milestone 0.2 added no database, place, realtime, analytics, or production secrets. The later CQ-201 exception is limited to server-only Neon connection-secret names in Development and Preview for an owner-approved non-production migration. Do not configure a distinct runtime login, capability pepper, provider key, or any application secret in Production until its separate owner gate is approved.
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
 6. Record each applicable Preview URL in its implementing pull request and complete the Preview acceptance checklist below.
 
@@ -72,12 +72,12 @@ converted back to static generation or edge-cached without a reviewed hash/SRI
 design. Production `script-src` excludes `unsafe-inline`; Development adds only
 `unsafe-eval` for framework debugging.
 
-| Environment | Purpose                     | Data boundary                               |
-| ----------- | --------------------------- | ------------------------------------------- |
-| Development | Local domain/UI work        | Sample fixtures only until 0.3              |
-| Test        | GitHub Actions              | Isolated fixtures and disposable databases  |
-| Preview     | Exact pull-request artifact | Non-production provider resources           |
-| Production  | Approved immutable artifact | Production resources and retention controls |
+| Environment | Purpose                     | Data boundary                                                                                          |
+| ----------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Development | Local domain/UI work        | Sample fixtures; non-production database secret names are reserved but runtime access remains disabled |
+| Test        | GitHub Actions              | Isolated fixtures and disposable databases                                                             |
+| Preview     | Exact pull-request artifact | Non-production provider resources                                                                      |
+| Production  | Approved immutable artifact | Production resources and retention controls                                                            |
 
 Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. Both exact names are configured as secrets only in Development and Preview under CQ-201. CQ-202 defines NOLOGIN `consensus_runtime` and `consensus_migrator` group roles; provider login roles receive membership out of band, and the runtime role receives no schema-creation privilege. Role creation, the first Neon migration, and application consumption remain gated. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md) and [the migration runbook](MIGRATIONS.md).
 
