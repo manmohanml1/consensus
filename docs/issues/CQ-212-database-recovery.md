@@ -4,6 +4,9 @@
 **Type:** operations  
 **Depends on:** CQ-201, CQ-202
 
+**Status:** provider-neutral rehearsal complete; hosted Neon restore/teardown
+evidence awaits separate exact owner authorization.
+
 Keep database changes forward-only and make restore/teardown procedures
 repeatable without exposing credentials or room data.
 

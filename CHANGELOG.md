@@ -18,6 +18,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- A distinct least-privilege Neon runtime login, sensitive Preview/Development
+  pooled URL, Preview-only capability pepper, protected Preview room-creation
+  smoke evidence, and verified synthetic aggregate cleanup for CQ-201.
 - Host-authorized, ten-minute, one-use recovery transfers that atomically rotate
   host capability authority, revoke the prior cookie, and preserve command
   sequencing without accounts.

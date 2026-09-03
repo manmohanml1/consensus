@@ -2,7 +2,7 @@
 
 ## Current boundary
 
-Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. The public site at `https://consensus-web-navy.vercel.app/` remains a fixture-only reference deployment. A shared **non-production** Neon database has been provisioned and migrations `0001`–`0005` are applied; its server-only connection-secret names exist only in Vercel Development and Preview. There is still no distinct pooled runtime login, capability pepper, realtime integration, custom domain, production database/data, or Production application-runtime secret. Consequently private room APIs fail closed and Production remains fixture-only. GitHub's protected `production` environment contains only the Vercel deployment credentials described below.
+Milestone 0.2 remains provider-independent at the product boundary. A Vercel project named `consensus-web` is linked to `manmohanml1/consensus` for Preview and Production builds. The public site at `https://consensus-web-navy.vercel.app/` remains a fixture-only reference deployment. A shared **non-production** Neon database has been provisioned, migrations `0001`–`0005` are applied, and a distinct least-privilege runtime login is active for Preview validation. Vercel Development has the pooled runtime URL but deliberately lacks the capability pepper, so private room APIs fail closed there unless a developer supplies an approved local-only pepper. Preview has both server-only values; Production has neither. There is still no realtime integration, custom domain, production database, production data, or Production application-runtime secret.
 
 The 2026-08-28 deployment audit found that Vercel Git integration created Preview deployments for pull-request commits and automatically created Production deployments for merged `main` commits. That behavior did not match the earlier manual-promotion documentation. ADR 0011 corrects the boundary: pull requests retain automatic Previews, and the Vercel project setting **Production → Branch Tracking → Auto-assign Custom Production Domains** remains disabled so merged `main` builds are staged Production candidates. Only the owner-dispatched promotion workflow may move the production alias. This provider-side setting—not `vercel.json`—is the authoritative control.
 
@@ -13,7 +13,7 @@ The project currently uses these settings:
 1. Link `manmohanml1/consensus` to the Vercel project named `consensus-web`.
 2. Set the Vercel Root Directory to `apps/web`. The app-local `vercel.json` selects the Next.js framework while Vercel discovers the workspace lockfile and framework build defaults.
 3. Keep `main` as the Vercel production build branch and use pull-request branches for Preview deployments. In **Settings → Environments → Production → Branch Tracking**, disable **Auto-assign Custom Production Domains**. Vercel then creates a staged Production deployment for `main` without moving the production alias.
-4. Milestone 0.2 added no database, place, realtime, analytics, or production secrets. The later CQ-201 exception is limited to server-only Neon connection-secret names in Development and Preview for an owner-approved non-production migration. Do not configure a distinct runtime login, capability pepper, provider key, or any application secret in Production until its separate owner gate is approved.
+4. Milestone 0.2 added no database, place, realtime, analytics, or production secrets. CQ-201 later authorized the non-production Neon migration and a distinct runtime login. Its pooled URL is a sensitive Preview/Development secret, while the independent capability pepper is a sensitive Preview-only secret. Do not configure either value, a provider key, or any other application secret in Production until its separate owner gate is approved.
 5. Keep Vercel deployment protection and GitHub branch protection aligned with the intended tester audience.
 6. Record each applicable Preview URL in its implementing pull request and complete the Preview acceptance checklist below.
 
@@ -72,23 +72,24 @@ converted back to static generation or edge-cached without a reviewed hash/SRI
 design. Production `script-src` excludes `unsafe-inline`; Development adds only
 `unsafe-eval` for framework debugging.
 
-| Environment | Purpose                     | Data boundary                                                                                          |
-| ----------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Development | Local domain/UI work        | Sample fixtures; non-production database secret names are reserved but runtime access remains disabled |
-| Test        | GitHub Actions              | Isolated fixtures and disposable databases                                                             |
-| Preview     | Exact pull-request artifact | Non-production provider resources                                                                      |
-| Production  | Approved immutable artifact | Production resources and retention controls                                                            |
+| Environment | Purpose                     | Data boundary                                                                                       |
+| ----------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
+| Development | Local domain/UI work        | Pooled non-production URL is available; APIs fail closed without a separately supplied local pepper |
+| Test        | GitHub Actions              | Isolated fixtures and disposable databases                                                          |
+| Preview     | Exact pull-request artifact | Non-production provider resources                                                                   |
+| Production  | Approved immutable artifact | Production resources and retention controls                                                         |
 
-Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. Both exact names are configured as secrets only in Development and Preview under CQ-201. CQ-202 defines NOLOGIN `consensus_runtime` and `consensus_migrator` group roles; provider login roles receive membership out of band, and the runtime role receives no schema-creation privilege. Role creation, the first Neon migration, and application consumption remain gated. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md) and [the migration runbook](MIGRATIONS.md).
+Milestone 0.3 reserves `CONSENSUS_DATABASE_URL` for pooled server runtime access and `CONSENSUS_MIGRATION_DATABASE_URL` for direct, owner-approved migrations. Both exact names are configured as sensitive values only in Development and Preview under CQ-201. CQ-202 defines NOLOGIN `consensus_runtime` and `consensus_migrator` group roles; the distinct application login inherits only `consensus_runtime`, has no database or schema creation privilege, and cannot assume `consensus_migrator`. The first Neon migration and a protected Preview creation smoke are complete. Neither credential may be copied into Production or pull-request jobs. See [the non-production provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md), [the runtime activation record](operations/2026-09-03-neon-preview-runtime-activation.md), and [the migration runbook](MIGRATIONS.md).
 
 `CONSENSUS_CAPABILITY_PEPPER` is a server-only, independently
 generated 32-byte key encoded as base64url. It must differ by environment, remain
 outside browser bundles and logs, and be rotated only through a capability
 reissuance plan because changing it invalidates every outstanding room token.
 CQ-204's private room routes fail closed with a safe `503` until both the runtime
-database URL and pepper are present. Defining the variable, applying migrations,
-or activating those routes in Preview remains a separately authorized
-non-production operation; neither secret belongs in Production yet.
+database URL and pepper are present. The owner-authorized Preview activation
+uses both values and produced a real `201` room creation response; Development
+and Production remain fail-closed by configuration. Neither secret belongs in
+Production yet.
 
 ## Promotion contract
 
@@ -105,3 +106,33 @@ Vercel Git integration is the preferred initial web build path. The default Node
 The app-local `apps/web/vercel.json` pins the framework contract. Project IDs, tokens, and environment-specific secrets remain outside the repository. The Vercel project Root Directory must stay aligned with `apps/web`; changes to provider or GitHub settings remain explicit external actions.
 
 Database migrations remain separately approval-gated and run before promotion with a verified recovery plan. When a migration cannot be rolled back safely, application compatibility must support both the old and new schema during the deployment window.
+
+## Milestone 0.3 environment readiness
+
+The repository, shared non-production schema, least-privilege runtime identity,
+and protected room-creation smoke are ready for broader Preview acceptance. The
+current web journey still renders illustrative local fixtures; it does not yet
+connect the setup, lobby, voting, and result screens to the private room API.
+That visible integration belongs to the next product slice and must be verified
+as a complete two-browser host/participant journey before Preview is presented
+as a working multi-user release.
+
+Before widening Preview access:
+
+- complete CQ-212's separately authorized hosted restore-and-teardown rehearsal
+  and use its evidence to finish CQ-214;
+- connect the web journey to the secure room API without exposing capabilities
+  in URLs, logs, browser storage, or client-readable responses;
+- verify host creation, invitation, pending admission, voting, result, expiry,
+  recovery, and deletion across two independent browser contexts;
+- repeat the responsive, accessibility, runtime-log, abuse-control, and synthetic
+  data-cleanup checks against one immutable Preview deployment.
+
+Production preparation is deliberately separate. Create an independent
+production database and distinct least-privilege migration/runtime identities;
+generate a unique production capability pepper; approve retention, recovery,
+monitoring, cost, and rollback targets; then apply reviewed migrations before
+promoting an exact staged `main` artifact. Never copy non-production database
+URLs, credentials, pepper, fixtures, or branches into Production. Merge,
+Production promotion, and the annotated tag/GitHub Release remain three
+separate explicit owner gates.
