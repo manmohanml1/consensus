@@ -45,7 +45,9 @@ acceptance run. No Production activation, promotion, tag, or release is implied.
 The topic branch connects account-free creation, invitation, pending admission
 and denial, manual candidate review, roster lock, private voting, deterministic
 resolution, commitment, refresh-safe command sequencing, and one-time host
-recovery to the existing HTTP boundary. Room creation accepts a small
+recovery to the existing HTTP boundary. The connected journey retains the
+photo-led, swipe-optional, button-complete mobile interaction established in
+v0.2.1 instead of presenting the secure workflow as a dashboard. Room creation accepts a small
 provider-neutral manual candidate deck so the complete decision loop can be
 proved without pretending illustrative entries are live venue data. Licensed
 nearby discovery, venue photos, ratings, reviews, dishes, and map search remain

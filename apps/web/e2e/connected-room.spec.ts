@@ -169,7 +169,10 @@ test("orchestrates a two-browser secure-room journey", async ({
 
   try {
     await host.goto("/");
-    await host.getByLabel("When?").fill("2026-09-04T19:00");
+    await host.waitForLoadState("networkidle");
+    const targetAt = host.getByLabel("When?");
+    await targetAt.fill("2027-09-04T19:00");
+    await expect(targetAt).toHaveValue("2027-09-04T19:00");
     await host
       .getByLabel("Starter options · one per line")
       .fill("Garden Table\nNight Noodle");
@@ -178,6 +181,7 @@ test("orchestrates a two-browser secure-room journey", async ({
     await expect(host.getByText("r1.AAAAAAAAAAAAAAAAAAAAAA")).toBeVisible();
 
     await guest.goto("/?join=r1.AAAAAAAAAAAAAAAAAAAAAA");
+    await guest.waitForLoadState("networkidle");
     await guest.getByLabel("Your name").fill("Sam");
     await guest.getByRole("button", { name: "Ask to join" }).click();
     await expect(guest.getByText("Waiting for the host")).toBeVisible();
@@ -193,11 +197,19 @@ test("orchestrates a two-browser secure-room journey", async ({
       .getByRole("button", { name: "Lock roster and begin voting" })
       .click();
     await guest.getByRole("button", { name: "Refresh" }).click();
-    await host.getByRole("button", { name: "Prefer" }).click();
-    await host.getByRole("button", { name: "Prefer" }).click();
+    await host
+      .getByRole("button", { name: /^Prefer — a positive choice$/ })
+      .click();
+    await host
+      .getByRole("button", { name: /^Prefer — a positive choice$/ })
+      .click();
     await guest.getByRole("button", { name: "Refresh progress" }).click();
-    await guest.getByRole("button", { name: "Accept" }).click();
-    await guest.getByRole("button", { name: "Accept" }).click();
+    await guest
+      .getByRole("button", { name: /^Accept — a workable compromise$/ })
+      .click();
+    await guest
+      .getByRole("button", { name: /^Accept — a workable compromise$/ })
+      .click();
     await host.getByRole("button", { name: "Refresh progress" }).click();
     await host.getByRole("button", { name: "Resolve fairly" }).click();
     await guest.getByRole("button", { name: "Refresh progress" }).click();

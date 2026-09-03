@@ -13,7 +13,9 @@ export default async function HomePage({
     typeof query.join === "string" ? query.join.slice(0, 25) : "";
   return (
     <main>
-      <section className="hero" aria-labelledby="hero-title">
+      <ConnectedRoom initialLocator={initialLocator} />
+
+      <section className="hero vision-hero" aria-labelledby="hero-title">
         <div className="eyebrow">Consensus · decision MVP</div>
         <h1 id="hero-title">Make the choice. Keep the group.</h1>
         <p className="hero-copy">
@@ -27,8 +29,6 @@ export default async function HomePage({
           <span>Explainable result</span>
         </div>
       </section>
-
-      <ConnectedRoom initialLocator={initialLocator} />
 
       <div className="prototype-divider" role="separator">
         <span>Explore the single-device prototype</span>

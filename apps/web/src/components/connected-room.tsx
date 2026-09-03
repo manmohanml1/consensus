@@ -8,7 +8,8 @@ import {
   type RoomProtocolError,
   type RoomRole,
 } from "@consensus/domain";
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 
 type Actor = { memberId: string; role: RoomRole; nextSequence: number };
 type RoomState = { room: RoomProjection; actor: Actor };
@@ -20,6 +21,36 @@ const starterCandidates = [
   "Harbor Kitchen",
   "Cellar Club",
 ].join("\n");
+
+const connectedMedia: Record<
+  string,
+  { src: string; alt: string; vibe: string; highlights: readonly string[] }
+> = {
+  "garden table": {
+    src: "/fixtures/garden-table.png",
+    alt: "Illustrative seasonal plates in a plant-filled dining room",
+    vibe: "Calm · plant-forward · date-night",
+    highlights: ["Seasonal plates", "Quiet tables", "Group-friendly"],
+  },
+  "night noodle": {
+    src: "/fixtures/night-noodle.png",
+    alt: "Illustrative noodle bowl at a colorful evening counter",
+    vibe: "Lively · quick · late-night",
+    highlights: ["Flexible bowls", "Fast service", "Big flavors"],
+  },
+  "harbor kitchen": {
+    src: "/fixtures/harbor-kitchen.png",
+    alt: "Illustrative shared meal beside a waterfront window",
+    vibe: "Relaxed · roomy · waterfront",
+    highlights: ["Comfort plates", "Group tables", "Bright room"],
+  },
+  "cellar club": {
+    src: "/fixtures/cellar-club.png",
+    alt: "Illustrative candlelit plates in a brick cellar dining room",
+    vibe: "Intimate · tasting menu · moody",
+    highlights: ["Small plates", "Candlelit", "Special occasion"],
+  },
+};
 
 const requestJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
@@ -70,6 +101,8 @@ export function ConnectedRoom({
   const [state, setState] = useState<RoomState | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [dragX, setDragX] = useState(0);
+  const dragStartX = useRef<number | null>(null);
 
   const me = useMemo(
     () =>
@@ -389,6 +422,28 @@ export function ConnectedRoom({
       preference,
       mustPick: false,
     });
+  const currentMedia = nextCandidate
+    ? connectedMedia[nextCandidate.name.toLowerCase()]
+    : undefined;
+  const winnerMedia = winner
+    ? connectedMedia[winner.name.toLowerCase()]
+    : undefined;
+  const startDrag = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStartX.current = event.clientX;
+  };
+  const moveDrag = (event: PointerEvent<HTMLElement>) => {
+    if (dragStartX.current === null) return;
+    setDragX(Math.max(-130, Math.min(130, event.clientX - dragStartX.current)));
+  };
+  const endDrag = () => {
+    if (dragStartX.current === null) return;
+    const preference = dragX <= -85 ? "avoid" : dragX >= 85 ? "prefer" : null;
+    dragStartX.current = null;
+    setDragX(0);
+    if (preference) submitVote(preference);
+  };
 
   return (
     <section className="room-shell connected-room" aria-labelledby="room-title">
@@ -528,36 +583,111 @@ export function ConnectedRoom({
         <div className="connected-ballot" data-testid="connected-ballot">
           {nextCandidate ? (
             <>
-              <p className="section-kicker">
-                Option {(myProgress?.completed ?? 0) + 1} of{" "}
-                {activeCandidates.length}
+              <div className="connected-progress">
+                <span>{me.displayName}&apos;s picks</span>
+                <strong>
+                  {(myProgress?.completed ?? 0) + 1}/{activeCandidates.length}
+                </strong>
+              </div>
+              <div className="connected-progress-track" aria-hidden="true">
+                <span
+                  style={{
+                    width: `${((myProgress?.completed ?? 0) / activeCandidates.length) * 100}%`,
+                  }}
+                />
+              </div>
+              <p className="connected-swipe-hint">
+                Swipe to decide—or use the buttons.
               </p>
-              <h3>{nextCandidate.name}</h3>
-              <p>How well does this work for you?</p>
-              <div className="vote-actions">
+              <article
+                className="connected-profile-card"
+                onPointerDown={startDrag}
+                onPointerMove={moveDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                style={{
+                  transform: `translateX(${dragX}px) rotate(${dragX / 28}deg)`,
+                }}
+              >
+                <div className="connected-profile-media">
+                  {currentMedia ? (
+                    <Image
+                      src={currentMedia.src}
+                      alt={currentMedia.alt}
+                      fill
+                      draggable={false}
+                      priority
+                      sizes="(max-width: 650px) 100vw, 480px"
+                    />
+                  ) : (
+                    <span aria-hidden="true">
+                      {nextCandidate.name.slice(0, 1)}
+                    </span>
+                  )}
+                  <div className="connected-fixture-label">
+                    Illustrative · confirm details
+                  </div>
+                  <div
+                    className={`connected-swipe-stamp connected-pass ${dragX < -35 ? "is-visible" : ""}`}
+                    aria-hidden="true"
+                  >
+                    PASS
+                  </div>
+                  <div
+                    className={`connected-swipe-stamp connected-like ${dragX > 35 ? "is-visible" : ""}`}
+                    aria-hidden="true"
+                  >
+                    LIKE
+                  </div>
+                  <div className="connected-profile-overlay">
+                    <p>{currentMedia?.vibe ?? "Added by the host"}</p>
+                    <h3>{nextCandidate.name}</h3>
+                    <div className="connected-profile-chips">
+                      {(
+                        currentMedia?.highlights ?? [
+                          "Details unknown",
+                          "Check before travel",
+                        ]
+                      ).map((highlight) => (
+                        <span key={highlight}>{highlight}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </article>
+              <div
+                className="connected-vote-dock"
+                aria-label={`Vote on ${nextCandidate.name}`}
+              >
                 <button
                   type="button"
-                  className="vote-prefer"
-                  disabled={busy}
-                  onClick={() => submitVote("prefer")}
-                >
-                  Prefer
-                </button>
-                <button
-                  type="button"
-                  className="vote-accept"
-                  disabled={busy}
-                  onClick={() => submitVote("accept")}
-                >
-                  Accept
-                </button>
-                <button
-                  type="button"
-                  className="vote-avoid"
+                  className="connected-vote connected-vote--avoid"
+                  aria-label="Avoid — preference, not a safety veto"
                   disabled={busy}
                   onClick={() => submitVote("avoid")}
                 >
-                  Avoid
+                  <span>×</span>
+                  <small>Avoid</small>
+                </button>
+                <button
+                  type="button"
+                  className="connected-vote connected-vote--accept"
+                  aria-label="Accept — a workable compromise"
+                  disabled={busy}
+                  onClick={() => submitVote("accept")}
+                >
+                  <span>○</span>
+                  <small>Accept</small>
+                </button>
+                <button
+                  type="button"
+                  className="connected-vote connected-vote--prefer"
+                  aria-label="Prefer — a positive choice"
+                  disabled={busy}
+                  onClick={() => submitVote("prefer")}
+                >
+                  <span>♥</span>
+                  <small>Prefer</small>
                 </button>
               </div>
             </>
@@ -606,14 +736,31 @@ export function ConnectedRoom({
 
       {state.room.phase === "resolved" ? (
         <div className="connected-result" data-testid="connected-result">
-          <p className="section-kicker">The group has a result</p>
-          <h3>{winner?.name ?? "No safe result"}</h3>
-          <p>
-            {winner
-              ? `Selected from ${activeCandidates.length} eligible options after every locked voter completed a ballot.`
-              : "No option passed the room's safety and completion rules."}
-          </p>
-          <small>Decision ruleset {state.room.decision?.rulesetVersion}</small>
+          <div className="connected-result-media">
+            {winnerMedia ? (
+              <Image
+                src={winnerMedia.src}
+                alt={winnerMedia.alt}
+                fill
+                sizes="(max-width: 650px) 100vw, 480px"
+              />
+            ) : (
+              <span aria-hidden="true">{winner?.name.slice(0, 1) ?? "?"}</span>
+            )}
+            <div className="connected-result-badge">It&apos;s a match</div>
+          </div>
+          <div className="connected-result-copy">
+            <p className="section-kicker">The group has a result</p>
+            <h3>{winner?.name ?? "No safe result"}</h3>
+            <p>
+              {winner
+                ? `Selected from ${activeCandidates.length} eligible options after every locked voter completed a ballot.`
+                : "No option passed the room's safety and completion rules."}
+            </p>
+            <small>
+              Decision ruleset {state.room.decision?.rulesetVersion}
+            </small>
+          </div>
           <div className="connected-room__actions">
             <button
               type="button"

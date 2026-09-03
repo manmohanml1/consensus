@@ -20,7 +20,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 - A mobile-first secure-room client for anonymous creation, private-link join,
   explicit admission/denial, manual candidate review, locked-roster voting,
-  deterministic results, commitment, refresh-safe sequencing, and host recovery.
+  photo-led swipe/button ballots, match-style deterministic results, commitment,
+  refresh-safe sequencing, and host recovery.
 - Transactional seeding of a bounded provider-neutral manual candidate deck at
   room creation, enabling the real v0.3 decision loop without claiming live
   venue data before the v0.5 provider tranche.
