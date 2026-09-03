@@ -212,14 +212,10 @@ jobs:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           test -n "$VERCEL_AUTOMATION_BYPASS_SECRET"
-          case "$PREVIEW_URL" in
-            https://consensus-[a-z0-9]*-manmohanlonawat-8572s-projects.vercel.app|https://consensus-[a-z0-9]*-manmohanlonawat-8572s-projects.vercel.app/)
-              ;;
-            *)
+            if ! [[ "$PREVIEW_URL" =~ ^https://consensus-[a-z0-9]+-manmohanlonawat-8572s-projects\.vercel\.app/?$ ]]; then
               echo "Preview URL is not an approved Consensus Vercel deployment."
               exit 1
-              ;;
-          esac
+            fi
           [[ "$SYNTHETIC_TITLE" =~ ^Preview\ acceptance\ [A-Za-z0-9._:-]{1,80}$ ]]
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
