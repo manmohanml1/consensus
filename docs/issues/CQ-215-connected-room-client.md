@@ -61,3 +61,8 @@ Vercel Authentication before app code; it created no room. A durable opt-in
 test now accepts only a runtime-provided automation bypass and explicit
 synthetic cleanup title. Deployment protection remains enabled while the final
 immutable-Preview evidence is pending.
+
+The owner-dispatched `Consensus Preview Acceptance` workflow is the only hosted
+path for that test. It is environment-scoped to `Preview`, validates the Vercel
+host before it receives the bypass secret, and requires a separate owner cleanup
+authorization after the test has recorded its exact non-sensitive title.

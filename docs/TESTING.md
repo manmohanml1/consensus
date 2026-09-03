@@ -36,12 +36,16 @@ pnpm test:e2e
 
 Do not use a production provider or user room as automated test data.
 
-The deployed two-browser room check is deliberately opt-in because it writes one
-synthetic aggregate to shared non-production Neon. A Vercel Authentication
-protected Preview also requires its automation-bypass secret; interactive login
-cookies must not be copied into test runners. After explicit approval, use a
-unique, non-sensitive title and delete that exact aggregate through the
-documented operator cleanup procedure:
+The deployed two-browser room check is deliberately owner-dispatched because it
+writes one synthetic aggregate to shared non-production Neon. A Vercel
+Authentication-protected Preview also requires its automation-bypass secret;
+interactive login cookies must not be copied into test runners. The GitHub
+workflow `Consensus Preview Acceptance` uses only the existing protected
+`Preview` environment and accepts an immutable Preview URL plus a unique,
+non-sensitive title. After the approved run, delete that exact aggregate through
+the documented operator cleanup procedure.
+
+For a local reproduction by an approved operator:
 
 ```powershell
 $env:PLAYWRIGHT_BASE_URL = "https://<immutable-preview-host>"
@@ -54,7 +58,8 @@ pnpm --filter @consensus/web test:e2e -- e2e/preview-room-acceptance.spec.ts --p
 Never echo the bypass secret, invitation locator, capability cookie, or recovery
 code. The test uses separate browser contexts and passes the bypass only as a
 request header. It remains skipped during the ordinary local and pull-request
-gate.
+gate; the owner-dispatched workflow does not promote, release, or clean up data
+automatically.
 
 ## Disposable PostgreSQL migration suite
 
