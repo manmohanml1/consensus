@@ -140,6 +140,27 @@ describe("room command HTTP boundary", () => {
     expect(response.status).toBe(404);
   });
 
+  it("rejects an unsafe manual candidate deck before persistence", async () => {
+    const response = await handleRoomCreation(
+      new NextRequest("https://example.test/api/v1/rooms", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://example.test",
+        },
+        body: JSON.stringify({
+          protocolVersion: ROOM_PROTOCOL_VERSION,
+          title: "Friday dinner",
+          hostDisplayName: "Maya",
+          targetAt: "2026-09-02T23:00:00.000Z",
+          candidateNames: ["Duplicate", " duplicate "],
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
   it("rejects cross-origin joins without revealing locator validity", async () => {
     const response = await handleRoomJoin(
       new NextRequest("https://example.test/api/v1/rooms/join", {

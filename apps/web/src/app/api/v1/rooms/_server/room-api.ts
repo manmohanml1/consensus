@@ -237,11 +237,20 @@ export async function handleRoomCreation(
       capabilityExpiresAt,
       expiresAt,
       deletionDueAt: new Date(expiresAt.getTime() + ROOM_DELETION_GRACE_MS),
+      candidates: parsed.data.candidateNames?.map((name) => ({
+        id: `candidate_${randomUUID().replaceAll("-", "")}`,
+        name,
+      })),
     });
     const token = capability.takeToken();
     return new Response(
       JSON.stringify({
         room: projection,
+        actor: {
+          memberId,
+          role: "host",
+          nextSequence: 1,
+        },
         invitation: {
           locator: locator.locator,
           expiresAt: expiresAt.toISOString(),
@@ -332,18 +341,28 @@ export async function handleRoomJoin(request: NextRequest): Promise<Response> {
       capabilityHash: capability.hash,
       capabilityExpiresAt,
     });
-    return new Response(JSON.stringify(result.projection), {
-      status: 202,
-      headers: {
-        ...noStoreHeaders,
-        "Set-Cookie": serializeCapabilityCookie(
-          capability.takeToken(),
-          result.roomId,
-          capabilityExpiresAt,
-          now,
-        ),
+    return new Response(
+      JSON.stringify({
+        room: result.projection,
+        actor: {
+          memberId,
+          role: "participant",
+          nextSequence: 1,
+        },
+      }),
+      {
+        status: 202,
+        headers: {
+          ...noStoreHeaders,
+          "Set-Cookie": serializeCapabilityCookie(
+            capability.takeToken(),
+            result.roomId,
+            capabilityExpiresAt,
+            now,
+          ),
+        },
       },
-    });
+    );
   } catch (error) {
     if (error instanceof RoomStoreError) {
       return protocolErrorResponse("unauthorized-or-missing");
@@ -359,15 +378,18 @@ export async function handleProjection(
   const configured = configuredStore();
   if (!configured) return protocolErrorResponse("temporarily-unavailable");
   try {
-    const projection = await configured.store.getProjection(
+    const state = await configured.store.getAuthorizedProjection(
       roomId,
       request.cookies.get(CAPABILITY_COOKIE_NAME)?.value,
       configured.pepper,
     );
-    return new Response(JSON.stringify(projection), {
-      status: 200,
-      headers: noStoreHeaders,
-    });
+    return new Response(
+      JSON.stringify({ room: state.projection, actor: state.actor }),
+      {
+        status: 200,
+        headers: noStoreHeaders,
+      },
+    );
   } catch (error) {
     if (error instanceof RoomStoreError) {
       return protocolErrorResponse(error.code, error.currentRevision);
@@ -460,8 +482,8 @@ export async function handleRedeemHostRecovery(
       configured.pepper,
       now,
     );
-    const { capability, ...responseBody } = result;
-    return new Response(JSON.stringify(responseBody), {
+    const { capability, projection, actor } = result;
+    return new Response(JSON.stringify({ room: projection, actor }), {
       status: 200,
       headers: {
         ...noStoreHeaders,
@@ -530,13 +552,16 @@ export async function handleCommand(
       request.cookies.get(CAPABILITY_COOKIE_NAME)?.value,
       configured.pepper,
     );
-    return new Response(JSON.stringify(result.projection), {
-      status: result.replayed ? 200 : 201,
-      headers: {
-        ...noStoreHeaders,
-        "Idempotency-Replayed": result.replayed ? "true" : "false",
+    return new Response(
+      JSON.stringify({ room: result.projection, actor: result.actor }),
+      {
+        status: result.replayed ? 200 : 201,
+        headers: {
+          ...noStoreHeaders,
+          "Idempotency-Replayed": result.replayed ? "true" : "false",
+        },
       },
-    });
+    );
   } catch (error) {
     if (error instanceof RoomStoreError) {
       return protocolErrorResponse(error.code, error.currentRevision);

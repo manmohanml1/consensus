@@ -18,6 +18,12 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- A mobile-first secure-room client for anonymous creation, private-link join,
+  explicit admission/denial, manual candidate review, locked-roster voting,
+  deterministic results, commitment, refresh-safe sequencing, and host recovery.
+- Transactional seeding of a bounded provider-neutral manual candidate deck at
+  room creation, enabling the real v0.3 decision loop without claiming live
+  venue data before the v0.5 provider tranche.
 - A distinct least-privilege Neon runtime login, sensitive Preview/Development
   pooled URL, Preview-only capability pepper, protected Preview room-creation
   smoke evidence, and verified synthetic aggregate cleanup for CQ-201.

@@ -98,6 +98,7 @@ export interface CreateRoomRequest {
   title: string;
   hostDisplayName: string;
   targetAt: string;
+  candidateNames?: string[];
 }
 
 /** The friendly invitation locator may be shared, but grants no access itself. */
@@ -635,7 +636,13 @@ export function parseCreateRoomRequest(
   }
   rejectUnknownKeys(
     value,
-    ["protocolVersion", "title", "hostDisplayName", "targetAt"],
+    [
+      "protocolVersion",
+      "title",
+      "hostDisplayName",
+      "targetAt",
+      "candidateNames",
+    ],
     "$",
     issues,
   );
@@ -657,6 +664,59 @@ export function parseCreateRoomRequest(
     max: ROOM_PROTOCOL_LIMITS.maxDisplayNameLength,
   });
   const targetAt = readTimestamp(value, "targetAt", "$", issues);
+  let candidateNames: string[] | undefined;
+  if (value.candidateNames !== undefined) {
+    if (!Array.isArray(value.candidateNames)) {
+      pushIssue(
+        issues,
+        "$.candidateNames",
+        "invalid-type",
+        "Expected an array of candidate names.",
+      );
+    } else if (
+      value.candidateNames.length < 2 ||
+      value.candidateNames.length > ROOM_PROTOCOL_LIMITS.maxCandidates
+    ) {
+      pushIssue(
+        issues,
+        "$.candidateNames",
+        "invalid-value",
+        `Expected between 2 and ${ROOM_PROTOCOL_LIMITS.maxCandidates} candidates.`,
+      );
+    } else {
+      const parsedNames = value.candidateNames.map((entry, index) => {
+        if (typeof entry !== "string") {
+          pushIssue(
+            issues,
+            `$.candidateNames[${index}]`,
+            "invalid-type",
+            "Expected a string.",
+          );
+          return "";
+        }
+        const name = entry.trim();
+        if (name.length === 0 || name.length > 100) {
+          pushIssue(
+            issues,
+            `$.candidateNames[${index}]`,
+            "invalid-value",
+            "Candidate name length is outside the allowed range.",
+          );
+        }
+        return name;
+      });
+      const normalized = new Set(parsedNames.map((name) => name.toLowerCase()));
+      if (normalized.size !== parsedNames.length) {
+        pushIssue(
+          issues,
+          "$.candidateNames",
+          "invalid-value",
+          "Candidate names must be unique.",
+        );
+      }
+      candidateNames = parsedNames;
+    }
+  }
   if (issues.length > 0 || !title || !hostDisplayName || !targetAt) {
     return { success: false, issues };
   }
@@ -667,6 +727,7 @@ export function parseCreateRoomRequest(
       title,
       hostDisplayName,
       targetAt,
+      ...(candidateNames ? { candidateNames } : {}),
     },
   };
 }

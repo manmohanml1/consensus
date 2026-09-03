@@ -111,11 +111,11 @@ Database migrations remain separately approval-gated and run before promotion wi
 
 The repository, shared non-production schema, least-privilege runtime identity,
 and protected room-creation smoke are ready for broader Preview acceptance. The
-current web journey still renders illustrative local fixtures; it does not yet
-connect the setup, lobby, voting, and result screens to the private room API.
-That visible integration is CQ-215, the next milestone 0.3 product slice, and
-must be verified as a complete two-browser host/participant journey before
-Preview is presented as a working multi-user release.
+CQ-215 topic branch connects the setup, lobby, voting, result, and host-recovery
+screens to the private room API. The earlier single-device fixture remains below
+it as an explicitly labelled prototype reference. This connected journey must
+still be verified as a complete two-browser host/participant flow on one
+immutable Preview before Preview is presented as a working multi-user release.
 
 Before widening Preview access:
 

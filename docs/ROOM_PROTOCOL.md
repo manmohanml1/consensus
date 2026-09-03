@@ -26,7 +26,7 @@ Every command includes the protocol version, command id, idempotency key, room i
 | `participant.remove`  | Host                | Mark a pending or active participant as departed         |
 | `participant.leave`   | Participant         | Leave without rewriting a locked electorate              |
 | `roster.lock`         | Host                | Snapshot eligible voters before voting starts            |
-| `candidate.add`       | Host                | Add a normalized candidate reference                     |
+| `candidate.add`       | Host                | Reactivate a seeded normalized candidate                 |
 | `candidate.remove`    | Host                | Remove a candidate when the room phase permits           |
 | `vote.submit`         | Host or participant | Submit one idempotent preference command                 |
 | `decision.resolve`    | Host                | Request authoritative resolution after completion checks |
@@ -35,14 +35,19 @@ Every command includes the protocol version, command id, idempotency key, room i
 Unknown fields, unsupported versions, invalid roles, invalid identifiers, malformed timestamps, secret-like keys, and payloads over 16 KiB fail before command handling. Limits are deliberately small because a room contains at most eight participants and twelve candidates.
 
 `POST /api/v1/rooms` now delivers the CQ-206 creation contract: `protocolVersion`,
-`title`, `hostDisplayName`, and UTC `targetAt`. Its `201` response contains a
-validated projection and `{ invitation: { locator, expiresAt } }`; the host
+`title`, `hostDisplayName`, UTC `targetAt`, and an optional bounded deck of two
+to twelve unique `candidateNames`. Manual candidates are normalized and stored
+inside the room-creation transaction; provider fields remain outside this
+contract. Its `201` response contains `{ room, actor, invitation }`; the host
 capability is delivered only through `Set-Cookie`. The locator is a random
 non-authoritative reference for a future QR/link; it is neither a capability nor
 a proof of membership. `POST /api/v1/rooms/join` accepts that locator and a
 bounded display name, creates a pending participant, returns `202`, and delivers
 participant authority only as a room-path cookie. Pending authority may read the
-projection but cannot execute commands. Capabilities live for at most 24 hours;
+projection but cannot execute commands. Authorized projection and accepted
+command responses use the same `{ room, actor }` envelope, where `actor`
+contains only the authenticated member id, role, and next command sequence.
+Capabilities live for at most 24 hours;
 the room stops accepting mutations after its two-hour active TTL. During the
 remaining capability lifetime, an authenticated read reports an `expired`
 projection while unauthorized and missing rooms remain indistinguishable.
