@@ -3,7 +3,9 @@
 **CQ:** CQ-201 / GitHub #10  
 **Owner authorization:** 2026-08-31  
 **Provisioning date:** 2026-08-31 (America/New_York)  
-**Status:** In progress; connectivity and exact environment names verified; no migration has run
+**Status:** In progress; the first owner-authorized shared migration completed on
+2026-09-02 (America/New_York). Runtime activation, restore evidence, and teardown
+remain separately gated.
 
 ## Resource
 
@@ -73,13 +75,37 @@ invalidating the exposed value. The alias was then created from the rotated valu
 without rendering it, and the in-memory copy was cleared. No application or
 Production environment consumed the old credential.
 
+## First shared migration evidence
+
+The owner authorized the exact first-migration bootstrap and the five reviewed
+forward migrations from merged commit
+`2fc5d2045cf872df404a3f7094187df2b74890ad` on 2026-09-02
+(America/New_York). The operation targeted this resource only; it did not use a
+Production credential or alter a Production deployment.
+
+- The query-console identity created the NOLOGIN `consensus_migrator` and
+  `consensus_runtime` groups, received `consensus_migrator` membership, and
+  granted that group database `CREATE`.
+- `PUBLIC` no longer has `CREATE` on the `public` schema.
+- Migrations `0001_room_aggregate.sql` through `0005_host_recovery.sql`
+  committed under `consensus_migrator` with the repository checksums recorded in
+  `consensus_internal.schema_migrations`.
+- The ledger contains exactly five ordered entries. Runtime-group evidence is
+  positive for `consensus` schema usage, room CRUD, command select/insert, and
+  host-recovery CRUD.
+- The applied `consensus` schema contains the ten expected tables: candidates,
+  commands, commitments, constraints, decisions, host-recovery challenges,
+  outbox events, participants, rooms, and votes.
+
+The query console was returned to read-only after verification. No synthetic
+room data was inserted during this schema-only operation.
+
 ## Remaining gates
 
-- CQ-202 defines separate least-privileged runtime and migration roles; create
-  and verify their provider-managed login memberships only as part of an
-  explicitly authorized first-migration operation.
-- Obtain separate owner authorization for the first migration, naming the target
-  and exact commit.
+- Provision and verify a distinct pooled runtime login with only
+  `consensus_runtime` membership before enabling application use of
+  `CONSENSUS_DATABASE_URL`. That runtime activation remains separately owner
+  authorized.
 - CQ-212 adds a localhost-only disposable schema/fixture recovery and teardown
   rehearsal plus the shared-provider runbook. Its CI evidence does not authorize
   a Neon restore or teardown; each remains a destructive, separately authorized

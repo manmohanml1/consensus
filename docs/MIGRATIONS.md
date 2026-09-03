@@ -76,3 +76,18 @@ request or operating record:
 
 Owner authorization must name the target and commit. It does not authorize
 Production credentials, promotion, a tag, a GitHub Release, or teardown.
+
+## Shared non-production evidence
+
+The first shared Neon execution completed on 2026-09-02 (America/New_York)
+against the approved non-production resource at commit
+`2fc5d2045cf872df404a3f7094187df2b74890ad`. The bootstrap created the two
+NOLOGIN groups, granted the migration identity `consensus_migrator` membership
+and database `CREATE`, and revoked `PUBLIC` schema creation. Migrations 0001
+through 0005 then committed with their repository checksums in the migration
+ledger. The non-secret operational evidence is recorded in
+[the provisioning record](operations/2026-08-31-neon-nonproduction-provisioning.md).
+
+This proves schema application only. It does not authorize a separate pooled
+runtime login, application consumption of the database URL, restore, teardown,
+Preview promotion, Production credentials, a tag, or a release.
