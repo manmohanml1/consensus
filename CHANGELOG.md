@@ -21,6 +21,12 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - A distinct least-privilege Neon runtime login, sensitive Preview/Development
   pooled URL, Preview-only capability pepper, protected Preview room-creation
   smoke evidence, and verified synthetic aggregate cleanup for CQ-201.
+- An owner-authorized hosted Neon restore-branch rehearsal covering migrations
+  0001–0005, runtime role separation, synthetic aggregate creation/deletion,
+  and verified teardown for CQ-212.
+- CQ-215 makes the connected mobile-first host/participant browser journey an
+  explicit milestone 0.3 requirement instead of treating the secure API as the
+  finished product.
 - Host-authorized, ten-minute, one-use recovery transfers that atomically rotate
   host capability authority, revoke the prior cookie, and preserve command
   sequencing without accounts.

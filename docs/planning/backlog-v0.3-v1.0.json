@@ -352,6 +352,22 @@
       "labels": []
     },
     {
+      "id": "CQ-215",
+      "version": "0.3.0",
+      "title": "Connect the secure room journey to the web client",
+      "type": "feature",
+      "dependsOn": ["CQ-204", "CQ-206", "CQ-207", "CQ-209", "CQ-210", "CQ-213"],
+      "outcome": "Let hosts and participants complete the durable secure-room journey from separate mobile-first browser sessions.",
+      "acceptance": [
+        "The host creates a room and shares a locator that contains no authority",
+        "A participant joins pending, receives explicit admission, and sees only an authorized projection",
+        "Host and participant can complete roster lock, voting, resolution, result, departure, and recovery states without fixture-only shortcuts",
+        "Capabilities remain in secure HTTP-only cookies and never enter URLs, browser storage, logs, or client-readable payloads",
+        "Two-browser tests cover the complete responsive journey, refresh recovery, denial states, and expiry without requiring realtime transport"
+      ],
+      "labels": []
+    },
+    {
       "id": "CQ-301",
       "version": "0.4.0",
       "title": "Select and approve the realtime transport",

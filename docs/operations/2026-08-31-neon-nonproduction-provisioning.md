@@ -4,8 +4,8 @@
 **Owner authorization:** 2026-08-31  
 **Provisioning date:** 2026-08-31 (America/New_York)  
 **Status:** Provider selection, provisioning, migration, least-privilege runtime
-access, and protected Preview activation are complete. Hosted restore and
-provider teardown evidence remain separately gated under CQ-212.
+access, protected Preview activation, and hosted restore-branch rehearsal are
+complete. Deleting the provider project remains a separate destructive gate.
 
 ## Resource
 
@@ -113,13 +113,13 @@ room data was inserted during this schema-only operation.
   returned HTTP `201`, and then deleted the aggregate and its cascaded test rows;
   the follow-up count was zero. See the dedicated activation record.
 - CQ-212 adds a localhost-only disposable schema/fixture recovery and teardown
-  rehearsal plus the shared-provider runbook. Its CI evidence does not authorize
-  a Neon restore or teardown; each remains a destructive, separately authorized
-  action.
+  rehearsal plus the shared-provider runbook. Its separately authorized hosted
+  rehearsal was completed on 2026-09-03 and deleted only its temporary branch.
 
-CQ-201 provider selection and non-production activation are complete. Hosted
-restore and teardown evidence remain in CQ-212. No Production deployment, tag,
-release, or Production application configuration is authorized by this record.
+CQ-201 provider selection and non-production activation and CQ-212 hosted
+restore-branch evidence are complete. No full provider-project teardown,
+Production deployment, tag, release, or Production application configuration is
+authorized by this record.
 
 ## Sources checked 2026-08-31
 

@@ -113,20 +113,22 @@ The repository, shared non-production schema, least-privilege runtime identity,
 and protected room-creation smoke are ready for broader Preview acceptance. The
 current web journey still renders illustrative local fixtures; it does not yet
 connect the setup, lobby, voting, and result screens to the private room API.
-That visible integration belongs to the next product slice and must be verified
-as a complete two-browser host/participant journey before Preview is presented
-as a working multi-user release.
+That visible integration is CQ-215, the next milestone 0.3 product slice, and
+must be verified as a complete two-browser host/participant journey before
+Preview is presented as a working multi-user release.
 
 Before widening Preview access:
 
-- complete CQ-212's separately authorized hosted restore-and-teardown rehearsal
-  and use its evidence to finish CQ-214;
 - connect the web journey to the secure room API without exposing capabilities
   in URLs, logs, browser storage, or client-readable responses;
 - verify host creation, invitation, pending admission, voting, result, expiry,
   recovery, and deletion across two independent browser contexts;
 - repeat the responsive, accessibility, runtime-log, abuse-control, and synthetic
   data-cleanup checks against one immutable Preview deployment.
+
+CQ-212's owner-authorized hosted restore-branch rehearsal is complete. It
+verified migrations, least-privilege grants, synthetic aggregate deletion, and
+temporary branch teardown without changing the default non-production branch.
 
 Production preparation is deliberately separate. Create an independent
 production database and distinct least-privilege migration/runtime identities;
