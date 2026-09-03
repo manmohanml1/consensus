@@ -22,6 +22,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
   explicit admission/denial, manual candidate review, locked-roster voting,
   photo-led swipe/button ballots, match-style deterministic results, commitment,
   refresh-safe sequencing, and host recovery.
+- An opt-in, protected-Preview two-browser acceptance check that keeps host and
+  participant cookies isolated and requires an explicit synthetic cleanup label.
 - Transactional seeding of a bounded provider-neutral manual candidate deck at
   room creation, enabling the real v0.3 decision loop without claiming live
   venue data before the v0.5 provider tranche.

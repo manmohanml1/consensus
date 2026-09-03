@@ -24,8 +24,8 @@ Milestone 0.2.1 also validates install metadata and generated icons, plus horizo
 
 Browser projects run through one worker so image-heavy responsive journeys do
 not race development-server hydration on constrained local and CI runners. The
-24-test suite remains small enough for deterministic serialization. Increasing
-worker count requires repeated evidence that the complete gate remains stable.
+suite remains small enough for deterministic serialization. Increasing worker
+count requires repeated evidence that the complete gate remains stable.
 
 Set `PLAYWRIGHT_BASE_URL` to an immutable HTTPS Preview origin to run the same suite without starting the local development server:
 
@@ -35,6 +35,26 @@ pnpm test:e2e
 ```
 
 Do not use a production provider or user room as automated test data.
+
+The deployed two-browser room check is deliberately opt-in because it writes one
+synthetic aggregate to shared non-production Neon. A Vercel Authentication
+protected Preview also requires its automation-bypass secret; interactive login
+cookies must not be copied into test runners. After explicit approval, use a
+unique, non-sensitive title and delete that exact aggregate through the
+documented operator cleanup procedure:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "https://<immutable-preview-host>"
+$env:CONSENSUS_LIVE_PREVIEW_ACCEPTANCE = "1"
+$env:CONSENSUS_PREVIEW_TEST_TITLE = "Preview acceptance <unique-run-label>"
+$env:VERCEL_AUTOMATION_BYPASS_SECRET = "<protected-test-secret>"
+pnpm --filter @consensus/web test:e2e -- e2e/preview-room-acceptance.spec.ts --project=desktop-chromium
+```
+
+Never echo the bypass secret, invitation locator, capability cookie, or recovery
+code. The test uses separate browser contexts and passes the bypass only as a
+request header. It remains skipped during the ordinary local and pull-request
+gate.
 
 ## Disposable PostgreSQL migration suite
 

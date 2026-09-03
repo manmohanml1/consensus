@@ -56,3 +56,8 @@ the separate v0.5 provider tranche.
 Local automated evidence covers the UI orchestration and server contracts. The
 issue stays open until the same two-browser journey, recovery/expiry states,
 runtime logs, and synthetic cleanup are verified against one immutable Preview.
+The 2026-09-03 live attempt proved that fresh contexts correctly encounter
+Vercel Authentication before app code; it created no room. A durable opt-in
+test now accepts only a runtime-provided automation bypass and explicit
+synthetic cleanup title. Deployment protection remains enabled while the final
+immutable-Preview evidence is pending.

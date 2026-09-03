@@ -130,6 +130,17 @@ CQ-212's owner-authorized hosted restore-branch rehearsal is complete. It
 verified migrations, least-privilege grants, synthetic aggregate deletion, and
 temporary branch teardown without changing the default non-production branch.
 
+The first CQ-215 protected-Preview attempt on 2026-09-03 verified that ordinary
+fresh browser contexts are redirected to Vercel Authentication before the
+application loads. That is the expected protection boundary, not product
+evidence. The repository now contains an opt-in two-context Preview check that
+uses Vercel's dedicated automation-bypass header when the secret is supplied at
+runtime. No shared room was created by the blocked attempt, and an operator
+query confirmed that its synthetic title had zero remaining aggregates. The
+immutable Preview exit evidence is still pending a separately managed bypass
+secret and an authorized run; deployment protection must not be disabled merely
+to satisfy the test.
+
 Production preparation is deliberately separate. Create an independent
 production database and distinct least-privilege migration/runtime identities;
 generate a unique production capability pepper; approve retention, recovery,
