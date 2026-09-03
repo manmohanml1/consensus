@@ -35,7 +35,8 @@ not a complete product outcome.
 
 ## Acceptance evidence
 
-A two-browser Playwright suite and one immutable protected Preview demonstrate
+A two-browser Playwright suite and one immutable protected Preview check are
+prepared to demonstrate
 creation, joining, admission, roster lock, voting, resolution, result, refresh,
 denial, recovery, and expiry. Synthetic rooms are deleted after the Preview
 acceptance run. No Production activation, promotion, tag, or release is implied.

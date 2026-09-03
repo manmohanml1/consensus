@@ -52,14 +52,15 @@ $env:PLAYWRIGHT_BASE_URL = "https://<immutable-preview-host>"
 $env:CONSENSUS_LIVE_PREVIEW_ACCEPTANCE = "1"
 $env:CONSENSUS_PREVIEW_TEST_TITLE = "Preview acceptance <unique-run-label>"
 $env:VERCEL_AUTOMATION_BYPASS_SECRET = "<protected-test-secret>"
-pnpm --filter @consensus/web test:e2e -- e2e/preview-room-acceptance.spec.ts --project=desktop-chromium
+pnpm --filter @consensus/web exec playwright test e2e/preview-room-acceptance.spec.ts --project=desktop-chromium --retries=0
 ```
 
 Never echo the bypass secret, invitation locator, capability cookie, or recovery
 code. The test uses separate browser contexts and passes the bypass only as a
-request header. It remains skipped during the ordinary local and pull-request
-gate; the owner-dispatched workflow does not promote, release, or clean up data
-automatically.
+request header. It makes exactly one attempt: retrying a stateful shared-Preview
+test could create duplicate fixtures. It remains skipped during the ordinary
+local and pull-request gate; the owner-dispatched workflow does not promote,
+release, or clean up data automatically.
 
 ## Disposable PostgreSQL migration suite
 

@@ -227,7 +227,7 @@ jobs:
           CONSENSUS_LIVE_PREVIEW_ACCEPTANCE: "1"
           CONSENSUS_PREVIEW_TEST_TITLE: ${{ inputs.synthetic_title }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm --filter @consensus/web test:e2e -- e2e/preview-room-acceptance.spec.ts --project=desktop-chromium
+          run: pnpm --filter @consensus/web exec playwright test e2e/preview-room-acceptance.spec.ts --project=desktop-chromium --retries=0
       - name: Upload Playwright diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

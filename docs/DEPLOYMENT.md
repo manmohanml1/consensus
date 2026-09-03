@@ -25,8 +25,12 @@ Run the browser suite against the immutable Preview artifact before completing t
 
 ```powershell
 $env:PLAYWRIGHT_BASE_URL = "https://<preview-host>"
-pnpm --filter @consensus/web test:e2e
+pnpm --filter @consensus/web exec playwright test e2e/preview-room-acceptance.spec.ts --project=desktop-chromium --retries=0
 ```
+
+The protected shared-Preview scenario is a single stateful test and must run
+without retries; an operator may investigate a failure, but must not let CI
+silently create duplicate synthetic rooms.
 
 - Record deployment URL, commit SHA, target environment, build duration, and status in the pull request.
 - Complete host setup, candidate review, ballot, no-safe-result, result, commitment, and safe-link flows.
