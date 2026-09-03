@@ -43,7 +43,7 @@ jobs:
         run: |
           test -n "$VERCEL_AUTOMATION_BYPASS_SECRET"
           case "$PREVIEW_URL" in
-            https://consensus-web-*-manmohanlonawat-8572s-projects.vercel.app|https://consensus-web-*-manmohanlonawat-8572s-projects.vercel.app/)
+            https://consensus-[a-z0-9]*-manmohanlonawat-8572s-projects.vercel.app|https://consensus-[a-z0-9]*-manmohanlonawat-8572s-projects.vercel.app/)
               ;;
             *)
               echo "Preview URL is not an approved Consensus Vercel deployment."
