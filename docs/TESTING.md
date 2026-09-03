@@ -40,7 +40,7 @@ The deployed two-browser room check is deliberately owner-dispatched because it
 writes one synthetic aggregate to shared non-production Neon. A Vercel
 Authentication-protected Preview also requires its automation-bypass secret;
 interactive login cookies must not be copied into test runners. The GitHub
-workflow `Consensus Preview Acceptance` uses only the existing protected
+manual `Consensus Quality` workflow job uses only the existing protected
 `Preview` environment and accepts an immutable Preview URL plus a unique,
 non-sensitive title. After the approved run, delete that exact aggregate through
 the documented operator cleanup procedure.

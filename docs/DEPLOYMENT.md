@@ -139,7 +139,7 @@ runtime. No shared room was created by the blocked attempt, and an operator
 query confirmed that its synthetic title had zero remaining aggregates. The
 immutable Preview exit evidence is still pending a separately managed bypass
 secret and an authorized run; deployment protection must not be disabled merely
-to satisfy the test. The owner-dispatched `Consensus Preview Acceptance` workflow
+to satisfy the test. The owner-dispatched `Consensus Quality` acceptance job
 uses the `VERCEL_AUTOMATION_BYPASS_SECRET` held only in GitHub's protected
 `Preview` environment, validates the target is a Consensus Vercel Preview host,
 and never receives Production secrets or performs an automatic cleanup.
