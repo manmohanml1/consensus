@@ -45,6 +45,11 @@ manual `Consensus Quality` workflow job uses only the existing protected
 non-sensitive title. After the approved run, delete that exact aggregate through
 the documented operator cleanup procedure.
 
+Manual Preview dispatches run only this stateful acceptance job. The normal
+pull-request event remains the authoritative source, dependency, persistence,
+build, and local-browser gate; keeping the executions separate prevents an
+unrelated rerun from obscuring the exact Preview result.
+
 For a local reproduction by an approved operator:
 
 ```powershell

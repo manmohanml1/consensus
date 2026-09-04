@@ -70,6 +70,7 @@ jobs:
           fi
 
   verify:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -111,6 +112,7 @@ jobs:
           retention-days: 7
 
   persistence:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -166,7 +168,7 @@ jobs:
 
   build-and-test:
     name: build-and-test
-    if: always()
+    if: always() && github.event_name != 'workflow_dispatch'
     needs: [pull-request-policy, verify, persistence, dependency-review]
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -117,9 +117,10 @@ The repository, shared non-production schema, least-privilege runtime identity,
 and protected room-creation smoke are ready for broader Preview acceptance. The
 CQ-215 topic branch connects the setup, lobby, voting, result, and host-recovery
 screens to the private room API. The earlier single-device fixture remains below
-it as an explicitly labelled prototype reference. This connected journey must
-still be verified as a complete two-browser host/participant flow on one
-immutable Preview before Preview is presented as a working multi-user release.
+it as an explicitly labelled prototype reference. The connected happy path has
+passed against one immutable Preview with independent host and participant
+browser contexts; the remaining negative-state, accessibility, responsive, and
+cleanup checks still gate broader Preview release.
 
 Before widening Preview access:
 
@@ -139,14 +140,17 @@ fresh browser contexts are redirected to Vercel Authentication before the
 application loads. That is the expected protection boundary, not product
 evidence. The repository now contains an opt-in two-context Preview check that
 uses Vercel's dedicated automation-bypass header when the secret is supplied at
-runtime. No shared room was created by the blocked attempt, and an operator
-query confirmed that its synthetic title had zero remaining aggregates. The
-immutable Preview exit evidence is still pending a separately managed bypass
-secret and an authorized run; deployment protection must not be disabled merely
-to satisfy the test. The owner-dispatched `Consensus Quality` acceptance job
-uses the `VERCEL_AUTOMATION_BYPASS_SECRET` held only in GitHub's protected
-`Preview` environment, validates the target is a Consensus Vercel Preview host,
-and never receives Production secrets or performs an automatic cleanup.
+runtime; deployment protection was not disabled. The owner-dispatched run for
+commit `7804dd5` passed creation, invitation, pending admission, roster lock,
+both ballots, deterministic resolution, and matching committed results on the
+immutable Preview. Runtime-log review found expected 2xx room traffic and no
+warning/error/fatal application events, with one PostgreSQL client TLS
+forward-compatibility warning recorded for hardening. The job uses the
+`VERCEL_AUTOMATION_BYPASS_SECRET` held only in GitHub's protected `Preview`
+environment, validates the target is a Consensus Vercel Preview host, never
+receives Production secrets, and never performs automatic cleanup. Exact
+evidence and the still-authorization-gated synthetic cleanup are recorded in
+[the CQ-215 protected Preview acceptance record](operations/2026-09-03-cq215-protected-preview-acceptance.md).
 
 Production preparation is deliberately separate. Create an independent
 production database and distinct least-privilege migration/runtime identities;
