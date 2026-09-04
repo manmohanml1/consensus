@@ -6,6 +6,14 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Compare stable privacy-preserving Preview error fields while independently
+  validating unique per-request correlation IDs.
+- Distinguish expected negative-path 404s and the blocked Vercel Preview toolbar
+  frame from actionable page and console errors in protected acceptance.
+- Replace brittle browser-test network-idle waits with observable entry-mode
+  state transitions that prove React hydration before form interaction.
+- Render authenticated expired-room projections as terminal states and suppress
+  stale invite, roster, recovery, departure, and voting controls.
 - Replaced Production `script-src 'unsafe-inline'` with a unique per-request
   nonce and `strict-dynamic`, with browser regression coverage.
 - Serialized the small Playwright browser matrix to prevent recurring local and
@@ -18,6 +26,20 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Connected-room browser coverage for privacy-preserving denial, expiry, host
+  recovery, participant departure, responsive widths, keyboard use, and reduced
+  motion in addition to the independent host/participant happy path.
+- A mobile-first secure-room client for anonymous creation, private-link join,
+  explicit admission/denial, manual candidate review, locked-roster voting,
+  photo-led swipe/button ballots, match-style deterministic results, commitment,
+  refresh-safe sequencing, and host recovery.
+- An opt-in, protected-Preview acceptance check that keeps host, admitted,
+  denied, and recovered browser authorities isolated; verifies capability
+  rotation, indistinguishable absence, responsive overflow, and browser errors;
+  and requires an explicit synthetic cleanup label.
+- Transactional seeding of a bounded provider-neutral manual candidate deck at
+  room creation, enabling the real v0.3 decision loop without claiming live
+  venue data before the v0.5 provider tranche.
 - A distinct least-privilege Neon runtime login, sensitive Preview/Development
   pooled URL, Preview-only capability pepper, protected Preview room-creation
   smoke evidence, and verified synthetic aggregate cleanup for CQ-201.

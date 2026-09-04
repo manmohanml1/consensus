@@ -25,6 +25,18 @@ import { deleteDueRoomAggregates } from "./retention.mjs";
 export interface CommandResult {
   replayed: boolean;
   projection: RoomProjection;
+  actor: RoomActor;
+}
+
+export interface RoomActor {
+  memberId: string;
+  role: "host" | "participant";
+  nextSequence: number;
+}
+
+export interface AuthorizedRoomState {
+  projection: RoomProjection;
+  actor: RoomActor;
 }
 
 export interface CreateRoomInput {
@@ -38,6 +50,7 @@ export interface CreateRoomInput {
   capabilityExpiresAt: Date;
   expiresAt: Date;
   deletionDueAt: Date;
+  candidates?: Array<{ id: string; name: string }>;
 }
 
 export interface JoinRoomInput {
@@ -181,6 +194,21 @@ export class PostgresRoomStore {
           input.capabilityExpiresAt,
         ],
       );
+      for (const candidate of input.candidates ?? []) {
+        await client.query(
+          `INSERT INTO consensus.candidates
+             (room_id, id, name, source, field_provenance,
+              distance_meters, open_confidence, constraint_evidence)
+           VALUES ($1, $2, $3, 'host-manual', $4, 0, 'unknown', $5)`,
+          [
+            input.roomId,
+            candidate.id,
+            candidate.name,
+            { name: "host-supplied" },
+            {},
+          ],
+        );
+      }
       const room = await this.loadRoom(client, input.roomId, false);
       if (!room) throw new Error("Created room was not found.");
       const projection = await this.buildProjection(client, room);
@@ -290,6 +318,15 @@ export class PostgresRoomStore {
     token: unknown,
     pepper: Uint8Array,
   ): Promise<RoomProjection> {
+    return (await this.getAuthorizedProjection(roomId, token, pepper))
+      .projection;
+  }
+
+  async getAuthorizedProjection(
+    roomId: string,
+    token: unknown,
+    pepper: Uint8Array,
+  ): Promise<AuthorizedRoomState> {
     const client = await this.pool.connect();
     try {
       await client.query(
@@ -300,12 +337,26 @@ export class PostgresRoomStore {
         await this.authenticate(client, roomId, token, pepper, true);
         throw new RoomStoreError("unauthorized-or-missing");
       }
-      await this.authenticate(client, roomId, token, pepper, true);
+      const actor = await this.authenticate(
+        client,
+        roomId,
+        token,
+        pepper,
+        true,
+      );
       const projection = await this.buildProjection(client, room);
       await client.query("COMMIT");
-      return room.expires_at.getTime() <= Date.now()
-        ? { ...projection, phase: "expired" }
-        : projection;
+      return {
+        projection:
+          room.expires_at.getTime() <= Date.now()
+            ? { ...projection, phase: "expired" }
+            : projection,
+        actor: {
+          memberId: actor.id,
+          role: actor.role,
+          nextSequence: Number(actor.last_sequence) + 1,
+        },
+      };
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       throw error;
@@ -505,7 +556,15 @@ export class PostgresRoomStore {
         }
         const projection = parseProjection(previous.result_projection);
         await client.query("COMMIT");
-        return { replayed: true, projection };
+        return {
+          replayed: true,
+          projection,
+          actor: {
+            memberId: actor.id,
+            role: actor.role,
+            nextSequence: Number(actor.last_sequence) + 1,
+          },
+        };
       }
 
       const currentRevision = Number(room.revision);
@@ -562,7 +621,15 @@ export class PostgresRoomStore {
         ],
       );
       await client.query("COMMIT");
-      return { replayed: false, projection };
+      return {
+        replayed: false,
+        projection,
+        actor: {
+          memberId: actor.id,
+          role: actor.role,
+          nextSequence: command.sequence + 1,
+        },
+      };
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       if (

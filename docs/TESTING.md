@@ -22,10 +22,18 @@ pnpm --filter @consensus/web exec playwright install chromium
 
 Milestone 0.2.1 also validates install metadata and generated icons, plus horizontal-overflow and primary-action availability at 320, 390, 768, 1024, and 1440 CSS pixels. Manual HTTPS install and device checks follow [PWA.md](PWA.md); automation does not substitute for iOS/Android home-screen verification.
 
+The local CQ-215 connected-room suite uses isolated browser authorities for the
+host/participant happy path and mocked committed projections for denial,
+authenticated expiry, host recovery, and participant departure. It also checks
+the connected entry surface at 320, 390, 768, 1024, and 1440 CSS pixels,
+keyboard navigation, and the reduced-motion override. These deterministic local
+checks do not write shared Neon data and do not replace the separately
+owner-authorized protected Preview review.
+
 Browser projects run through one worker so image-heavy responsive journeys do
 not race development-server hydration on constrained local and CI runners. The
-24-test suite remains small enough for deterministic serialization. Increasing
-worker count requires repeated evidence that the complete gate remains stable.
+suite remains small enough for deterministic serialization. Increasing worker
+count requires repeated evidence that the complete gate remains stable.
 
 Set `PLAYWRIGHT_BASE_URL` to an immutable HTTPS Preview origin to run the same suite without starting the local development server:
 
@@ -35,6 +43,45 @@ pnpm test:e2e
 ```
 
 Do not use a production provider or user room as automated test data.
+
+The deployed multi-context room check is deliberately owner-dispatched because
+it writes one synthetic aggregate to shared non-production Neon. It exercises
+an admitted participant, a denied participant, host recovery with old-authority
+revocation, missing/unauthorized response equivalence, responsive overflow, and
+browser errors without creating additional aggregates. A Vercel
+Authentication-protected Preview also requires its automation-bypass secret;
+interactive login cookies must not be copied into test runners. The GitHub
+manual `Consensus Quality` workflow job uses only the existing protected
+`Preview` environment and accepts an immutable Preview URL plus a unique,
+non-sensitive title. After the approved run, delete that exact aggregate through
+the documented operator cleanup procedure.
+
+Manual Preview dispatches run only this stateful acceptance job. The normal
+pull-request event remains the authoritative source, dependency, persistence,
+build, and local-browser gate; keeping the executions separate prevents an
+unrelated rerun from obscuring the exact Preview result.
+
+The production dependency audit is also isolated from the full verify job. It
+remains fail-closed and part of the aggregate `build-and-test` requirement, but
+an advisory-service outage can be diagnosed and rerun without repeating the
+entire build and browser suite.
+
+For a local reproduction by an approved operator:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "https://<immutable-preview-host>"
+$env:CONSENSUS_LIVE_PREVIEW_ACCEPTANCE = "1"
+$env:CONSENSUS_PREVIEW_TEST_TITLE = "Preview acceptance <unique-run-label>"
+$env:VERCEL_AUTOMATION_BYPASS_SECRET = "<protected-test-secret>"
+pnpm --filter @consensus/web exec playwright test e2e/preview-room-acceptance.spec.ts --project=desktop-chromium --retries=0
+```
+
+Never echo the bypass secret, invitation locator, capability cookie, or recovery
+code. The test uses separate browser contexts and passes the bypass only as a
+request header. It makes exactly one attempt: retrying a stateful shared-Preview
+test could create duplicate fixtures. It remains skipped during the ordinary
+local and pull-request gate; the owner-dispatched workflow does not promote,
+release, or clean up data automatically.
 
 ## Disposable PostgreSQL migration suite
 

@@ -1,11 +1,21 @@
 import { DecisionWorkflow } from "@/components/decision-workflow";
+import { ConnectedRoom } from "@/components/connected-room";
 import { connection } from "next/server";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ join?: string | string[] }>;
+}) {
   await connection();
+  const query = await searchParams;
+  const initialLocator =
+    typeof query.join === "string" ? query.join.slice(0, 25) : "";
   return (
     <main>
-      <section className="hero" aria-labelledby="hero-title">
+      <ConnectedRoom initialLocator={initialLocator} />
+
+      <section className="hero vision-hero" aria-labelledby="hero-title">
         <div className="eyebrow">Consensus · decision MVP</div>
         <h1 id="hero-title">Make the choice. Keep the group.</h1>
         <p className="hero-copy">
@@ -19,6 +29,10 @@ export default async function HomePage() {
           <span>Explainable result</span>
         </div>
       </section>
+
+      <div className="prototype-divider" role="separator">
+        <span>Explore the single-device prototype</span>
+      </div>
 
       <DecisionWorkflow />
 

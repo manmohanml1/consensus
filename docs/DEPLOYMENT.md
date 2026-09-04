@@ -25,8 +25,12 @@ Run the browser suite against the immutable Preview artifact before completing t
 
 ```powershell
 $env:PLAYWRIGHT_BASE_URL = "https://<preview-host>"
-pnpm --filter @consensus/web test:e2e
+pnpm --filter @consensus/web exec playwright test e2e/preview-room-acceptance.spec.ts --project=desktop-chromium --retries=0
 ```
+
+The protected shared-Preview scenario is a single stateful test and must run
+without retries; an operator may investigate a failure, but must not let CI
+silently create duplicate synthetic rooms.
 
 - Record deployment URL, commit SHA, target environment, build duration, and status in the pull request.
 - Complete host setup, candidate review, ballot, no-safe-result, result, commitment, and safe-link flows.
@@ -111,11 +115,12 @@ Database migrations remain separately approval-gated and run before promotion wi
 
 The repository, shared non-production schema, least-privilege runtime identity,
 and protected room-creation smoke are ready for broader Preview acceptance. The
-current web journey still renders illustrative local fixtures; it does not yet
-connect the setup, lobby, voting, and result screens to the private room API.
-That visible integration is CQ-215, the next milestone 0.3 product slice, and
-must be verified as a complete two-browser host/participant journey before
-Preview is presented as a working multi-user release.
+CQ-215 topic branch connects the setup, lobby, voting, result, and host-recovery
+screens to the private room API. The earlier single-device fixture remains below
+it as an explicitly labelled prototype reference. The connected happy path has
+passed against one immutable Preview with independent host and participant
+browser contexts; the remaining negative-state, accessibility, responsive, and
+cleanup checks still gate broader Preview release.
 
 Before widening Preview access:
 
@@ -129,6 +134,23 @@ Before widening Preview access:
 CQ-212's owner-authorized hosted restore-branch rehearsal is complete. It
 verified migrations, least-privilege grants, synthetic aggregate deletion, and
 temporary branch teardown without changing the default non-production branch.
+
+The first CQ-215 protected-Preview attempt on 2026-09-03 verified that ordinary
+fresh browser contexts are redirected to Vercel Authentication before the
+application loads. That is the expected protection boundary, not product
+evidence. The repository now contains an opt-in two-context Preview check that
+uses Vercel's dedicated automation-bypass header when the secret is supplied at
+runtime; deployment protection was not disabled. The owner-dispatched run for
+commit `7804dd5` passed creation, invitation, pending admission, roster lock,
+both ballots, deterministic resolution, and matching committed results on the
+immutable Preview. Runtime-log review found expected 2xx room traffic and no
+warning/error/fatal application events, with one PostgreSQL client TLS
+forward-compatibility warning recorded for hardening. The job uses the
+`VERCEL_AUTOMATION_BYPASS_SECRET` held only in GitHub's protected `Preview`
+environment, validates the target is a Consensus Vercel Preview host, never
+receives Production secrets, and never performs automatic cleanup. Exact
+evidence and the separately authorized, zero-residue synthetic cleanup are recorded in
+[the CQ-215 protected Preview acceptance record](operations/2026-09-03-cq215-protected-preview-acceptance.md).
 
 Production preparation is deliberately separate. Create an independent
 production database and distinct least-privilege migration/runtime identities;

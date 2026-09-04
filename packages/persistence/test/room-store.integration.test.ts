@@ -94,6 +94,7 @@ describeDatabase("transactional room command store", () => {
     expect(replayed).toEqual({
       replayed: true,
       projection: accepted.projection,
+      actor: accepted.actor,
     });
     await expect(
       store.executeCommand(
@@ -190,6 +191,10 @@ describeDatabase("transactional room command store", () => {
       capabilityExpiresAt: capability.expiresAt,
       expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
       deletionDueAt: new Date(Date.now() + 8 * 24 * 60 * 60 * 1_000),
+      candidates: [
+        { id: "candidate_created_01", name: "Garden Table" },
+        { id: "candidate_created_02", name: "Night Noodle" },
+      ],
     });
 
     expect(projection).toMatchObject({
@@ -198,6 +203,20 @@ describeDatabase("transactional room command store", () => {
       participants: [
         { id: "member_created_01", displayName: "Maya", status: "active" },
       ],
+      candidates: [
+        { id: "candidate_created_01", name: "Garden Table", status: "active" },
+        { id: "candidate_created_02", name: "Night Noodle", status: "active" },
+      ],
+    });
+    const authorized = await store.getAuthorizedProjection(
+      "room_created_0001",
+      capability.takeToken(),
+      pepper,
+    );
+    expect(authorized.actor).toEqual({
+      memberId: "member_created_01",
+      role: "host",
+      nextSequence: 1,
     });
     const stored = await admin.query(
       "SELECT invite_code_hash, capability_hash FROM consensus.rooms JOIN consensus.participants ON rooms.id = participants.room_id WHERE rooms.id = $1",

@@ -154,6 +154,32 @@ describe("room creation requests", () => {
     });
   });
 
+  it("accepts a bounded unique manual candidate deck", () => {
+    const request = {
+      ...validCreation(),
+      candidateNames: ["Garden Table", "Night Noodle"],
+    };
+    expect(parseCreateRoomRequest(request)).toEqual({
+      success: true,
+      data: request,
+    });
+  });
+
+  it("rejects duplicate or undersized candidate decks", () => {
+    expect(
+      parseCreateRoomRequest({
+        ...validCreation(),
+        candidateNames: ["Garden Table", " garden table "],
+      }),
+    ).toMatchObject({ success: false });
+    expect(
+      parseCreateRoomRequest({
+        ...validCreation(),
+        candidateNames: ["Only one"],
+      }),
+    ).toMatchObject({ success: false });
+  });
+
   it("rejects capabilities, unknown fields, and non-UTC time", () => {
     const result = parseCreateRoomRequest({
       ...validCreation(),
