@@ -50,6 +50,11 @@ pull-request event remains the authoritative source, dependency, persistence,
 build, and local-browser gate; keeping the executions separate prevents an
 unrelated rerun from obscuring the exact Preview result.
 
+The production dependency audit is also isolated from the full verify job. It
+remains fail-closed and part of the aggregate `build-and-test` requirement, but
+an advisory-service outage can be diagnosed and rerun without repeating the
+entire build and browser suite.
+
 For a local reproduction by an approved operator:
 
 ```powershell
