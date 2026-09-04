@@ -199,7 +199,23 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     });
     expect(oldHostResponse.status).toBe(404);
     expect(missingResponse.status).toBe(404);
-    expect(oldHostResponse.body).toEqual(missingResponse.body);
+    const stableUnavailableResponse = {
+      protocolVersion: "1.0.0",
+      code: "unauthorized-or-missing",
+      message: "The room is unavailable.",
+      retryable: false,
+    };
+    expect(oldHostResponse.body).toMatchObject(stableUnavailableResponse);
+    expect(missingResponse.body).toMatchObject(stableUnavailableResponse);
+    const oldHostCorrelationId = (
+      oldHostResponse.body as { correlationId?: unknown }
+    ).correlationId;
+    const missingCorrelationId = (
+      missingResponse.body as { correlationId?: unknown }
+    ).correlationId;
+    expect(oldHostCorrelationId).toMatch(/^correlation_[a-f0-9]{32}$/);
+    expect(missingCorrelationId).toMatch(/^correlation_[a-f0-9]{32}$/);
+    expect(oldHostCorrelationId).not.toBe(missingCorrelationId);
 
     for (const testedPage of [host, guest, denied, recoveredHost]) {
       const dimensions = await testedPage.evaluate(() => ({

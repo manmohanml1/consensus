@@ -2,6 +2,7 @@ import {
   expect,
   test,
   type BrowserContext,
+  type Page,
   type Route,
 } from "@playwright/test";
 
@@ -9,6 +10,14 @@ type Participant = {
   id: string;
   displayName: string;
   status: "pending" | "active" | "left";
+};
+
+const activateEntryMode = async (page: Page, mode: "Create" | "Join") => {
+  const button = page.getByRole("button", { name: mode, exact: true });
+  await expect(async () => {
+    await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+  }).toPass();
 };
 
 const projection = ({
@@ -214,7 +223,8 @@ test("orchestrates a two-browser secure-room journey", async ({
 
   try {
     await host.goto("/");
-    await host.waitForLoadState("networkidle");
+    await activateEntryMode(host, "Join");
+    await activateEntryMode(host, "Create");
     const targetAt = host.getByLabel("When?");
     await targetAt.fill("2027-09-04T19:00");
     await expect(targetAt).toHaveValue("2027-09-04T19:00");
@@ -226,7 +236,8 @@ test("orchestrates a two-browser secure-room journey", async ({
     await expect(host.getByText("r1.AAAAAAAAAAAAAAAAAAAAAA")).toBeVisible();
 
     await guest.goto("/?join=r1.AAAAAAAAAAAAAAAAAAAAAA");
-    await guest.waitForLoadState("networkidle");
+    await activateEntryMode(guest, "Create");
+    await activateEntryMode(guest, "Join");
     await guest.getByLabel("Your name").fill("Sam");
     await guest.getByRole("button", { name: "Ask to join" }).click();
     await expect(guest.getByText("Waiting for the host")).toBeVisible();

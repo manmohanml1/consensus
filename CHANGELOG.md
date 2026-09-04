@@ -6,6 +6,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Compare stable privacy-preserving Preview error fields while independently
+  validating unique per-request correlation IDs.
+- Replace brittle browser-test network-idle waits with observable entry-mode
+  state transitions that prove React hydration before form interaction.
 - Render authenticated expired-room projections as terminal states and suppress
   stale invite, roster, recovery, departure, and voting controls.
 - Replaced Production `script-src 'unsafe-inline'` with a unique per-request

@@ -72,3 +72,28 @@ commitments, and host-recovery challenges. No unrelated room was targeted.
 
 PR merge, Production promotion, a semantic version tag, and a GitHub Release
 remain separate explicit owner decisions.
+
+## Expanded-run evidence
+
+On 2026-09-04 EDT, the owner authorized exactly one protected Preview acceptance
+attempt for commit `873a57a2a043c13fc00f500b0d61c6e13958ef50`, immutable
+deployment
+`https://consensus-m6i6c921i-manmohanlonawat-8572s-projects.vercel.app`, and
+synthetic title `Preview acceptance PR143-873a57a`. Workflow run
+[33891798373](https://github.com/manmohanml1/consensus/actions/runs/33891798373)
+reached room creation, admission and denial, voting and resolution, host
+recovery, prior-host revocation, and missing-room privacy checks. Both revoked
+and missing authorities received the same stable 404 public error fields.
+
+The run then failed because the test compared the complete error envelopes and
+therefore incorrectly required their intentionally unique per-request
+correlation IDs to match. This was a test assertion defect, not a product,
+authorization, or privacy failure. Responsive-overflow and final browser-console
+assertions were positioned after the failing assertion and did not execute in
+this hosted attempt. No automatic retry was made.
+
+The run created one shared non-production aggregate labelled
+`Preview acceptance PR143-873a57a`. It remains retained pending a separately
+authorized, exact cleanup and zero-match verification. A corrected revision
+must complete ordinary CI before the owner may authorize a new single-attempt
+protected Preview run against that revision's immutable deployment.
