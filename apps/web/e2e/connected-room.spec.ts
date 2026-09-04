@@ -11,6 +11,51 @@ type Participant = {
   status: "pending" | "active" | "left";
 };
 
+const projection = ({
+  phase = "lobby",
+  role = "host",
+  participantStatus = "active",
+}: {
+  phase?: "lobby" | "expired";
+  role?: "host" | "participant";
+  participantStatus?: "pending" | "active" | "left";
+} = {}) => ({
+  room: {
+    protocolVersion: "1.0.0",
+    roomId: "room_connected_state_0001",
+    revision: phase === "expired" ? 2 : 1,
+    phase,
+    title: "Friday dinner",
+    targetAt: "2027-09-04T23:00:00.000Z",
+    createdAt: "2026-09-03T12:00:00.000Z",
+    expiresAt: "2026-09-03T14:00:00.000Z",
+    rosterLocked: false,
+    participants: [
+      {
+        id:
+          role === "host"
+            ? "member_host_state_0001"
+            : "member_guest_state_0001",
+        displayName: role === "host" ? "Maya" : "Sam",
+        status: participantStatus,
+      },
+    ],
+    constraintIds: [],
+    candidates: [
+      { id: "candidate_garden", name: "Garden Table", status: "active" },
+      { id: "candidate_noodle", name: "Night Noodle", status: "active" },
+    ],
+    ballotProgress: [],
+    decision: null,
+  },
+  actor: {
+    memberId:
+      role === "host" ? "member_host_state_0001" : "member_guest_state_0001",
+    role,
+    nextSequence: 1,
+  },
+});
+
 test("orchestrates a two-browser secure-room journey", async ({
   browser,
 }, testInfo) => {
@@ -229,4 +274,194 @@ test("orchestrates a two-browser secure-room journey", async ({
     await hostContext.close();
     await guestContext.close();
   }
+});
+
+test("renders expiry as a terminal connected-room state", async ({ page }) => {
+  let expired = false;
+  await page.route("**/api/v1/rooms**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith("/recovery/redeem") && request.method() === "POST") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(projection()),
+      });
+    }
+    if (path.endsWith("/projection")) {
+      expired = true;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(projection({ phase: "expired" })),
+      });
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Recover" }).click();
+  await page.getByLabel("Room ID").fill("room_connected_state_0001");
+  await page
+    .getByLabel("One-time recovery code")
+    .fill("hr1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  await page.getByRole("button", { name: "Restore host access" }).click();
+  await page.getByRole("button", { name: "Refresh" }).click();
+
+  expect(expired).toBe(true);
+  await expect(page.getByTestId("connected-expired")).toContainText(
+    "This temporary room has expired.",
+  );
+  await expect(
+    page.getByRole("button", { name: "Lock roster and begin voting" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Create recovery code" }),
+  ).toHaveCount(0);
+});
+
+test("keeps denial indistinguishable from missing room access", async ({
+  page,
+}) => {
+  let denied = false;
+  await page.route("**/api/v1/rooms**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/v1/rooms/join") {
+      return route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify(
+          projection({ role: "participant", participantStatus: "pending" }),
+        ),
+      });
+    }
+    if (path.endsWith("/projection")) {
+      denied = true;
+      return route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: JSON.stringify({
+          protocolVersion: "1.0.0",
+          code: "unauthorized-or-missing",
+        }),
+      });
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/?join=r1.AAAAAAAAAAAAAAAAAAAAAA");
+  await page.getByLabel("Your name").fill("Sam");
+  await page.getByRole("button", { name: "Ask to join" }).click();
+  await expect(page.getByText("Waiting for the host")).toBeVisible();
+  await page.getByRole("button", { name: "Refresh" }).click();
+
+  expect(denied).toBe(true);
+  await expect(
+    page.getByText(
+      "That room is unavailable or this browser no longer has access.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+});
+
+test("restores host access without retaining the recovery code", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/rooms/**/recovery/redeem", async (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(projection()),
+    }),
+  );
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Recover" }).click();
+  await page.getByLabel("Room ID").fill("room_connected_state_0001");
+  await page
+    .getByLabel("One-time recovery code")
+    .fill("hr1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  await page.getByRole("button", { name: "Restore host access" }).click();
+
+  await expect(page.getByText("Hosting as")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText(
+    "Host access restored on this browser.",
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "Recover" }).click();
+  await expect(page.getByLabel("One-time recovery code")).toHaveValue("");
+});
+
+test("reflects a participant departure from committed room state", async ({
+  page,
+}) => {
+  let left = false;
+  await page.route("**/api/v1/rooms**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/v1/rooms/join") {
+      return route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify(projection({ role: "participant" })),
+      });
+    }
+    if (path.endsWith("/commands") && request.method() === "POST") {
+      left = true;
+      return route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify(
+          projection({ role: "participant", participantStatus: "left" }),
+        ),
+      });
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/?join=r1.AAAAAAAAAAAAAAAAAAAAAA");
+  await page.getByLabel("Your name").fill("Sam");
+  await page.getByRole("button", { name: "Ask to join" }).click();
+  await page.getByRole("button", { name: "Leave room" }).click();
+
+  expect(left).toBe(true);
+  await expect(page.getByText("left", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Leave room" })).toHaveCount(0);
+});
+
+test("keeps connected entry keyboard-operable and responsive", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 1000 });
+    const dimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  }
+
+  await page.getByRole("button", { name: "Create", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("button", { name: "Join", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Private room code")).toBeFocused();
+});
+
+test("honors reduced motion in the connected interface", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      ),
+    )
+    .toBe(true);
+  const duration = await page
+    .getByRole("button", { name: "Join" })
+    .evaluate((element) => getComputedStyle(element).transitionDuration);
+  expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.00001);
 });

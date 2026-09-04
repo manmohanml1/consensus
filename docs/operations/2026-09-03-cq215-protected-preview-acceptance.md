@@ -39,14 +39,31 @@ adopt weaker libpq semantics for that spelling. Before such an upgrade, make the
 certificate-verifying mode explicit in the connection configuration and test it
 in non-production.
 
+## Authorized cleanup
+
+On 2026-09-03 EDT / 2026-09-04 UTC, the owner separately authorized removal of
+the seven inventoried `Preview acceptance PR143-*` rooms. A fresh pre-delete
+query reconfirmed exactly seven matches: two for `PR143-1213e06` and one each for
+`PR143-0b0645f`, `PR143-c7b2c26`, `PR143-1f05c3a`, `PR143-a91229d`, and
+`PR143-7804dd5`.
+
+The cleanup matched all seven exact room-ID/title pairs and aborted unless the
+affected row count was exactly seven. The statement completed successfully. A
+separate read-only verification returned zero for the matching title pattern,
+all seven room IDs, and every dependent aggregate table: participants,
+constraints, candidates, commands, votes, decisions, outbox events,
+commitments, and host-recovery challenges. No unrelated room was targeted.
+
 ## Remaining gates
 
+- Local connected-UI regression coverage now passes for denial, authenticated
+  terminal expiry, host recovery, participant departure, responsive widths,
+  keyboard operation, and reduced motion. This is deterministic evidence, not a
+  claim about the protected artifact.
 - Execute the final negative-state Preview review for denial, expiry, recovery,
   missing-room, and unauthorized projections.
 - Complete responsive, keyboard, reduced-motion, accessibility, and browser
   console review against the accepted artifact.
-- Enumerate all exact `Preview acceptance PR143-*` synthetic aggregates, then
-  obtain separate owner authorization before deleting only those aggregates.
 - Rotate or revoke the automation-bypass credential when protected Preview
   acceptance no longer needs it.
 

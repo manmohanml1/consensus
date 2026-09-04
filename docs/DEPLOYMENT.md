@@ -149,7 +149,7 @@ forward-compatibility warning recorded for hardening. The job uses the
 `VERCEL_AUTOMATION_BYPASS_SECRET` held only in GitHub's protected `Preview`
 environment, validates the target is a Consensus Vercel Preview host, never
 receives Production secrets, and never performs automatic cleanup. Exact
-evidence and the still-authorization-gated synthetic cleanup are recorded in
+evidence and the separately authorized, zero-residue synthetic cleanup are recorded in
 [the CQ-215 protected Preview acceptance record](operations/2026-09-03-cq215-protected-preview-acceptance.md).
 
 Production preparation is deliberately separate. Create an independent

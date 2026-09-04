@@ -460,7 +460,25 @@ export function ConnectedRoom({
         <span>Revision {state.room.revision}</span>
       </div>
 
-      {state.actor.role === "host" && invitation ? (
+      {state.room.phase === "expired" ? (
+        <div
+          className="waiting-card"
+          data-testid="connected-expired"
+          role="status"
+        >
+          <div>
+            <strong>This temporary room has expired.</strong>
+            <p>
+              Voting and roster changes are closed. Start a new room to decide
+              together again.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {state.room.phase !== "expired" &&
+      state.actor.role === "host" &&
+      invitation ? (
         <article className="invite-card">
           <p className="section-kicker">Invite without an account</p>
           <h3>Bring the group into this room.</h3>
@@ -472,7 +490,7 @@ export function ConnectedRoom({
         </article>
       ) : null}
 
-      {me?.status === "pending" ? (
+      {state.room.phase !== "expired" && me?.status === "pending" ? (
         <div className="waiting-card" role="status">
           <span className="waiting-pulse" aria-hidden="true" />
           <div>
@@ -482,7 +500,7 @@ export function ConnectedRoom({
         </div>
       ) : null}
 
-      {!state.room.rosterLocked ? (
+      {state.room.phase !== "expired" && !state.room.rosterLocked ? (
         <div className="roster-board">
           <div className="panel-heading split-heading">
             <div>
@@ -782,7 +800,7 @@ export function ConnectedRoom({
         </div>
       ) : null}
 
-      {state.actor.role === "host" ? (
+      {state.room.phase !== "expired" && state.actor.role === "host" ? (
         <details className="recovery-panel">
           <summary>Host recovery</summary>
           <p>
@@ -805,7 +823,8 @@ export function ConnectedRoom({
         </details>
       ) : null}
 
-      {state.actor.role === "participant" &&
+      {state.room.phase !== "expired" &&
+      state.actor.role === "participant" &&
       me?.status === "active" &&
       !state.room.rosterLocked ? (
         <button

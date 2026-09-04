@@ -22,6 +22,14 @@ pnpm --filter @consensus/web exec playwright install chromium
 
 Milestone 0.2.1 also validates install metadata and generated icons, plus horizontal-overflow and primary-action availability at 320, 390, 768, 1024, and 1440 CSS pixels. Manual HTTPS install and device checks follow [PWA.md](PWA.md); automation does not substitute for iOS/Android home-screen verification.
 
+The local CQ-215 connected-room suite uses isolated browser authorities for the
+host/participant happy path and mocked committed projections for denial,
+authenticated expiry, host recovery, and participant departure. It also checks
+the connected entry surface at 320, 390, 768, 1024, and 1440 CSS pixels,
+keyboard navigation, and the reduced-motion override. These deterministic local
+checks do not write shared Neon data and do not replace the separately
+owner-authorized protected Preview review.
+
 Browser projects run through one worker so image-heavy responsive journeys do
 not race development-server hydration on constrained local and CI runners. The
 suite remains small enough for deterministic serialization. Increasing worker

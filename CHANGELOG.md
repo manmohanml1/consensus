@@ -6,6 +6,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Render authenticated expired-room projections as terminal states and suppress
+  stale invite, roster, recovery, departure, and voting controls.
 - Replaced Production `script-src 'unsafe-inline'` with a unique per-request
   nonce and `strict-dynamic`, with browser regression coverage.
 - Serialized the small Playwright browser matrix to prevent recurring local and
@@ -18,6 +20,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- Connected-room browser coverage for privacy-preserving denial, expiry, host
+  recovery, participant departure, responsive widths, keyboard use, and reduced
+  motion in addition to the independent host/participant happy path.
 - A mobile-first secure-room client for anonymous creation, private-link join,
   explicit admission/denial, manual candidate review, locked-roster voting,
   photo-led swipe/button ballots, match-style deterministic results, commitment,

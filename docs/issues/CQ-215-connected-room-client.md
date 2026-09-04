@@ -55,15 +55,20 @@ proved without pretending illustrative entries are live venue data. Licensed
 nearby discovery, venue photos, ratings, reviews, dishes, and map search remain
 the separate v0.5 provider tranche.
 
-Local automated evidence covers the UI orchestration and server contracts. The
+Local automated evidence covers the UI orchestration and server contracts,
+including denial, authenticated terminal expiry, recovery-code clearing,
+participant departure, five responsive widths, keyboard entry, and reduced
+motion. The
 2026-09-03 owner-dispatched run for commit `7804dd5` passed the connected happy
 path using independent host and participant contexts while Vercel deployment
 protection remained enabled. Runtime review showed expected 2xx room traffic and
 no warning/error/fatal application events; the PostgreSQL client emitted one TLS
 forward-compatibility warning that must be hardened before a driver-major
-upgrade. Recovery/expiry and other negative-state Preview checks, responsive and
-accessibility review, and authorized synthetic cleanup remain before CQ-215 can
-close. See [the acceptance record](../operations/2026-09-03-cq215-protected-preview-acceptance.md).
+upgrade. The corresponding negative-state, responsive, accessibility, and
+console review against the protected Preview artifact remains before CQ-215 can
+close. The separately authorized
+cleanup removed all seven PR #143 synthetic rooms and verified zero dependent
+rows. See [the acceptance record](../operations/2026-09-03-cq215-protected-preview-acceptance.md).
 
 The owner-dispatched `Consensus Quality` acceptance job is the only hosted path
 for that test. It is environment-scoped to `Preview`, validates the Vercel host
