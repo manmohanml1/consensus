@@ -97,3 +97,30 @@ The run created one shared non-production aggregate labelled
 authorized, exact cleanup and zero-match verification. A corrected revision
 must complete ordinary CI before the owner may authorize a new single-attempt
 protected Preview run against that revision's immutable deployment.
+
+## Corrected-run evidence
+
+On 2026-09-04 EDT, the owner authorized exact cleanup of the retained
+`Preview acceptance PR143-873a57a` aggregate. The guarded statement found one
+match and deleted one room, `room_c8dc501172334db78ed3fc92787ca8a3`. A separate
+verification returned zero for its exact title, room ID, and every dependent
+room-owned relation.
+
+The owner then authorized one protected attempt for commit
+`dc7da2fa065f45911d2106aeab7fe9edf0f99459`, immutable deployment
+`https://consensus-50mtg2w5t-manmohanlonawat-8572s-projects.vercel.app`, and
+synthetic title `Preview acceptance PR143-dc7da2f`. Workflow run
+[33899129394](https://github.com/manmohanml1/consensus/actions/runs/33899129394)
+completed every product, authority, and responsive-overflow assertion. Its
+final console assertion then failed on four expected attempts by Vercel's
+Preview toolbar to frame `vercel.live`, which the application CSP correctly
+blocked, and three expected browser 404 messages produced by the denied,
+revoked-host, and missing-room checks. No page exception or unexpected API
+response was reported.
+
+The acceptance assertion now preserves zero tolerance for page exceptions and
+unexpected console errors, requires the three deliberate negative-path 404s,
+and permits only the narrowly identified Vercel toolbar CSP message. The CSP is
+not weakened. No automatic hosted retry was made. The run created one aggregate
+labelled `Preview acceptance PR143-dc7da2f`; it remains pending separately
+authorized exact cleanup and zero-match verification.

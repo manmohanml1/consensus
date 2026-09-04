@@ -8,6 +8,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 - Compare stable privacy-preserving Preview error fields while independently
   validating unique per-request correlation IDs.
+- Distinguish expected negative-path 404s and the blocked Vercel Preview toolbar
+  frame from actionable page and console errors in protected acceptance.
 - Replace brittle browser-test network-idle waits with observable entry-mode
   state transitions that prove React hydration before form interaction.
 - Render authenticated expired-room projections as terminal states and suppress

@@ -51,12 +51,13 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     },
   });
 
-  const consoleFailures: string[] = [];
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
   const observe = (page: Page) => {
     page.on("console", (message) => {
-      if (message.type() === "error") consoleFailures.push(message.text());
+      if (message.type() === "error") consoleErrors.push(message.text());
     });
-    page.on("pageerror", (error) => consoleFailures.push(error.message));
+    page.on("pageerror", (error) => pageErrors.push(error.message));
   };
 
   try {
@@ -236,7 +237,22 @@ test("accepts a real Preview invitation in a separate browser session", async ({
         dimensions.clientWidth,
       );
     }
-    expect(consoleFailures).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    const expectedNotFoundMessage =
+      "Failed to load resource: the server responded with a status of 404 ()";
+    expect(
+      consoleErrors.filter((message) => message === expectedNotFoundMessage),
+    ).toHaveLength(3);
+    const unexpectedConsoleErrors = consoleErrors.filter(
+      (message) =>
+        message !== expectedNotFoundMessage &&
+        !(
+          message.startsWith(
+            "Framing 'https://vercel.live/' violates the following Content Security Policy directive:",
+          ) && message.includes("default-src 'self'")
+        ),
+    );
+    expect(unexpectedConsoleErrors).toEqual([]);
   } finally {
     await hostContext.close();
     await guestContext.close();
