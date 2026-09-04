@@ -104,11 +104,11 @@ test("accepts a real Preview invitation in a separate browser session", async ({
       host.getByRole("button", { name: "Resolve fairly" }),
     ).toBeEnabled();
     await host.getByRole("button", { name: "Resolve fairly" }).click();
+    const hostResult = host.getByTestId("connected-result");
+    await expect(hostResult).toBeVisible();
     await guest.getByRole("button", { name: "Refresh progress" }).click();
 
-    const hostResult = host.getByTestId("connected-result");
     const guestResult = guest.getByTestId("connected-result");
-    await expect(hostResult).toBeVisible();
     await expect(guestResult).toBeVisible();
     const hostWinner = hostResult.getByRole("heading", { level: 3 });
     const guestWinner = guestResult.getByRole("heading", { level: 3 });
