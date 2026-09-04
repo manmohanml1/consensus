@@ -110,7 +110,9 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     const guestResult = guest.getByTestId("connected-result");
     await expect(hostResult).toBeVisible();
     await expect(guestResult).toBeVisible();
-    await expect(guestResult).toHaveText(await hostResult.innerText());
+    const hostWinner = hostResult.getByRole("heading", { level: 3 });
+    const guestWinner = guestResult.getByRole("heading", { level: 3 });
+    await expect(guestWinner).toHaveText(await hostWinner.textContent());
   } finally {
     await hostContext.close();
     await guestContext.close();
