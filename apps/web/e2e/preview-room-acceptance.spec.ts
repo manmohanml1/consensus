@@ -87,6 +87,7 @@ test("accepts a real Preview invitation in a separate browser session", async ({
       }
     }
     await expect(host.getByText("Waiting for the group.")).toBeVisible();
+    await guest.getByRole("button", { name: "Refresh progress" }).click();
     for (let index = 0; index < 4; index += 1) {
       await guest
         .getByRole("button", { name: /^Accept — a workable compromise$/ })
