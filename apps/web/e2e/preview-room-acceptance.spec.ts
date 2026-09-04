@@ -1,8 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 // This is intentionally opt-in: it exercises the deployed Preview runtime and
-// creates one clearly labelled synthetic room that is removed immediately by
-// the documented operator cleanup procedure.
+// creates one clearly labelled synthetic room that is removed only through the
+// separately authorized operator cleanup procedure.
 test("accepts a real Preview invitation in a separate browser session", async ({
   browser,
 }, testInfo) => {
@@ -36,9 +36,32 @@ test("accepts a real Preview invitation in a separate browser session", async ({
       "x-vercel-set-bypass-cookie": "true",
     },
   });
+  const deniedContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    extraHTTPHeaders: {
+      "x-vercel-protection-bypass": bypassSecret!,
+      "x-vercel-set-bypass-cookie": "true",
+    },
+  });
+  const recoveryContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    extraHTTPHeaders: {
+      "x-vercel-protection-bypass": bypassSecret!,
+      "x-vercel-set-bypass-cookie": "true",
+    },
+  });
+
+  const consoleFailures: string[] = [];
+  const observe = (page: Page) => {
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleFailures.push(message.text());
+    });
+    page.on("pageerror", (error) => consoleFailures.push(error.message));
+  };
 
   try {
     const host = await hostContext.newPage();
+    observe(host);
     await host.goto("/");
     await expect(
       host.getByRole("heading", {
@@ -53,7 +76,27 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     const locator = await host.locator("code").first().textContent();
     expect(locator).toMatch(/^r1\.[A-Za-z0-9_-]+$/);
 
+    const denied = await deniedContext.newPage();
+    observe(denied);
+    await denied.goto(`/?join=${encodeURIComponent(locator ?? "")}`);
+    await denied.getByLabel("Your name").fill("Denied guest");
+    await denied.getByRole("button", { name: "Ask to join" }).click();
+    await expect(denied.getByText("Waiting for the host")).toBeVisible();
+    await host.getByRole("button", { name: "Refresh" }).click();
+    await host
+      .locator(".connected-roster li", { hasText: "Denied guest" })
+      .getByRole("button", { name: "Deny" })
+      .click();
+    await denied.getByRole("button", { name: "Refresh" }).click();
+    await expect(
+      denied.getByText(
+        "That room is unavailable or this browser no longer has access.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+
     const guest = await guestContext.newPage();
+    observe(guest);
     await guest.goto(`/?join=${encodeURIComponent(locator ?? "")}`);
     await guest.getByLabel("Your name").fill("Preview guest");
     await guest.getByRole("button", { name: "Ask to join" }).click();
@@ -113,8 +156,75 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     const hostWinner = hostResult.getByRole("heading", { level: 3 });
     const guestWinner = guestResult.getByRole("heading", { level: 3 });
     await expect(guestWinner).toHaveText(await hostWinner.textContent());
+
+    await host.locator(".recovery-panel").getByText("Host recovery").click();
+    const recoveryPanel = host.locator(".recovery-panel");
+    const roomId = await recoveryPanel.locator("code").first().textContent();
+    expect(roomId).toMatch(/^room_[a-f0-9]{32}$/);
+    await recoveryPanel
+      .getByRole("button", { name: "Create recovery code" })
+      .click();
+    const recoveryCode = await recoveryPanel
+      .locator("code")
+      .nth(1)
+      .textContent();
+    expect(recoveryCode).toMatch(/^hr1\.[A-Za-z0-9_-]{32}$/);
+
+    const recoveredHost = await recoveryContext.newPage();
+    observe(recoveredHost);
+    await recoveredHost.goto("/");
+    await recoveredHost.getByRole("button", { name: "Recover" }).click();
+    await recoveredHost.getByLabel("Room ID").fill(roomId ?? "");
+    await recoveredHost
+      .getByLabel("One-time recovery code")
+      .fill(recoveryCode ?? "");
+    await recoveredHost
+      .getByRole("button", { name: "Restore host access" })
+      .click();
+    await expect(recoveredHost.getByText("Hosting as")).toBeVisible();
+    await expect(recoveredHost.getByTestId("connected-result")).toBeVisible();
+
+    const oldHostResponse = await host.evaluate(async (id) => {
+      const response = await fetch(`/api/v1/rooms/${id}/projection`, {
+        cache: "no-store",
+      });
+      return { status: response.status, body: await response.json() };
+    }, roomId);
+    const missingResponse = await recoveredHost.evaluate(async () => {
+      const response = await fetch(
+        "/api/v1/rooms/room_00000000000000000000000000000000/projection",
+        { cache: "no-store" },
+      );
+      return { status: response.status, body: await response.json() };
+    });
+    expect(oldHostResponse.status).toBe(404);
+    expect(missingResponse.status).toBe(404);
+    expect(oldHostResponse.body).toEqual(missingResponse.body);
+
+    for (const testedPage of [host, guest, denied, recoveredHost]) {
+      const dimensions = await testedPage.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+        dimensions.clientWidth,
+      );
+    }
+    for (const width of [768, 1024, 1440]) {
+      await recoveredHost.setViewportSize({ width, height: 1000 });
+      const dimensions = await recoveredHost.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+        dimensions.clientWidth,
+      );
+    }
+    expect(consoleFailures).toEqual([]);
   } finally {
     await hostContext.close();
     await guestContext.close();
+    await deniedContext.close();
+    await recoveryContext.close();
   }
 });

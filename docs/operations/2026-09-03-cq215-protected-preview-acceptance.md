@@ -60,10 +60,13 @@ commitments, and host-recovery challenges. No unrelated room was targeted.
   terminal expiry, host recovery, participant departure, responsive widths,
   keyboard operation, and reduced motion. This is deterministic evidence, not a
   claim about the protected artifact.
-- Execute the final negative-state Preview review for denial, expiry, recovery,
-  missing-room, and unauthorized projections.
-- Complete responsive, keyboard, reduced-motion, accessibility, and browser
-  console review against the accepted artifact.
+- Dispatch the prepared final Preview revision against the exact accepted
+  artifact. It reuses one labelled aggregate for denial, recovery rotation,
+  revoked-host/missing-room equivalence, responsive overflow, and browser error
+  checks; authenticated expiry remains covered by the disposable persistence
+  and local connected-UI suites.
+- Complete the manual keyboard, reduced-motion, and screen-reader review against
+  the accepted artifact.
 - Rotate or revoke the automation-bypass credential when protected Preview
   acceptance no longer needs it.
 

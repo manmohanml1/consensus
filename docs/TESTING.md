@@ -44,8 +44,11 @@ pnpm test:e2e
 
 Do not use a production provider or user room as automated test data.
 
-The deployed two-browser room check is deliberately owner-dispatched because it
-writes one synthetic aggregate to shared non-production Neon. A Vercel
+The deployed multi-context room check is deliberately owner-dispatched because
+it writes one synthetic aggregate to shared non-production Neon. It exercises
+an admitted participant, a denied participant, host recovery with old-authority
+revocation, missing/unauthorized response equivalence, responsive overflow, and
+browser errors without creating additional aggregates. A Vercel
 Authentication-protected Preview also requires its automation-bypass secret;
 interactive login cookies must not be copied into test runners. The GitHub
 manual `Consensus Quality` workflow job uses only the existing protected

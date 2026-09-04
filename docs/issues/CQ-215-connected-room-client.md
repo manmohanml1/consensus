@@ -74,3 +74,7 @@ The owner-dispatched `Consensus Quality` acceptance job is the only hosted path
 for that test. It is environment-scoped to `Preview`, validates the Vercel host
 before it receives the bypass secret, and requires a separate owner cleanup
 authorization after the test has recorded its exact non-sensitive title.
+The final prepared revision reuses one room across admitted, denied, recovered,
+revoked-host, and missing-room checks and also records responsive overflow and
+browser-console failures; preparation and local static validation do not imply
+authorization to dispatch it.
