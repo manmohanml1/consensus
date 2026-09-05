@@ -4,7 +4,7 @@
 **Type:** feature  
 **Depends on:** CQ-204, CQ-206, CQ-207, CQ-209, CQ-210, CQ-213  
 **GitHub issue:** [#142](https://github.com/manmohanml1/consensus/issues/142)  
-**Status:** implementation in review; protected Preview happy path verified
+**Status:** complete; merged in PR #143 as `a9fe3ee`
 
 Connect the existing mobile-first decision interface to the secure room HTTP
 boundary so separate host and participant browsers can complete a durable room
@@ -35,16 +35,18 @@ not a complete product outcome.
 
 ## Acceptance evidence
 
-A two-browser Playwright suite demonstrated creation, joining, admission, roster
-lock, voting, resolution, result, and refresh on one immutable protected Preview.
-Local suites cover denial, recovery, and expiry; those states remain in the final
-Preview exit review. Synthetic cleanup is a separately authorized operation, not
-an automatic test side effect. No Production activation, promotion, tag, or
-release is implied.
+A two-browser Playwright suite demonstrated creation, joining, admission, denial,
+roster lock, voting, resolution, result, refresh, host recovery, prior-host
+revocation, missing-room privacy equivalence, and responsive overflow on one
+immutable protected Preview. Local suites additionally cover authenticated
+expiry, departure, keyboard use, and reduced motion. The final hosted run had no
+unexpected page or console errors. Separately authorized cleanup removed its
+exact synthetic aggregate and verified zero dependent residue. No Production
+activation, promotion, tag, or release is implied.
 
 ## Current implementation boundary
 
-The topic branch connects account-free creation, invitation, pending admission
+The merged implementation connects account-free creation, invitation, pending admission
 and denial, manual candidate review, roster lock, private voting, deterministic
 resolution, commitment, refresh-safe command sequencing, and one-time host
 recovery to the existing HTTP boundary. The connected journey retains the
@@ -58,23 +60,19 @@ the separate v0.5 provider tranche.
 Local automated evidence covers the UI orchestration and server contracts,
 including denial, authenticated terminal expiry, recovery-code clearing,
 participant departure, five responsive widths, keyboard entry, and reduced
-motion. The
-2026-09-03 owner-dispatched run for commit `7804dd5` passed the connected happy
-path using independent host and participant contexts while Vercel deployment
-protection remained enabled. Runtime review showed expected 2xx room traffic and
-no warning/error/fatal application events; the PostgreSQL client emitted one TLS
-forward-compatibility warning that must be hardened before a driver-major
-upgrade. The corresponding negative-state, responsive, accessibility, and
-console review against the protected Preview artifact remains before CQ-215 can
-close. The separately authorized
-cleanup removed all seven PR #143 synthetic rooms and verified zero dependent
-rows. See [the acceptance record](../operations/2026-09-03-cq215-protected-preview-acceptance.md).
+motion. On 2026-09-04, the final owner-dispatched run for commit `b080059`
+passed the full protected-Preview journey in independent browser contexts while
+Vercel deployment protection remained enabled. It included negative-state,
+privacy-equivalence, responsive-overflow, and unexpected console/page-error
+checks. The separately authorized cleanup removed the final exact aggregate
+`room_55e62aee5faf4fedac1d0df705d16b8c` and verified zero dependent rows. See
+[the acceptance record](../operations/2026-09-03-cq215-protected-preview-acceptance.md).
 
 The owner-dispatched `Consensus Quality` acceptance job is the only hosted path
 for that test. It is environment-scoped to `Preview`, validates the Vercel host
 before it receives the bypass secret, and requires a separate owner cleanup
 authorization after the test has recorded its exact non-sensitive title.
-The final prepared revision reuses one room across admitted, denied, recovered,
-revoked-host, and missing-room checks and also records responsive overflow and
-browser-console failures; preparation and local static validation do not imply
-authorization to dispatch it.
+The final accepted revision reused one room across admitted, denied, recovered,
+revoked-host, and missing-room checks and recorded responsive overflow and
+browser-console failures. Run dispatch, cleanup, merge, Production promotion,
+tagging, and release publication remain independently authorized operations.

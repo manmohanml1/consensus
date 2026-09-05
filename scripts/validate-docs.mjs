@@ -52,22 +52,42 @@ if (roadmapRows.length === 0) {
 }
 
 const activeRows = roadmapRows.filter(({ status }) => status === "Active");
-if (activeRows.length !== 1) {
+if (activeRows.length > 1) {
   failures.push(
-    `ROADMAP.md: expected exactly one Active version, found ${activeRows.length}`,
+    `ROADMAP.md: expected at most one Active version, found ${activeRows.length}`,
   );
 }
 
 const activeIndex = roadmapRows.findIndex(({ status }) => status === "Active");
+const firstPlannedIndex = roadmapRows.findIndex(
+  ({ status }) => status === "Planned",
+);
+const lastStartedIndex =
+  firstPlannedIndex === -1 ? roadmapRows.length - 1 : firstPlannedIndex - 1;
+
+if (activeIndex !== -1 && activeIndex !== lastStartedIndex) {
+  failures.push(
+    `ROADMAP.md: Active version must be the latest started milestone`,
+  );
+}
+
 for (const [index, row] of roadmapRows.entries()) {
-  if (index < activeIndex && !["Complete", "Acceptance"].includes(row.status)) {
+  if (
+    firstPlannedIndex !== -1 &&
+    index >= firstPlannedIndex &&
+    row.status !== "Planned"
+  ) {
     failures.push(
-      `ROADMAP.md: ${row.version} precedes the active milestone but is ${row.status}`,
+      `ROADMAP.md: ${row.version} follows the first Planned milestone but is ${row.status}`,
     );
   }
-  if (index > activeIndex && row.status !== "Planned") {
+
+  if (
+    index <= lastStartedIndex &&
+    !["Complete", "Acceptance", "Active"].includes(row.status)
+  ) {
     failures.push(
-      `ROADMAP.md: ${row.version} follows the active milestone but is ${row.status}`,
+      `ROADMAP.md: ${row.version} precedes the planned backlog but is ${row.status}`,
     );
   }
 }

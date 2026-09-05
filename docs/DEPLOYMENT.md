@@ -114,38 +114,33 @@ Database migrations remain separately approval-gated and run before promotion wi
 ## Milestone 0.3 environment readiness
 
 The repository, shared non-production schema, least-privilege runtime identity,
-and protected room-creation smoke are ready for broader Preview acceptance. The
-CQ-215 topic branch connects the setup, lobby, voting, result, and host-recovery
-screens to the private room API. The earlier single-device fixture remains below
-it as an explicitly labelled prototype reference. The connected happy path has
-passed against one immutable Preview with independent host and participant
-browser contexts; the remaining negative-state, accessibility, responsive, and
-cleanup checks still gate broader Preview release.
+and protected room journey have completed their technical Preview exit. CQ-215
+connects setup, lobby, voting, result, denial, expiry, departure, and host
+recovery to the private room API. The earlier single-device fixture remains
+below it as an explicitly labelled prototype reference. The final protected
+Preview run at commit `b080059` passed isolated-role, negative-state,
+privacy-equivalence, responsive-overflow, and unexpected page/console-error
+checks. Its exact synthetic aggregate was removed with zero residue.
 
-Before widening Preview access:
+Before widening Preview access beyond controlled acceptance:
 
-- connect the web journey to the secure room API without exposing capabilities
-  in URLs, logs, browser storage, or client-readable responses;
-- verify host creation, invitation, pending admission, voting, result, expiry,
-  recovery, and deletion across two independent browser contexts;
-- repeat the responsive, accessibility, runtime-log, abuse-control, and synthetic
-  data-cleanup checks against one immutable Preview deployment.
+- complete CQ-106 physical-device/PWA acceptance and CQ-107 moderated-usability
+  evidence;
+- retain deployment protection and the protected automation-bypass boundary
+  while Preview uses shared non-production persistence;
+- repeat the full stateful run only for a materially changed accepted artifact,
+  once, with an exact synthetic title and separately authorized cleanup.
 
 CQ-212's owner-authorized hosted restore-branch rehearsal is complete. It
 verified migrations, least-privilege grants, synthetic aggregate deletion, and
 temporary branch teardown without changing the default non-production branch.
 
-The first CQ-215 protected-Preview attempt on 2026-09-03 verified that ordinary
-fresh browser contexts are redirected to Vercel Authentication before the
-application loads. That is the expected protection boundary, not product
-evidence. The repository now contains an opt-in two-context Preview check that
-uses Vercel's dedicated automation-bypass header when the secret is supplied at
-runtime; deployment protection was not disabled. The owner-dispatched run for
-commit `7804dd5` passed creation, invitation, pending admission, roster lock,
-both ballots, deterministic resolution, and matching committed results on the
-immutable Preview. Runtime-log review found expected 2xx room traffic and no
-warning/error/fatal application events, with one PostgreSQL client TLS
-forward-compatibility warning recorded for hardening. The job uses the
+The repository contains an opt-in multi-context Preview check that uses Vercel's
+dedicated automation-bypass header when the secret is supplied at runtime;
+deployment protection is not disabled. The final owner-dispatched run
+[33901645276](https://github.com/manmohanml1/consensus/actions/runs/33901645276)
+at commit `b080059` passed the complete protected-Preview boundary in one
+attempt. The job uses the
 `VERCEL_AUTOMATION_BYPASS_SECRET` held only in GitHub's protected `Preview`
 environment, validates the target is a Consensus Vercel Preview host, never
 receives Production secrets, and never performs automatic cleanup. Exact
@@ -160,3 +155,7 @@ promoting an exact staged `main` artifact. Never copy non-production database
 URLs, credentials, pepper, fixtures, or branches into Production. Merge,
 Production promotion, and the annotated tag/GitHub Release remain three
 separate explicit owner gates.
+
+The complete remaining resource, product-acceptance, observability, recovery,
+rollback, and release sequence is recorded in
+[the v0.3 pre-Production readiness record](operations/2026-09-04-v03-preproduction-readiness.md).
