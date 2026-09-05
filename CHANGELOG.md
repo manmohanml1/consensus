@@ -6,6 +6,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Reconciled the v0.3 roadmap, security exit, deployment readiness, and Preview
+  operations records with the final protected-Preview evidence and merged
+  connected-room implementation.
 - Compare stable privacy-preserving Preview error fields while independently
   validating unique per-request correlation IDs.
 - Distinguish expected negative-path 404s and the blocked Vercel Preview toolbar
