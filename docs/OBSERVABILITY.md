@@ -15,6 +15,31 @@ Initial service-level indicators:
 
 Alerts must describe an operator action. Product analytics are a separate minimized event contract defined in ADR 0008.
 
+## Pre-launch Production thresholds
+
+Vercel Runtime Logs/Observability and the Neon usage dashboard are the initial
+owner-visible sources. The Hobby/Free boundary does not justify claiming paid
+alerting features that are not enabled. Review the dashboards during every
+launch window and at least daily while rooms are enabled.
+
+- fail closed and investigate when room-command 5xx responses reach 5 in five
+  minutes or exceed 2% of commands;
+- investigate sustained 429 responses above 5% for ten minutes; keep the
+  per-IP creation limiter active and disable new rooms during abuse;
+- treat any Production migration failure as a release stop and preserve the
+  last schema-compatible application candidate;
+- alert operationally when the retention job fails or the oldest due aggregate
+  is more than 24 hours overdue; disable room creation if the sweep cannot be
+  restored;
+- review Neon at 70% of any storage, compute, or transfer allowance and disable
+  room creation at 85% until the owner approves capacity or a paid tier;
+- investigate any unexpected authorization-denial increase without logging room
+  locators, capabilities, names, votes, constraints, or precise location.
+
+The budget owner is the repository owner. Pre-launch resources remain within
+Vercel Hobby and Neon Free; any paid upgrade or new telemetry vendor is a
+separate approval.
+
 ## Delivery telemetry
 
 Every Production promotion record includes the GitHub workflow run, full source SHA, Vercel deployment ID/URL, target project, approval time, smoke result, and rollback candidate. Never copy tokens or full provider payloads into the record.

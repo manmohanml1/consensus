@@ -10,11 +10,14 @@ deletion, provider teardown, paid resource, or Production action.
 | ------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
 | CI/local disposable | Synthetic test data only            | Recreate or restore during the job; no durability promise                                   |
 | Development/Preview | Synthetic non-production rooms only | Provider recovery capability plus verified logical export before a destructive change       |
-| Production          | Not approved in milestone 0.3       | Define and rehearse RPO/RTO, backup retention, restore access, and cost before provisioning |
+| Production          | Synthetic data only before launch   | Six-hour maximum RPO, 30-minute operator RTO target, isolated restore branch before traffic |
 
-The selected Neon Free recovery window is a provider limit, not an application
-SLO. A Production proposal must replace this table with measured RPO/RTO and a
-budgeted backup policy.
+The six-hour Neon Free history window is a provider limit, not a durability
+guarantee. The Production branch-fork component was measured at 0.22 seconds on
+2026-09-04, but a complete traffic recovery has not yet demonstrated the
+30-minute RTO. Rehearse the full path again after material schema/provider
+changes and move to a budgeted backup tier before the product requires a longer
+recovery window.
 
 ## Automated disposable rehearsal
 
@@ -45,6 +48,17 @@ the five migration ledger entries, runtime role separation, one synthetic
 aggregate, cascade deletion, and zero follow-up counts, then deleted only that
 temporary branch. The default branch and provider project remained active. See
 [the non-secret evidence record](2026-09-03-neon-hosted-recovery-rehearsal.md).
+
+## Hosted Production rehearsal
+
+The independently provisioned Production project has reviewed migrations
+`0001`–`0005`, distinct migration/runtime identities, and a unique Production
+secret boundary. On 2026-09-04 Neon forked a disposable branch in 0.22 seconds;
+the branch contained five migration entries, ten application tables, and one
+synthetic room/participant aggregate, while the runtime grant checks remained
+least privilege. The owner-authorized cleanup verified zero matching room and
+participant rows, then permanently deleted only the temporary branch. See
+[the Production provisioning record](2026-09-04-neon-production-provisioning.md).
 
 ## Before an authorized shared migration
 
@@ -92,6 +106,13 @@ Record timestamp, environment, commit, configured limit, deleted count, duration
 and success/failure—never room IDs or content. If backlog exceeds policy, disable
 new room creation, preserve the database, investigate worker failures, and resume
 only bounded sweeps after the cause is understood.
+
+Before Production room creation is enabled, configure one server-side sweep at
+least every 24 hours with a batch limit of 100. A run repeats bounded batches
+until fewer than 100 rows are returned, then emits only total counts, duration,
+commit, and outcome. Alert when a run fails or the oldest due aggregate exceeds
+24 hours. If the scheduler is unavailable, keep room creation fail-closed; a
+manual owner-approved sweep is incident recovery, not the normal cadence.
 
 ## Provider teardown
 

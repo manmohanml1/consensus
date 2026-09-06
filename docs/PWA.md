@@ -37,6 +37,11 @@ Check 768px, 1024px, and 1440px layouts, keyboard-only completion, visible focus
 
 Attach phone and desktop screenshots to the implementing pull request. Record failures as GitHub issues with reproduction steps, viewport/device, expected behavior, actual behavior, and severity. Release-critical failures block Preview acceptance.
 
+Use the privacy-bounded
+[product acceptance session record](operations/product-acceptance-session-record.md)
+for the physical-device result and the related moderated sessions. Responsive
+emulation does not replace an actual iOS/Android installation.
+
 ## Deferred capabilities
 
 Offline caching needs an explicit data freshness and service-worker recovery design because stale venue or room data can mislead a group. Push notifications require durable subscriptions, consent, expiration, abuse controls, and server-side storage. Both remain out of scope until their roadmap value and privacy costs are validated.

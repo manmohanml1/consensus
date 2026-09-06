@@ -77,6 +77,13 @@ request or operating record:
 Owner authorization must name the target and commit. It does not authorize
 Production credentials, promotion, a tag, a GitHub Release, or teardown.
 
+Production migrations use the separately protected `Consensus Production
+Database Migration` workflow. The owner must provide the exact current `main`
+SHA, type `MIGRATE`, and approve GitHub's protected `Production` environment.
+The workflow checks out and verifies that exact `main`, validates the persistence
+package, and uses only the environment-scoped
+`CONSENSUS_MIGRATION_DATABASE_URL`. It cannot promote an application deployment.
+
 ## Shared non-production evidence
 
 The first shared Neon execution completed on 2026-09-02 (America/New_York)

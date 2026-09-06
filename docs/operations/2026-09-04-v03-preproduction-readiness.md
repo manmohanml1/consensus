@@ -2,7 +2,8 @@
 
 **Date:** 2026-09-04 EDT  
 **Baseline:** merged `main` commit `a9fe3eeeef4d12ded26a4a9f6c2e9c70f4a17d08`  
-**Decision:** technical secure-room exit passed; Production remains unchanged
+**Decision:** technical secure-room exit passed; Production resources are
+prepared and fail-closed; the public alias remains unchanged
 
 ## Proven before Production
 
@@ -28,6 +29,10 @@
 - These inherited gates keep roadmap versions 0.2, 0.2.1, and 0.3 in
   `Acceptance`. They prevent an honest stable v0.3.0 declaration even though
   the technical secure-room exit has passed.
+- The bounded evidence worksheet is
+  [product-acceptance-session-record.md](product-acceptance-session-record.md).
+  Only observations from physical devices and real moderated participants count;
+  an automated agent must not fill or attest those rows.
 
 If a deployable prerelease is needed before those human gates close, use a
 SemVer prerelease such as `0.3.0-preview.1`; do not present it as stable
@@ -35,43 +40,33 @@ SemVer prerelease such as `0.3.0-preview.1`; do not present it as stable
 
 ## Production resource checklist
 
-None of these items is authorized by this record:
+| Item                                                     | State                              | Evidence / remaining gate                                                                                                                                     |
+| -------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Independent Production Neon project                      | Complete                           | `consensus-production` / `still-shape-81533129`; no non-production data or credentials reused                                                                 |
+| Distinct migration/runtime identities and NOLOGIN groups | Complete                           | Runtime cannot create database/schema objects or assume migrator                                                                                              |
+| Secret scoping                                           | Complete                           | Direct migration URL only in protected GitHub `Production`; pooled runtime URL and unique pepper only in Vercel Production                                    |
+| Reviewed migrations `0001`–`0005`                        | Complete                           | Five checksummed ledger entries and ten application tables                                                                                                    |
+| Fail-closed application gate                             | Complete                           | Vercel Production has `CONSENSUS_ROOM_CREATION_ENABLED=false`                                                                                                 |
+| Recovery branch/schema/permission proof                  | Complete                           | 0.22-second fork, five migrations, ten tables, one synthetic room/participant; cleanup verified zero rooms/participants and the sole temporary branch removed |
+| Retention contract                                       | Defined; invocation pending        | Daily bounded batches of 100, 24-hour deletion-lag alert, count-only logs; scheduler must be verified before room creation is enabled                         |
+| Error and capacity monitoring                            | Defined; activation review pending | Vercel logs/Observability plus Neon usage; thresholds in `docs/OBSERVABILITY.md`                                                                              |
+| Cost envelope                                            | Complete for pre-launch            | Neon Free UI: 0.5 GB, 100 CU-hours/project, scale to zero; Vercel Hobby limits apply; owner is budget decision-maker                                          |
+| Staged current-main artifact                             | Complete                           | READY `n64AmruEG8W2WzLW5SL54VJA3qKt`, `a9fe3ee`, custom domains skipped                                                                                       |
+| Product acceptance                                       | Pending human evidence             | CQ-106 physical devices and CQ-107 ten moderated sessions                                                                                                     |
 
-1. Create an independent Production Neon project/database; never reuse the
-   shared non-production branch, credentials, or data.
-2. Create separate Production NOLOGIN group roles plus distinct migration and
-   runtime login identities. Revoke `PUBLIC` schema creation and prove the
-   runtime identity cannot migrate or create objects.
-3. Store the Production migration URL only in the owner-controlled migration
-   path and the pooled runtime URL only in Vercel Production.
-4. Generate a unique Production capability pepper. Never copy the Preview
-   pepper, and record the capability-invalidating rotation procedure.
-5. Apply only reviewed migrations `0001`–`0005` with checksum verification,
-   then run read-only schema and privilege checks before application activation.
-6. Approve the 24-hour room lifetime, terminal-expiry behavior, bounded deletion
-   cadence, data-owner response path, and count-only deletion logging for
-   Production.
-7. Define alerting for elevated 5xx/429 rates, migration failure, deletion lag,
-   database saturation, and unexpected authorization failures without logging
-   locators, capabilities, votes, constraints, or precise location.
-8. Record the free/paid service limits, budget owner, usage alerts, and the
-   threshold at which new room creation must fail closed.
-9. Complete an owner-authorized Production database recovery rehearsal using
-   synthetic data and an independently disposable branch or project.
-10. Identify both rollback layers: the last known-good Vercel deployment and a
-    schema-compatible database recovery point. Verify application compatibility
-    before any alias movement.
+Full non-secret provider and rehearsal evidence is in
+[the Production provisioning record](2026-09-04-neon-production-provisioning.md).
 
 ## Exact release path
 
 ```text
-close CQ-106/CQ-107 acceptance evidence
-  -> merge this CQ-214 exit reconciliation under exact approval
+merge this CQ-214 exit reconciliation under exact PR approval
+  -> complete and owner-attest CQ-106/CQ-107 acceptance evidence
   -> prepare a dedicated release/v0.3.0 branch and version PR
   -> merge that release PR under exact approval
-  -> provision and verify Production resources under exact approval
-  -> apply reviewed Production migrations under exact approval
-  -> inspect a READY, current-main, non-aliased Production candidate
+  -> verify the bounded Production retention invocation
+  -> inspect a READY, release-SHA, non-aliased Production candidate
+  -> enable Production room creation only as part of the approved launch window
   -> promote the exact candidate under exact approval
   -> run Production smoke/log/data-boundary checks
   -> create the annotated tag under separate exact approval
