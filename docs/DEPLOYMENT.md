@@ -150,8 +150,8 @@ checks. Its exact synthetic aggregate was removed with zero residue.
 
 Before widening Preview access beyond controlled acceptance:
 
-- complete CQ-106 physical-device/PWA acceptance and CQ-107 moderated-usability
-  evidence;
+- keep CQ-106 physical-device/PWA and CQ-107 moderated-usability evidence
+  scheduled for the 0.6.0 closed beta; do not represent either as passed;
 - retain deployment protection and the protected automation-bypass boundary
   while Preview uses shared non-production persistence;
 - repeat the full stateful run only for a materially changed accepted artifact,
@@ -175,12 +175,13 @@ evidence and the separately authorized, zero-residue synthetic cleanup are recor
 
 Production preparation remains separate from launch. The independent database,
 distinct identities, unique pepper, reviewed schema, and a READY staged
-current-main artifact now exist; room creation stays disabled. Complete the
-recorded recovery cleanup, verify the daily retention invocation, close the real
-device/human acceptance gates, and review monitoring/cost/rollback immediately
-before any alias movement. Never copy non-production URLs, credentials, pepper,
-fixtures, or branches into Production. Merge, Production promotion, annotated
-tag, and GitHub Release remain separate explicit owner gates.
+current-main artifact now exist; room creation stays disabled. The daily
+retention invocation must be verified and monitoring/cost/rollback reviewed
+immediately before any alias movement. CQ-106/CQ-107 are deferred to the 0.6.0
+closed beta and still block stable product claims. Never copy non-production
+URLs, credentials, pepper, fixtures, or branches into Production. Merge,
+Production promotion, annotated tag, and GitHub Release remain separate explicit
+owner gates.
 
 The complete remaining resource, product-acceptance, observability, recovery,
 rollback, and release sequence is recorded in

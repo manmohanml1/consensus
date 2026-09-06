@@ -107,12 +107,16 @@ and success/failure—never room IDs or content. If backlog exceeds policy, disa
 new room creation, preserve the database, investigate worker failures, and resume
 only bounded sweeps after the cause is understood.
 
-Before Production room creation is enabled, configure one server-side sweep at
-least every 24 hours with a batch limit of 100. A run repeats bounded batches
-until fewer than 100 rows are returned, then emits only total counts, duration,
-commit, and outcome. Alert when a run fails or the oldest due aggregate exceeds
-24 hours. If the scheduler is unavailable, keep room creation fail-closed; a
-manual owner-approved sweep is incident recovery, not the normal cadence.
+Before Production room creation is enabled, configure the Vercel Cron route
+`GET /api/internal/retention` at least every 24 hours. Its `0 3 * * *` schedule
+runs at 03:00 UTC and accepts only `Authorization: Bearer $CRON_SECRET`; Vercel
+supplies that header when the Production-only `CRON_SECRET` is configured. Each
+invocation has a fixed batch limit of 100 and emits only its deleted count and
+outcome—never room IDs, stored content, or connection values. Verify one
+authenticated production invocation, its count-only log evidence, and the
+24-hour failure/deletion-lag alert before enabling room creation. If the
+scheduler is unavailable, keep room creation fail-closed; a manual
+owner-approved sweep is incident recovery, not the normal cadence.
 
 ## Provider teardown
 
