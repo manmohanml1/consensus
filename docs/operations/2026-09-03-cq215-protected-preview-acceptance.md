@@ -54,7 +54,7 @@ all seven room IDs, and every dependent aggregate table: participants,
 constraints, candidates, commands, votes, decisions, outbox events,
 commitments, and host-recovery challenges. No unrelated room was targeted.
 
-## Remaining gates
+## Gates before the final accepted run
 
 - Local connected-UI regression coverage now passes for denial, authenticated
   terminal expiry, host recovery, participant departure, responsive widths,
@@ -93,10 +93,11 @@ assertions were positioned after the failing assertion and did not execute in
 this hosted attempt. No automatic retry was made.
 
 The run created one shared non-production aggregate labelled
-`Preview acceptance PR143-873a57a`. It remains retained pending a separately
-authorized, exact cleanup and zero-match verification. A corrected revision
-must complete ordinary CI before the owner may authorize a new single-attempt
-protected Preview run against that revision's immutable deployment.
+`Preview acceptance PR143-873a57a`. It was retained until the separately
+authorized, exact cleanup and zero-match verification described below. A
+corrected revision completed ordinary CI before the owner authorized a new
+single-attempt protected Preview run against that revision's immutable
+deployment.
 
 ## Corrected-run evidence
 
@@ -122,5 +123,41 @@ The acceptance assertion now preserves zero tolerance for page exceptions and
 unexpected console errors, requires the three deliberate negative-path 404s,
 and permits only the narrowly identified Vercel toolbar CSP message. The CSP is
 not weakened. No automatic hosted retry was made. The run created one aggregate
-labelled `Preview acceptance PR143-dc7da2f`; it remains pending separately
-authorized exact cleanup and zero-match verification.
+labelled `Preview acceptance PR143-dc7da2f`; it was subsequently removed under
+separately authorized exact cleanup with zero matching aggregate or dependent
+rows.
+
+## Final accepted run and cleanup
+
+On 2026-09-04 EDT, the owner authorized one protected Preview attempt for commit
+`b080059c7613375422a86ae488c0028de05c5bf4`, immutable deployment
+`https://consensus-k3lszbnhl-manmohanlonawat-8572s-projects.vercel.app`, and
+synthetic title `Preview acceptance PR143-b080059`. Workflow run
+[33901645276](https://github.com/manmohanml1/consensus/actions/runs/33901645276)
+passed in one attempt.
+
+The accepted run covered isolated host, admitted-participant,
+denied-participant, and recovered-host browser contexts; creation, admission,
+denial, locked electorate, both ballots, deterministic resolution, matching
+committed results, host recovery and authority rotation, revoked-host and
+missing-room privacy equivalence, responsive overflow, and expected negative
+console behavior. It reported no unexpected page exception, API response, or
+console error. Expected CSP blocking of the Vercel Preview toolbar and the three
+deliberate negative-path 404s remained narrowly classified rather than hidden.
+
+The owner separately authorized exact cleanup of the resulting room
+`room_55e62aee5faf4fedac1d0df705d16b8c`. The guarded delete matched the exact
+room ID/title pair and deleted one aggregate. A separate read-only verification
+returned zero for the exact title, room ID, and every dependent relation. No
+unrelated room was targeted. PR #143 subsequently merged as commit `a9fe3ee`.
+
+## Post-acceptance boundaries
+
+- Manual screen-reader and physical-device acceptance remains tracked by the
+  inherited CQ-106/CQ-107 product gates; automated keyboard, reduced-motion,
+  responsive, and isolated-role coverage is complete.
+- Rotate or revoke the automation-bypass credential when protected Preview
+  acceptance no longer needs it.
+- Production resource creation, secret activation, migration, promotion,
+  semantic-version tagging, and GitHub Release publication remain separate
+  explicit owner decisions.

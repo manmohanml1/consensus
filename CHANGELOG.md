@@ -6,6 +6,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Reconciled the v0.3 roadmap, security exit, deployment readiness, and Preview
+  operations records with the final protected-Preview evidence and merged
+  connected-room implementation.
 - Compare stable privacy-preserving Preview error fields while independently
   validating unique per-request correlation IDs.
 - Distinguish expected negative-path 404s and the blocked Vercel Preview toolbar
@@ -26,6 +29,11 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 
+- A protected, exact-main Production migration workflow, an isolated Production
+  Neon provisioning record, and privacy-bounded physical-device/moderated
+  acceptance worksheet.
+- An owner-authorized Production Neon restore rehearsal with isolated synthetic
+  aggregate cleanup, verified zero residue, and temporary-branch teardown.
 - Connected-room browser coverage for privacy-preserving denial, expiry, host
   recovery, participant departure, responsive widths, keyboard use, and reduced
   motion in addition to the independent host/participant happy path.

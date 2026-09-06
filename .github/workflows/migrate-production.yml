@@ -1,0 +1,64 @@
+name: Consensus Production Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Full 40-character main SHA containing the reviewed migrations
+        required: true
+        type: string
+      confirmation:
+        description: Type MIGRATE to authorize this exact Production migration
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consensus-production-database-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: Production
+    steps:
+      - name: Checkout exact current main without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: main
+      - name: Validate owner-supplied migration target
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$CONFIRMATION" = "MIGRATE"
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_COMMIT"
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate repository migration contract
+        run: |
+          pnpm --filter @consensus/persistence lint
+          pnpm --filter @consensus/persistence typecheck
+          pnpm --filter @consensus/persistence test
+      - name: Apply checksum-protected forward migrations
+        env:
+          CONSENSUS_MIGRATION_DATABASE_URL: ${{ secrets.CONSENSUS_MIGRATION_DATABASE_URL }}
+        run: |
+          test -n "$CONSENSUS_MIGRATION_DATABASE_URL"
+          pnpm --filter @consensus/persistence migrate
