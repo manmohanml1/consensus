@@ -111,7 +111,7 @@ Before Production room creation is enabled, configure the Vercel Cron route
 `GET /api/internal/retention` at least every 24 hours. Its `0 3 * * *` schedule
 runs at 03:00 UTC and accepts only `Authorization: Bearer $CRON_SECRET`; Vercel
 supplies that header when the Production-only `CRON_SECRET` is configured. Each
-invocation has a fixed batch limit of 100 and emits only its deleted count and
+invocation has a fixed batch limit of 100 and logs only its deleted count and
 outcome—never room IDs, stored content, or connection values. Verify one
 authenticated production invocation, its count-only log evidence, and the
 24-hour failure/deletion-lag alert before enabling room creation. If the

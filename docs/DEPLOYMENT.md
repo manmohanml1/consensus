@@ -173,15 +173,16 @@ receives Production secrets, and never performs automatic cleanup. Exact
 evidence and the separately authorized, zero-residue synthetic cleanup are recorded in
 [the CQ-215 protected Preview acceptance record](operations/2026-09-03-cq215-protected-preview-acceptance.md).
 
-Production preparation remains separate from launch. The independent database,
-distinct identities, unique pepper, reviewed schema, and a READY staged
-current-main artifact now exist; room creation stays disabled. The daily
-retention invocation must be verified and monitoring/cost/rollback reviewed
-immediately before any alias movement. CQ-106/CQ-107 are deferred to the 0.6.0
-closed beta and still block stable product claims. Never copy non-production
-URLs, credentials, pepper, fixtures, or branches into Production. Merge,
-Production promotion, annotated tag, and GitHub Release remain separate explicit
-owner gates.
+The independent database, distinct identities, unique pepper, reviewed schema,
+and the `5e8ed4f` Production candidate are live. Vercel Cron is active and its
+first authenticated retention invocation returned `200`; a non-creating probe
+returned the expected `503`, confirming room creation remains fail-closed. The
+next change is count-only retention logging and promotion-verifier hardening,
+then a separately approved launch candidate that enables creation. CQ-106/CQ-107
+are deferred to the 0.6.0 closed beta and still block stable product claims.
+Never copy non-production URLs, credentials, pepper, fixtures, or branches into
+Production. Merge, Production promotion, annotated tag, and GitHub Release
+remain separate explicit owner gates.
 
 The complete remaining resource, product-acceptance, observability, recovery,
 rollback, and release sequence is recorded in

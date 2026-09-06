@@ -40,19 +40,19 @@ SemVer prerelease such as `0.3.0-preview.1`; do not present it as stable
 
 ## Production resource checklist
 
-| Item                                                     | State                                      | Evidence / remaining gate                                                                                                                                     |
-| -------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Independent Production Neon project                      | Complete                                   | `consensus-production` / `still-shape-81533129`; no non-production data or credentials reused                                                                 |
-| Distinct migration/runtime identities and NOLOGIN groups | Complete                                   | Runtime cannot create database/schema objects or assume migrator                                                                                              |
-| Secret scoping                                           | Complete                                   | Direct migration URL only in protected GitHub `Production`; pooled runtime URL and unique pepper only in Vercel Production                                    |
-| Reviewed migrations `0001`–`0005`                        | Complete                                   | Five checksummed ledger entries and ten application tables                                                                                                    |
-| Fail-closed application gate                             | Complete                                   | Vercel Production has `CONSENSUS_ROOM_CREATION_ENABLED=false`                                                                                                 |
-| Recovery branch/schema/permission proof                  | Complete                                   | 0.22-second fork, five migrations, ten tables, one synthetic room/participant; cleanup verified zero rooms/participants and the sole temporary branch removed |
-| Retention contract                                       | Implemented; Production activation pending | Daily 03:00 UTC Vercel Cron, fixed batches of 100, `CRON_SECRET` Bearer authentication, count-only response; verify it before room creation is enabled        |
-| Error and capacity monitoring                            | Defined; activation review pending         | Vercel logs/Observability plus Neon usage; thresholds in `docs/OBSERVABILITY.md`                                                                              |
-| Cost envelope                                            | Complete for pre-launch                    | Neon Free UI: 0.5 GB, 100 CU-hours/project, scale to zero; Vercel Hobby limits apply; owner is budget decision-maker                                          |
-| Staged current-main artifact                             | Complete                                   | READY `n64AmruEG8W2WzLW5SL54VJA3qKt`, `a9fe3ee`, custom domains skipped                                                                                       |
-| Product acceptance                                       | Deferred to 0.6.0                          | CQ-106 physical devices and CQ-107 ten moderated sessions remain mandatory for stable product claims                                                          |
+| Item                                                     | State                             | Evidence / remaining gate                                                                                                                                     |
+| -------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Independent Production Neon project                      | Complete                          | `consensus-production` / `still-shape-81533129`; no non-production data or credentials reused                                                                 |
+| Distinct migration/runtime identities and NOLOGIN groups | Complete                          | Runtime cannot create database/schema objects or assume migrator                                                                                              |
+| Secret scoping                                           | Complete                          | Direct migration URL only in protected GitHub `Production`; pooled runtime URL and unique pepper only in Vercel Production                                    |
+| Reviewed migrations `0001`–`0005`                        | Complete                          | Five checksummed ledger entries and ten application tables                                                                                                    |
+| Fail-closed application gate                             | Complete                          | Vercel Production has `CONSENSUS_ROOM_CREATION_ENABLED=false`                                                                                                 |
+| Recovery branch/schema/permission proof                  | Complete                          | 0.22-second fork, five migrations, ten tables, one synthetic room/participant; cleanup verified zero rooms/participants and the sole temporary branch removed |
+| Retention contract                                       | Active; log hardening pending     | Daily 03:00 UTC Vercel Cron is active and returned `200` on 2026-09-06; fixed batches of 100 and `CRON_SECRET` authentication are verified                    |
+| Error and capacity monitoring                            | Active; count-only log PR pending | Vercel request logs verified the cron `200`; the follow-up PR adds an explicit deleted-count log while keeping payloads and identifiers absent                |
+| Cost envelope                                            | Complete for pre-launch           | Neon Free UI: 0.5 GB, 100 CU-hours/project, scale to zero; Vercel Hobby limits apply; owner is budget decision-maker                                          |
+| Staged current-main artifact                             | Complete                          | READY `n64AmruEG8W2WzLW5SL54VJA3qKt`, `a9fe3ee`, custom domains skipped                                                                                       |
+| Product acceptance                                       | Deferred to 0.6.0                 | CQ-106 physical devices and CQ-107 ten moderated sessions remain mandatory for stable product claims                                                          |
 
 Full non-secret provider and rehearsal evidence is in
 [the Production provisioning record](2026-09-04-neon-production-provisioning.md).
@@ -63,10 +63,11 @@ Full non-secret provider and rehearsal evidence is in
 merge the retention and acceptance-deferral PR under exact approval
   -> save a unique Production-only CRON_SECRET and enable bounded deletion
   -> inspect the Vercel Cron registration and verify one authenticated sweep
-  -> inspect logs, deletion count, and alerting/capacity controls
-  -> inspect a READY, release-SHA, non-aliased Production candidate
-  -> enable Production room creation only as part of the approved launch window
-  -> promote the exact candidate under exact approval
+  -> inspect the promoted public URL, cron `200`, and disabled-creation response
+  -> merge the promotion/log-observability hardening PR under exact approval
+  -> inspect a fresh READY, release-SHA Production candidate
+  -> enable Production room creation only as part of the separately approved launch window
+  -> promote that exact launch candidate under exact approval
   -> run Production smoke/log/data-boundary checks
   -> gather CQ-106/CQ-107 evidence in the 0.6.0 closed beta
   -> only then prepare, tag, and publish a stable v0.3.0 release under separate approvals

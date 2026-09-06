@@ -6,6 +6,7 @@ export interface RetentionDependencies {
   isEnabled: () => boolean;
   deleteDue: (limit: number, now: Date) => Promise<{ deleted: number }>;
   now?: () => Date;
+  onCompleted?: (deleted: number) => void;
 }
 
 const noStoreHeaders = {
@@ -51,6 +52,11 @@ export async function handleRetentionCron(
       RETENTION_BATCH_LIMIT,
       dependencies.now?.() ?? new Date(),
     );
+    try {
+      dependencies.onCompleted?.(result.deleted);
+    } catch {
+      // Observability must not turn a completed deletion into a retryable error.
+    }
     return response(200, { status: "completed", deleted: result.deleted });
   } catch {
     return response(503, { error: "temporarily-unavailable" });
