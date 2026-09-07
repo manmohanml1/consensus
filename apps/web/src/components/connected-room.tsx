@@ -9,7 +9,14 @@ import {
   type RoomRole,
 } from "@consensus/domain";
 import Image from "next/image";
-import { useMemo, useRef, useState, type PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
 
 type Actor = { memberId: string; role: RoomRole; nextSequence: number };
 type RoomState = { room: RoomProjection; actor: Actor };
@@ -75,11 +82,17 @@ const messageFor = (error: unknown) => {
   if (code === "room-locked") return "This room is locked for that action.";
   if (code === "room-expired") return "This temporary room has expired.";
   if (code === "stale-revision" || code === "sequence-conflict")
-    return "Someone updated the room first. Refresh, then try again.";
+    return "Someone updated the room first. Sync, then try again.";
   if (code === "unauthorized-or-missing")
     return "That room is unavailable or this browser no longer has access.";
-  return "The room could not be updated. Refresh and try again.";
+  return "The room could not be updated. Sync and try again.";
 };
+
+const isUnavailableRoomError = (error: unknown) =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  String(error.code) === "unauthorized-or-missing";
 
 export function ConnectedRoom({
   initialLocator = "",
@@ -93,6 +106,7 @@ export function ConnectedRoom({
   const [displayName, setDisplayName] = useState("");
   const [targetAt, setTargetAt] = useState("");
   const [candidateText, setCandidateText] = useState(starterCandidates);
+  const [newCandidateName, setNewCandidateName] = useState("");
   const [locator, setLocator] = useState(initialLocator);
   const [recoverRoomId, setRecoverRoomId] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
@@ -122,6 +136,22 @@ export function ConnectedRoom({
       setBusy(false);
     }
   };
+
+  const returnToJoin = useCallback(() => {
+    setState(null);
+    setMode("join");
+    setNotice(
+      "Your previous access ended. Use this invite to ask the host to admit you again.",
+    );
+  }, []);
+
+  const loadProjection = useCallback(
+    async (roomId: string) =>
+      requestJson<RoomState>(
+        `/api/v1/rooms/${encodeURIComponent(roomId)}/projection`,
+      ),
+    [],
+  );
 
   const createRoom = () =>
     run(async () => {
@@ -180,16 +210,21 @@ export function ConnectedRoom({
   const refresh = () =>
     state &&
     run(async () => {
-      setState(
-        await requestJson<RoomState>(
-          `/api/v1/rooms/${state.room.roomId}/projection`,
-        ),
-      );
+      try {
+        setState(await loadProjection(state.room.roomId));
+      } catch (error) {
+        if (isUnavailableRoomError(error)) {
+          returnToJoin();
+          return;
+        }
+        throw error;
+      }
     });
 
   const command = (
     type: RoomCommand["type"],
     payload: RoomCommand["payload"],
+    onAccepted?: () => void,
   ) =>
     state &&
     run(async () => {
@@ -214,6 +249,7 @@ export function ConnectedRoom({
           },
         ),
       );
+      onAccepted?.();
     });
 
   const createRecovery = () =>
@@ -229,6 +265,43 @@ export function ConnectedRoom({
       setIssuedRecovery(recovery.recoveryCode);
       setNotice("Save this one-time recovery code before continuing.");
     });
+
+  const createCandidate = () => {
+    const name = newCandidateName.trim();
+    if (!name) return;
+    command("candidate.create", { name }, () => setNewCandidateName(""));
+  };
+
+  const activeRoomId = state?.room.roomId;
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    let disposed = false;
+    const sync = async () => {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const next = await loadProjection(activeRoomId);
+        if (!disposed) {
+          setState((current) =>
+            current?.room.roomId === activeRoomId &&
+            next.room.revision >= current.room.revision
+              ? next
+              : current,
+          );
+        }
+      } catch (error) {
+        if (!disposed && isUnavailableRoomError(error)) returnToJoin();
+      }
+    };
+    const syncWhenVisible = () => void sync();
+    const interval = window.setInterval(syncWhenVisible, 2_500);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+    };
+  }, [activeRoomId, loadProjection, returnToJoin]);
 
   const shareRoom = async () => {
     const url = new URL(window.location.href);
@@ -513,7 +586,7 @@ export function ConnectedRoom({
               onClick={refresh}
               disabled={busy}
             >
-              Refresh
+              Sync now
             </button>
           </div>
           <ul className="connected-roster">
@@ -583,6 +656,38 @@ export function ConnectedRoom({
                 )}
               </div>
             ))}
+            {state.actor.role === "host" ? (
+              <form
+                className="candidate-add-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  createCandidate();
+                }}
+              >
+                <label htmlFor="connected-new-candidate">Add an option</label>
+                <div>
+                  <input
+                    id="connected-new-candidate"
+                    value={newCandidateName}
+                    maxLength={100}
+                    placeholder="e.g. Lantern Café"
+                    onChange={(event) =>
+                      setNewCandidateName(event.target.value)
+                    }
+                  />
+                  <button
+                    className="secondary compact"
+                    type="submit"
+                    disabled={busy || !newCandidateName.trim()}
+                  >
+                    Add
+                  </button>
+                </div>
+                <small>
+                  Host-added options have no venue details or photo yet.
+                </small>
+              </form>
+            ) : null}
           </div>
           {state.actor.role === "host" && pending.length === 0 ? (
             <button
@@ -638,12 +743,20 @@ export function ConnectedRoom({
                       sizes="(max-width: 650px) 100vw, 480px"
                     />
                   ) : (
-                    <span aria-hidden="true">
-                      {nextCandidate.name.slice(0, 1)}
-                    </span>
+                    <div
+                      className="connected-profile-placeholder"
+                      data-testid="connected-custom-option-media"
+                    >
+                      <span aria-hidden="true">
+                        {nextCandidate.name.slice(0, 1)}
+                      </span>
+                      <small>Host-added option</small>
+                    </div>
                   )}
                   <div className="connected-fixture-label">
-                    Illustrative · confirm details
+                    {currentMedia
+                      ? "Illustrative fixture · confirm details"
+                      : "Host-added · details to confirm"}
                   </div>
                   <div
                     className={`connected-swipe-stamp connected-pass ${dragX < -35 ? "is-visible" : ""}`}
@@ -658,13 +771,13 @@ export function ConnectedRoom({
                     LIKE
                   </div>
                   <div className="connected-profile-overlay">
-                    <p>{currentMedia?.vibe ?? "Added by the host"}</p>
+                    <p>{currentMedia?.vibe ?? "Host-added option"}</p>
                     <h3>{nextCandidate.name}</h3>
                     <div className="connected-profile-chips">
                       {(
                         currentMedia?.highlights ?? [
-                          "Details unknown",
-                          "Check before travel",
+                          "No image supplied",
+                          "Confirm details",
                         ]
                       ).map((highlight) => (
                         <span key={highlight}>{highlight}</span>
@@ -713,7 +826,9 @@ export function ConnectedRoom({
             <div role="status">
               <p className="section-kicker">Ballot submitted</p>
               <h3>Waiting for the group.</h3>
-              <p>Your private choices are saved. Refresh to see progress.</p>
+              <p>
+                Your private choices are saved. The room updates automatically.
+              </p>
             </div>
           )}
           <div className="ballot-progress-list">
@@ -736,7 +851,7 @@ export function ConnectedRoom({
               onClick={refresh}
               disabled={busy}
             >
-              Refresh progress
+              Sync now
             </button>
             {state.actor.role === "host" ? (
               <button

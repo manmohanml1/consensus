@@ -4,7 +4,8 @@
 **Type:** feature  
 **Depends on:** CQ-204, CQ-206, CQ-207, CQ-209, CQ-210, CQ-213  
 **GitHub issue:** [#142](https://github.com/manmohanml1/consensus/issues/142)  
-**Status:** complete; merged in PR #143 as `a9fe3ee`
+**Status:** complete; merged in PR #143 as `a9fe3ee`; follow-up reliability
+work is tracked by CQ-216 / GitHub #148
 
 Connect the existing mobile-first decision interface to the secure room HTTP
 boundary so separate host and participant browsers can complete a durable room
@@ -32,6 +33,11 @@ not a complete product outcome.
   horizontal overflow at the 390-pixel mobile baseline;
 - v0.3 may use explicit refresh or bounded polling. Realtime delivery,
   reconciliation, offline queuing, and convergence remain v0.4 responsibilities.
+
+CQ-216 makes the selected v0.3 polling option the default: visible connected
+tabs synchronize their authorized projection every 2.5 seconds and on tab
+return. Manual sync remains an optional recovery affordance, not a required
+step in the normal host/guest journey.
 
 ## Acceptance evidence
 

@@ -6,6 +6,9 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Make connected rooms update automatically while visible, allow hosts to add
+  bounded manual options after room creation, make custom-option media honest,
+  and return invalidated guests to a safe fresh admission request.
 - Reconciled the v0.3 roadmap, security exit, deployment readiness, and Preview
   operations records with the final protected-Preview evidence and merged
   connected-room implementation.
