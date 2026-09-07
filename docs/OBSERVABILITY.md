@@ -46,4 +46,9 @@ Every Production promotion record includes the GitHub workflow run, full source 
 
 The first owner-gated promotion is recorded in [the 2026-08-31 Production promotion record](operations/2026-08-31-production-promotion.md). PR #119 resolved its workflow false-negative by accepting a successful empty response and then verifying the exact Production alias before smoke testing.
 
+The controlled beta activation at commit `ce7d25be` is recorded in
+[the 2026-09-07 Production beta activation record](operations/2026-09-07-production-beta-activation.md).
+It includes the protected acceptance run, exact-alias promotion, public smoke
+response, post-launch retention completion, and error-log scan.
+
 Track build failures, Preview acceptance failures, promotion failures, rollback frequency, production smoke failures, and time from merge to approved promotion. Before closed beta, add an owner-visible runtime error source and a bounded alert for new production failures. A deployment is not healthy merely because Vercel reports READY.

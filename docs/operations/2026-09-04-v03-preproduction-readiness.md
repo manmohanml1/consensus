@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-04 EDT  
 **Baseline:** merged `main` commit `a9fe3eeeef4d12ded26a4a9f6c2e9c70f4a17d08`  
-**Decision:** technical secure-room exit passed; Production resources are
-prepared and fail-closed; the public alias remains unchanged
+**Decision:** superseded by the controlled Production beta activation recorded
+on 2026-09-07. This document remains the pre-activation resource baseline.
 
 ## Proven before Production
 
@@ -46,10 +46,10 @@ SemVer prerelease such as `0.3.0-preview.1`; do not present it as stable
 | Distinct migration/runtime identities and NOLOGIN groups | Complete                          | Runtime cannot create database/schema objects or assume migrator                                                                                              |
 | Secret scoping                                           | Complete                          | Direct migration URL only in protected GitHub `Production`; pooled runtime URL and unique pepper only in Vercel Production                                    |
 | Reviewed migrations `0001`–`0005`                        | Complete                          | Five checksummed ledger entries and ten application tables                                                                                                    |
-| Fail-closed application gate                             | Complete                          | Vercel Production has `CONSENSUS_ROOM_CREATION_ENABLED=false`                                                                                                 |
+| Fail-closed application gate                             | Superseded by approved activation | The pre-launch `false` state was verified; the approved 2026-09-07 launch changed the flag to `true` for its fresh candidate                                  |
 | Recovery branch/schema/permission proof                  | Complete                          | 0.22-second fork, five migrations, ten tables, one synthetic room/participant; cleanup verified zero rooms/participants and the sole temporary branch removed |
-| Retention contract                                       | Active; log hardening pending     | Daily 03:00 UTC Vercel Cron is active and returned `200` on 2026-09-06; fixed batches of 100 and `CRON_SECRET` authentication are verified                    |
-| Error and capacity monitoring                            | Active; count-only log PR pending | Vercel request logs verified the cron `200`; the follow-up PR adds an explicit deleted-count log while keeping payloads and identifiers absent                |
+| Retention contract                                       | Active                            | Daily 03:00 UTC Vercel Cron is active; bounded, authenticated sweeps returned `200` before and after activation                                               |
+| Error and capacity monitoring                            | Active                            | Vercel request logs include a count-only completion event and are scanned during each launch window                                                           |
 | Cost envelope                                            | Complete for pre-launch           | Neon Free UI: 0.5 GB, 100 CU-hours/project, scale to zero; Vercel Hobby limits apply; owner is budget decision-maker                                          |
 | Staged current-main artifact                             | Complete                          | READY `n64AmruEG8W2WzLW5SL54VJA3qKt`, `a9fe3ee`, custom domains skipped                                                                                       |
 | Product acceptance                                       | Deferred to 0.6.0                 | CQ-106 physical devices and CQ-107 ten moderated sessions remain mandatory for stable product claims                                                          |
@@ -76,3 +76,11 @@ merge the retention and acceptance-deferral PR under exact approval
 Merging code or documentation does not authorize any later step. A successful
 Preview run does not authorize Production. A Production promotion does not
 authorize a tag or GitHub Release.
+
+## Superseding activation record
+
+The owner approved the exact current-main candidate and its protected
+Production promotion on 2026-09-07. The live controlled beta and its
+post-launch verification are recorded in
+[the Production beta activation record](2026-09-07-production-beta-activation.md).
+CQ-106/CQ-107 remain deferred and no stable tag or release was created.
