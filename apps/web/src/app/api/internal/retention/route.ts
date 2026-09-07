@@ -16,6 +16,9 @@ function configuredDependencies(): RetentionDependencies | null {
   return {
     isEnabled: () => process.env.CONSENSUS_RETENTION_DELETE_ENABLED === "true",
     deleteDue: (limit, now) => store!.deleteRoomsDueForDeletion(limit, now),
+    onCompleted: (deleted) => {
+      console.info("consensus.retention.sweep.completed", { deleted });
+    },
   };
 }
 

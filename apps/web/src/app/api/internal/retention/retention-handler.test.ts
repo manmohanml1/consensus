@@ -41,18 +41,37 @@ describe("retention cron boundary", () => {
 
   it("uses the fixed bounded limit and returns only the deleted count", async () => {
     const deleteDue = vi.fn().mockResolvedValue({ deleted: 7 });
+    const onCompleted = vi.fn();
     const now = new Date("2026-09-05T03:00:00.000Z");
     const response = await handleRetentionCron(cronRequest(), secret, {
       isEnabled: () => true,
       deleteDue,
+      onCompleted,
       now: () => now,
     });
 
     expect(response.status).toBe(200);
     expect(deleteDue).toHaveBeenCalledWith(RETENTION_BATCH_LIMIT, now);
+    expect(onCompleted).toHaveBeenCalledWith(7);
     await expect(response.json()).resolves.toEqual({
       status: "completed",
       deleted: 7,
+    });
+  });
+
+  it("does not turn a logging failure into a deletion retry", async () => {
+    const response = await handleRetentionCron(cronRequest(), secret, {
+      isEnabled: () => true,
+      deleteDue: vi.fn().mockResolvedValue({ deleted: 0 }),
+      onCompleted: () => {
+        throw new Error("log sink unavailable");
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      status: "completed",
+      deleted: 0,
     });
   });
 

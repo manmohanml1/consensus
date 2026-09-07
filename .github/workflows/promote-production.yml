@@ -128,29 +128,31 @@ jobs:
         run: |
           production_host="${PRODUCTION_URL#https://}"
           production_host="${production_host%/}"
-          deployment_api_url="https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID"
+          public_deployment_api_url="https://api.vercel.com/v13/deployments/$production_host"
           if [ -n "$VERCEL_SCOPE_ID" ]; then
             encoded_scope_id="$(jq --raw-output --null-input --arg value "$VERCEL_SCOPE_ID" '$value | @uri')"
-            deployment_api_url="$deployment_api_url?teamId=$encoded_scope_id"
+            public_deployment_api_url="$public_deployment_api_url?teamId=$encoded_scope_id"
           fi
 
-          alias_verified=false
           for attempt in {1..10}; do
             curl --fail --silent --show-error \
               --header "Authorization: Bearer $VERCEL_TOKEN" \
-              "$deployment_api_url" \
-              --output promoted-deployment.json
+              "$public_deployment_api_url" \
+              --output public-deployment.json
 
-            jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' promoted-deployment.json
-            jq --exit-status --arg commit "$EXPECTED_COMMIT" '.meta.githubCommitSha == $commit' promoted-deployment.json
-            jq --exit-status '.target == "production" and .readyState == "READY"' promoted-deployment.json
-            if jq --exit-status --arg host "$production_host" '(.alias // []) | index($host) != null' promoted-deployment.json; then
-              alias_verified=true
+            jq --exit-status --arg deployment "$DEPLOYMENT_ID" '.id == $deployment' public-deployment.json && \
+              jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' public-deployment.json && \
+              jq --exit-status --arg commit "$EXPECTED_COMMIT" '.meta.githubCommitSha == $commit' public-deployment.json && \
+              jq --exit-status '.target == "production" and .readyState == "READY"' public-deployment.json && \
+              jq --exit-status '.readySubstate == "PROMOTED"' public-deployment.json && {
               break
-            fi
+            }
             sleep 3
           done
-          test "$alias_verified" = "true"
+          jq --exit-status --arg deployment "$DEPLOYMENT_ID" '.id == $deployment' public-deployment.json
+          jq --exit-status --arg project "$VERCEL_PROJECT_ID" '.projectId == $project' public-deployment.json
+          jq --exit-status --arg commit "$EXPECTED_COMMIT" '.meta.githubCommitSha == $commit' public-deployment.json
+          jq --exit-status '.target == "production" and .readyState == "READY" and .readySubstate == "PROMOTED"' public-deployment.json
       - name: Smoke-check Production
         env:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
