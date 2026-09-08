@@ -382,6 +382,32 @@ h1 {
 .connected-result-media img {
   object-fit: cover;
 }
+.connected-profile-placeholder {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  color: var(--mint);
+  text-align: center;
+}
+.connected-profile-placeholder span {
+  display: grid;
+  width: 116px;
+  height: 116px;
+  place-items: center;
+  border: 1px solid rgba(117, 245, 195, 0.36);
+  border-radius: 36px;
+  background: rgba(7, 11, 18, 0.42);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+.connected-profile-placeholder small {
+  color: #e8fff6;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .connected-profile-media::after,
 .connected-result-media::after {
   position: absolute;
@@ -528,6 +554,28 @@ h1 {
 .candidate-review-list small {
   color: var(--muted);
   text-transform: capitalize;
+}
+.candidate-add-form {
+  display: grid;
+  gap: 7px;
+  padding-top: 12px;
+}
+.candidate-add-form label {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.candidate-add-form > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.candidate-add-form input {
+  min-width: 0;
+  flex: 1;
+}
+.candidate-add-form small {
+  text-transform: none;
 }
 .connected-ballot h3,
 .connected-result h3 {

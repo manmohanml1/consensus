@@ -380,19 +380,31 @@ describeDatabase("transactional room command store", () => {
         payload,
       }) as RoomCommand;
 
+    const added = await store.executeCommand(
+      command("candidate.create", { name: "Lantern Café" }, 1, 1, {
+        memberId: "member_roster_host",
+        role: "host",
+      }),
+      hostToken,
+      pepper,
+    );
+    expect(added.projection.candidates).toContainEqual(
+      expect.objectContaining({ name: "Lantern Café", status: "active" }),
+    );
+
     await store.executeCommand(
       command(
         "participant.approve",
         { participantId: "member_roster_guest" },
-        1,
-        1,
+        2,
+        2,
         { memberId: "member_roster_host", role: "host" },
       ),
       hostToken,
       pepper,
     );
     await store.executeCommand(
-      command("roster.lock", {}, 2, 2, {
+      command("roster.lock", {}, 3, 3, {
         memberId: "member_roster_host",
         role: "host",
       }),
@@ -400,7 +412,7 @@ describeDatabase("transactional room command store", () => {
       pepper,
     );
     const left = await store.executeCommand(
-      command("participant.leave", {}, 3, 1, {
+      command("participant.leave", {}, 4, 1, {
         memberId: "member_roster_guest",
         role: "participant",
       }),

@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   DECISION_RULESET_VERSION,
   ROOM_PROTOCOL_LIMITS,
@@ -810,6 +810,49 @@ export class PostgresRoomStore {
           [room.id, acceptedRevision],
         );
         return;
+      case "candidate.create": {
+        if (room.phase !== "lobby" && room.phase !== "candidate-review") {
+          throw new RoomStoreError("room-locked");
+        }
+        const existing = await client.query<{ count: number }>(
+          `SELECT count(*)::int AS count
+             FROM consensus.candidates
+            WHERE room_id = $1`,
+          [room.id],
+        );
+        if (
+          (existing.rows[0]?.count ?? 0) >= ROOM_PROTOCOL_LIMITS.maxCandidates
+        ) {
+          throw new RoomStoreError("invalid-request");
+        }
+        const duplicate = await client.query(
+          `SELECT 1 FROM consensus.candidates
+            WHERE room_id = $1 AND lower(name) = lower($2)`,
+          [room.id, command.payload.name],
+        );
+        if (duplicate.rowCount !== 0) {
+          throw new RoomStoreError("invalid-request");
+        }
+        await client.query(
+          `INSERT INTO consensus.candidates
+             (room_id, id, name, source, field_provenance,
+              distance_meters, open_confidence, constraint_evidence)
+           VALUES ($1, $2, $3, 'host-manual', $4, 0, 'unknown', $5)`,
+          [
+            room.id,
+            `candidate_${randomUUID().replaceAll("-", "")}`,
+            command.payload.name,
+            { name: "host-supplied" },
+            {},
+          ],
+        );
+        await client.query(
+          `UPDATE consensus.rooms SET phase = 'candidate-review', revision = $2,
+                  updated_at = transaction_timestamp() WHERE id = $1`,
+          [room.id, acceptedRevision],
+        );
+        return;
+      }
       case "candidate.add":
       case "candidate.remove": {
         if (room.phase !== "lobby" && room.phase !== "candidate-review") {

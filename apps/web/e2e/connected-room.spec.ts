@@ -76,9 +76,13 @@ test("orchestrates a two-browser secure-room journey", async ({
   const participants: Participant[] = [
     { id: "member_host_0001", displayName: "Maya", status: "active" },
   ];
-  const candidates = [
-    { id: "candidate_garden", name: "Garden Table", status: "active" as const },
-    { id: "candidate_noodle", name: "Night Noodle", status: "active" as const },
+  const candidates: Array<{
+    id: string;
+    name: string;
+    status: "active";
+  }> = [
+    { id: "candidate_garden", name: "Garden Table", status: "active" },
+    { id: "candidate_noodle", name: "Night Noodle", status: "active" },
   ];
   const completed = new Map([
     ["member_host_0001", 0],
@@ -174,13 +178,22 @@ test("orchestrates a two-browser secure-room journey", async ({
       if (path.endsWith("/commands")) {
         const command = request.postDataJSON() as {
           type: string;
-          payload: { participantId?: string };
+          payload: { participantId?: string; name?: string };
         };
         if (command.type === "participant.approve") {
           const guest = participants.find(
             ({ id }) => id === command.payload.participantId,
           );
           if (guest) guest.status = "active";
+        } else if (
+          command.type === "candidate.create" &&
+          command.payload.name
+        ) {
+          candidates.push({
+            id: "candidate_lantern",
+            name: command.payload.name,
+            status: "active",
+          });
         } else if (command.type === "roster.lock") {
           rosterLocked = true;
           phase = "voting";
@@ -234,6 +247,11 @@ test("orchestrates a two-browser secure-room journey", async ({
     await host.getByLabel("Your name").fill("Maya");
     await host.getByRole("button", { name: "Create temporary room" }).click();
     await expect(host.getByText("r1.AAAAAAAAAAAAAAAAAAAAAA")).toBeVisible();
+    await host.getByLabel("Add an option").fill("Lantern Café");
+    await host.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(host.locator(".candidate-review-list")).toContainText(
+      "Lantern Café",
+    );
 
     await guest.goto("/?join=r1.AAAAAAAAAAAAAAAAAAAAAA");
     await activateEntryMode(guest, "Create");
@@ -242,9 +260,13 @@ test("orchestrates a two-browser secure-room journey", async ({
     await guest.getByRole("button", { name: "Ask to join" }).click();
     await expect(guest.getByText("Waiting for the host")).toBeVisible();
 
-    await host.getByRole("button", { name: "Refresh" }).click();
+    await expect(
+      host.locator(".connected-roster").getByText("Sam"),
+    ).toBeVisible({ timeout: 6_000 });
     await host.getByRole("button", { name: "Admit" }).click();
-    await guest.getByRole("button", { name: "Refresh" }).click();
+    await expect(guest.getByText("Waiting for the host")).toHaveCount(0, {
+      timeout: 6_000,
+    });
     await expect(
       guest.locator(".connected-roster").getByText("Sam"),
     ).toBeVisible();
@@ -252,23 +274,26 @@ test("orchestrates a two-browser secure-room journey", async ({
     await host
       .getByRole("button", { name: "Lock roster and begin voting" })
       .click();
-    await guest.getByRole("button", { name: "Refresh" }).click();
-    await host
-      .getByRole("button", { name: /^Prefer — a positive choice$/ })
-      .click();
-    await host
-      .getByRole("button", { name: /^Prefer — a positive choice$/ })
-      .click();
-    await guest.getByRole("button", { name: "Refresh progress" }).click();
-    await guest
-      .getByRole("button", { name: /^Accept — a workable compromise$/ })
-      .click();
-    await guest
-      .getByRole("button", { name: /^Accept — a workable compromise$/ })
-      .click();
-    await host.getByRole("button", { name: "Refresh progress" }).click();
+    await guest.getByRole("button", { name: "Sync now" }).click();
+    for (let index = 0; index < 3; index += 1) {
+      if (index === 2) {
+        await expect(
+          host.getByTestId("connected-custom-option-media"),
+        ).toBeVisible();
+      }
+      await host
+        .getByRole("button", { name: /^Prefer — a positive choice$/ })
+        .click();
+    }
+    await guest.getByRole("button", { name: "Sync now" }).click();
+    for (let index = 0; index < 3; index += 1) {
+      await guest
+        .getByRole("button", { name: /^Accept — a workable compromise$/ })
+        .click();
+    }
+    await host.getByRole("button", { name: "Sync now" }).click();
     await host.getByRole("button", { name: "Resolve fairly" }).click();
-    await guest.getByRole("button", { name: "Refresh progress" }).click();
+    await guest.getByRole("button", { name: "Sync now" }).click();
 
     await expect(host.getByTestId("connected-result")).toContainText(
       "Garden Table",
@@ -315,7 +340,7 @@ test("renders expiry as a terminal connected-room state", async ({ page }) => {
     .getByLabel("One-time recovery code")
     .fill("hr1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
   await page.getByRole("button", { name: "Restore host access" }).click();
-  await page.getByRole("button", { name: "Refresh" }).click();
+  await page.getByRole("button", { name: "Sync now" }).click();
 
   expect(expired).toBe(true);
   await expect(page.getByTestId("connected-expired")).toContainText(
@@ -362,15 +387,12 @@ test("keeps denial indistinguishable from missing room access", async ({
   await page.getByLabel("Your name").fill("Sam");
   await page.getByRole("button", { name: "Ask to join" }).click();
   await expect(page.getByText("Waiting for the host")).toBeVisible();
-  await page.getByRole("button", { name: "Refresh" }).click();
-
+  await expect(page.getByLabel("Private room code")).toHaveValue(
+    "r1.AAAAAAAAAAAAAAAAAAAAAA",
+    { timeout: 6_000 },
+  );
   expect(denied).toBe(true);
-  await expect(
-    page.getByText(
-      "That room is unavailable or this browser no longer has access.",
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expect(page.getByText(/previous access ended/i)).toBeVisible();
 });
 
 test("restores host access without retaining the recovery code", async ({

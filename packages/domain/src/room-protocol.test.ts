@@ -137,6 +137,29 @@ describe("room protocol commands", () => {
       );
     }
   });
+
+  it("accepts a host-created candidate and rejects participant escalation", () => {
+    const candidate = parseRoomCommand({
+      ...validVote(),
+      actor: { memberId: "member_host_1234", role: "host" },
+      type: "candidate.create",
+      payload: { name: "Late-night dumplings" },
+    });
+    expect(candidate).toMatchObject({
+      success: true,
+      data: expect.objectContaining({
+        type: "candidate.create",
+        payload: { name: "Late-night dumplings" },
+      }),
+    });
+
+    const participant = parseRoomCommand({
+      ...validVote(),
+      type: "candidate.create",
+      payload: { name: "Late-night dumplings" },
+    });
+    expect(participant).toMatchObject({ success: false });
+  });
 });
 
 describe("room creation requests", () => {

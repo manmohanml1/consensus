@@ -26,6 +26,7 @@ Every command includes the protocol version, command id, idempotency key, room i
 | `participant.remove`  | Host                | Mark a pending or active participant as departed         |
 | `participant.leave`   | Participant         | Leave without rewriting a locked electorate              |
 | `roster.lock`         | Host                | Snapshot eligible voters before voting starts            |
+| `candidate.create`    | Host                | Add one bounded, provider-neutral manual option          |
 | `candidate.add`       | Host                | Reactivate a seeded normalized candidate                 |
 | `candidate.remove`    | Host                | Remove a candidate when the room phase permits           |
 | `vote.submit`         | Host or participant | Submit one idempotent preference command                 |
@@ -51,6 +52,14 @@ Capabilities live for at most 24 hours;
 the room stops accepting mutations after its two-hour active TTL. During the
 remaining capability lifetime, an authenticated read reports an `expired`
 projection while unauthorized and missing rooms remain indistinguishable.
+
+Hosts may add a unique manual option through `candidate.create` while the room
+is in the lobby or candidate-review phase. The command is idempotent like every
+other room command, preserves the twelve-option cap across active and removed
+options, and records only `host-supplied` provenance. It never fabricates an
+image, rating, price, dish, or provider identity. A guest whose capability is
+no longer valid must submit a fresh join request before roster lock; the old
+capability is never reactivated.
 CQ-209 recovery is a host-authorized browser transfer: the current host creates
 one ten-minute `hr1.*` code, and the replacement browser redeems it to rotate the
 host cookie. The secret is never a room locator, command, projection, URL, or QR
@@ -82,3 +91,9 @@ CQ-208 adds bounded aggregate deletion behind an explicit operational switch;
 it does not expose a public deletion endpoint or schedule provider work.
 Shared-provider migration, realtime delivery, and Production activation remain
 out of scope. Shared-provider and Production gates remain intact.
+
+The v0.3 client uses visibility-aware bounded projection polling as the
+degraded/live-update transport. It pauses in hidden tabs, refreshes the current
+authorized projection without optimistic room-state writes, and returns an
+unavailable guest to the prefilled join form. WebSocket/SSE fan-out,
+reconciliation, and offline queuing remain v0.4 work.

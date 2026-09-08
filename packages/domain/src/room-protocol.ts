@@ -21,6 +21,7 @@ export type RoomCommandType =
   | "participant.remove"
   | "participant.leave"
   | "roster.lock"
+  | "candidate.create"
   | "candidate.add"
   | "candidate.remove"
   | "vote.submit"
@@ -50,6 +51,7 @@ export type RoomCommand =
   | RoomCommandBase<"participant.remove", { participantId: string }>
   | RoomCommandBase<"participant.leave", Record<string, never>>
   | RoomCommandBase<"roster.lock", Record<string, never>>
+  | RoomCommandBase<"candidate.create", { name: string }>
   | RoomCommandBase<"candidate.add", { candidateId: string }>
   | RoomCommandBase<"candidate.remove", { candidateId: string }>
   | RoomCommandBase<
@@ -172,6 +174,7 @@ const commandTypes: readonly RoomCommandType[] = [
   "participant.remove",
   "participant.leave",
   "roster.lock",
+  "candidate.create",
   "candidate.add",
   "candidate.remove",
   "vote.submit",
@@ -415,6 +418,13 @@ function parseCommandPayload(
       max: ROOM_PROTOCOL_LIMITS.maxRoomTitleLength,
     });
     return title ? { title } : undefined;
+  }
+  if (type === "candidate.create") {
+    rejectUnknownKeys(payload, ["name"], "$.payload", issues);
+    const name = readString(payload, "name", "$.payload", issues, {
+      max: 100,
+    });
+    return name ? { name } : undefined;
   }
   if (type === "candidate.add" || type === "candidate.remove") {
     rejectUnknownKeys(payload, ["candidateId"], "$.payload", issues);

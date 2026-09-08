@@ -83,18 +83,16 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     await denied.getByLabel("Your name").fill("Denied guest");
     await denied.getByRole("button", { name: "Ask to join" }).click();
     await expect(denied.getByText("Waiting for the host")).toBeVisible();
-    await host.getByRole("button", { name: "Refresh" }).click();
+    await host.getByRole("button", { name: "Sync now" }).click();
     await host
       .locator(".connected-roster li", { hasText: "Denied guest" })
       .getByRole("button", { name: "Deny" })
       .click();
-    await denied.getByRole("button", { name: "Refresh" }).click();
-    await expect(
-      denied.getByText(
-        "That room is unavailable or this browser no longer has access.",
-        { exact: true },
-      ),
-    ).toBeVisible();
+    await denied.getByRole("button", { name: "Sync now" }).click();
+    await expect(denied.getByLabel("Private room code")).toHaveValue(
+      locator ?? "",
+    );
+    await expect(denied.getByText(/previous access ended/i)).toBeVisible();
 
     const guest = await guestContext.newPage();
     observe(guest);
@@ -103,9 +101,9 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     await guest.getByRole("button", { name: "Ask to join" }).click();
     await expect(guest.getByText("Waiting for the host")).toBeVisible();
 
-    await host.getByRole("button", { name: "Refresh" }).click();
+    await host.getByRole("button", { name: "Sync now" }).click();
     await host.getByRole("button", { name: "Admit" }).click();
-    await guest.getByRole("button", { name: "Refresh" }).click();
+    await guest.getByRole("button", { name: "Sync now" }).click();
     await expect(
       guest.locator(".connected-roster").getByText("Preview guest"),
     ).toBeVisible();
@@ -116,7 +114,7 @@ test("accepts a real Preview invitation in a separate browser session", async ({
     await expect(
       host.getByRole("button", { name: /^Prefer — a positive choice$/ }),
     ).toBeVisible();
-    await guest.getByRole("button", { name: "Refresh" }).click();
+    await guest.getByRole("button", { name: "Sync now" }).click();
     await expect(
       guest.getByRole("button", { name: /^Accept — a workable compromise$/ }),
     ).toBeVisible();
@@ -131,7 +129,7 @@ test("accepts a real Preview invitation in a separate browser session", async ({
       }
     }
     await expect(host.getByText("Waiting for the group.")).toBeVisible();
-    await guest.getByRole("button", { name: "Refresh progress" }).click();
+    await guest.getByRole("button", { name: "Sync now" }).click();
     for (let index = 0; index < 4; index += 1) {
       await guest
         .getByRole("button", { name: /^Accept — a workable compromise$/ })
@@ -143,14 +141,14 @@ test("accepts a real Preview invitation in a separate browser session", async ({
       }
     }
     await expect(guest.getByText("Waiting for the group.")).toBeVisible();
-    await host.getByRole("button", { name: "Refresh progress" }).click();
+    await host.getByRole("button", { name: "Sync now" }).click();
     await expect(
       host.getByRole("button", { name: "Resolve fairly" }),
     ).toBeEnabled();
     await host.getByRole("button", { name: "Resolve fairly" }).click();
     const hostResult = host.getByTestId("connected-result");
     await expect(hostResult).toBeVisible();
-    await guest.getByRole("button", { name: "Refresh progress" }).click();
+    await guest.getByRole("button", { name: "Sync now" }).click();
 
     const guestResult = guest.getByTestId("connected-result");
     await expect(guestResult).toBeVisible();
