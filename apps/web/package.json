@@ -16,14 +16,14 @@
     "@consensus/domain": "workspace:*",
     "@consensus/persistence": "workspace:*",
     "@consensus/security": "workspace:*",
-    "next": "16.3.3",
+    "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/react-dom": "^19.2.7",
     "@playwright/test": "^1.55.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.3",
