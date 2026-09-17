@@ -4,11 +4,14 @@ import {
   ROOM_PROTOCOL_VERSION,
   type Preference,
   type RoomCommand,
-  type RoomProjection,
-  type RoomProtocolError,
-  type RoomRole,
 } from "@consensus/domain";
 import Image from "next/image";
+import {
+  reconcileRoom,
+  requestRoomJson as requestJson,
+  isUncertainRoomError,
+  type RoomState,
+} from "@/lib/room-session";
 import {
   useCallback,
   useEffect,
@@ -18,8 +21,6 @@ import {
   type PointerEvent,
 } from "react";
 
-type Actor = { memberId: string; role: RoomRole; nextSequence: number };
-type RoomState = { room: RoomProjection; actor: Actor };
 type EntryMode = "create" | "join" | "recover";
 
 const starterCandidates = [
@@ -59,17 +60,6 @@ const connectedMedia: Record<
   },
 };
 
-const requestJson = async <T,>(url: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(url, {
-    ...init,
-    cache: "no-store",
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  const body = (await response.json()) as T | RoomProtocolError;
-  if (!response.ok) throw body;
-  return body as T;
-};
-
 const messageFor = (error: unknown) => {
   const code =
     typeof error === "object" && error !== null && "code" in error
@@ -96,8 +86,10 @@ const isUnavailableRoomError = (error: unknown) =>
 
 export function ConnectedRoom({
   initialLocator = "",
+  initialRoomId = "",
 }: {
   initialLocator?: string;
+  initialRoomId?: string;
 }) {
   const [mode, setMode] = useState<EntryMode>(
     initialLocator ? "join" : "create",
@@ -108,16 +100,44 @@ export function ConnectedRoom({
   const [candidateText, setCandidateText] = useState(starterCandidates);
   const [newCandidateName, setNewCandidateName] = useState("");
   const [locator, setLocator] = useState(initialLocator);
-  const [recoverRoomId, setRecoverRoomId] = useState("");
+  const [recoverRoomId, setRecoverRoomId] = useState(initialRoomId);
   const [recoveryCode, setRecoveryCode] = useState("");
   const [issuedRecovery, setIssuedRecovery] = useState("");
-  const [invitation, setInvitation] = useState("");
+  const [invitation, setInvitation] = useState(initialLocator);
   const [state, setState] = useState<RoomState | null>(null);
-  const [busy, setBusy] = useState(false);
+  const stateRef = useRef<RoomState | null>(null);
+  const [working, setBusy] = useState(false);
+  const [retryPending, setRetryPending] = useState(false);
+  const pendingCommand = useRef<{
+    body: string;
+    roomId: string;
+    onAccepted?: () => void;
+  } | null>(null);
+  const [resuming, setResuming] = useState(Boolean(initialRoomId));
+  const [resumeFailed, setResumeFailed] = useState(false);
+  const [connectionNotice, setConnectionNotice] = useState("");
+  const busy = working || retryPending;
   const operationPending = useRef(false);
   const [notice, setNotice] = useState("");
   const [dragX, setDragX] = useState(0);
   const dragStartX = useRef<number | null>(null);
+
+  const adopt = useCallback((next: RoomState) => {
+    if (!stateRef.current) return;
+    const merged = reconcileRoom(stateRef.current, next);
+    stateRef.current = merged;
+    setState(merged);
+  }, []);
+
+  const enterRoom = (next: RoomState, invite = locator) => {
+    stateRef.current = next;
+    setState(next);
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("room", next.room.roomId);
+    if (invite) url.searchParams.set("join", invite);
+    window.history.replaceState(null, "", url);
+  };
 
   const me = useMemo(
     () =>
@@ -142,10 +162,20 @@ export function ConnectedRoom({
   };
 
   const returnToJoin = useCallback(() => {
+    const previous = stateRef.current;
+    stateRef.current = null;
+    pendingCommand.current = null;
+    setRetryPending(false);
     setState(null);
-    setMode("join");
+    setMode(previous?.actor.role === "host" ? "recover" : "join");
+    if (previous) setRecoverRoomId(previous.room.roomId);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("room");
+    window.history.replaceState(null, "", url);
     setNotice(
-      "Your previous access ended. Use this invite to ask the host to admit you again.",
+      previous?.actor.role === "host"
+        ? "Host access ended. Use a previously saved recovery code to restore access."
+        : "Your previous access ended. Use this invite to ask the host to admit you again.",
     );
   }, []);
 
@@ -156,6 +186,28 @@ export function ConnectedRoom({
       ),
     [],
   );
+
+  useEffect(() => {
+    if (!initialRoomId) return;
+    let disposed = false;
+    void loadProjection(initialRoomId)
+      .then((next) => {
+        if (disposed) return;
+        stateRef.current = next;
+        setState(next);
+        setResumeFailed(false);
+        setResuming(false);
+      })
+      .catch((error: unknown) => {
+        if (disposed) return;
+        setResuming(false);
+        if (isUnavailableRoomError(error)) returnToJoin();
+        else setResumeFailed(true);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [initialRoomId, loadProjection, returnToJoin]);
 
   const createRoom = () =>
     run(async () => {
@@ -175,13 +227,16 @@ export function ConnectedRoom({
           candidateNames,
         }),
       });
-      setState({ room: created.room, actor: created.actor });
+      enterRoom(
+        { room: created.room, actor: created.actor },
+        created.invitation.locator,
+      );
       setInvitation(created.invitation.locator);
     });
 
   const joinRoom = () =>
     run(async () => {
-      setState(
+      enterRoom(
         await requestJson<RoomState>("/api/v1/rooms/join", {
           method: "POST",
           body: JSON.stringify({
@@ -195,7 +250,7 @@ export function ConnectedRoom({
 
   const recoverHost = () =>
     run(async () => {
-      setState(
+      enterRoom(
         await requestJson<RoomState>(
           `/api/v1/rooms/${encodeURIComponent(recoverRoomId.trim())}/recovery/redeem`,
           {
@@ -215,7 +270,7 @@ export function ConnectedRoom({
     state &&
     run(async () => {
       try {
-        setState(await loadProjection(state.room.roomId));
+        adopt(await loadProjection(state.room.roomId));
       } catch (error) {
         if (isUnavailableRoomError(error)) {
           returnToJoin();
@@ -225,35 +280,74 @@ export function ConnectedRoom({
       }
     });
 
+  const sendPendingCommand = async () => {
+    const pending = pendingCommand.current;
+    if (!pending) return;
+    try {
+      const next = await requestJson<RoomState>(
+        `/api/v1/rooms/${pending.roomId}/commands`,
+        {
+          method: "POST",
+          body: pending.body,
+        },
+      );
+      if (pendingCommand.current !== pending) return;
+      adopt(next);
+      pendingCommand.current = null;
+      setRetryPending(false);
+      setConnectionNotice("");
+      pending.onAccepted?.();
+    } catch (error) {
+      if (pendingCommand.current !== pending) return;
+      if (isUncertainRoomError(error)) {
+        setRetryPending(true);
+        setNotice(
+          "Delivery is uncertain. Retry the same action to confirm it safely; do not start another action.",
+        );
+        return;
+      }
+      pendingCommand.current = null;
+      setRetryPending(false);
+      if (isUnavailableRoomError(error)) returnToJoin();
+      else {
+        try {
+          adopt(await loadProjection(pending.roomId));
+        } catch {
+          /* Polling reports reconnection state. */
+        }
+        throw error;
+      }
+    }
+  };
+
   const command = (
     type: RoomCommand["type"],
     payload: RoomCommand["payload"],
     onAccepted?: () => void,
   ) =>
     state &&
+    !pendingCommand.current &&
     run(async () => {
       const nonce = crypto.randomUUID();
-      setState(
-        await requestJson<RoomState>(
-          `/api/v1/rooms/${state.room.roomId}/commands`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              protocolVersion: ROOM_PROTOCOL_VERSION,
-              commandId: `command_${nonce}`,
-              idempotencyKey: `browser:${nonce}`,
-              roomId: state.room.roomId,
-              expectedRevision: state.room.revision,
-              sequence: state.actor.nextSequence,
-              issuedAt: new Date().toISOString(),
-              actor: { memberId: state.actor.memberId, role: state.actor.role },
-              type,
-              payload,
-            }),
-          },
-        ),
-      );
-      onAccepted?.();
+      const current = stateRef.current;
+      if (!current) return;
+      pendingCommand.current = {
+        roomId: current.room.roomId,
+        onAccepted,
+        body: JSON.stringify({
+          protocolVersion: ROOM_PROTOCOL_VERSION,
+          commandId: `command_${nonce}`,
+          idempotencyKey: `browser:${nonce}`,
+          roomId: current.room.roomId,
+          expectedRevision: current.room.revision,
+          sequence: current.actor.nextSequence,
+          issuedAt: new Date().toISOString(),
+          actor: { memberId: current.actor.memberId, role: current.actor.role },
+          type,
+          payload,
+        }),
+      };
+      await sendPendingCommand();
     });
 
   const createRecovery = () =>
@@ -277,39 +371,58 @@ export function ConnectedRoom({
   };
 
   const activeRoomId = state?.room.roomId;
+  const terminal = state?.room.phase === "expired";
   useEffect(() => {
-    if (!activeRoomId) return;
+    if (!activeRoomId || terminal) return;
 
     let disposed = false;
     let syncing = false;
+    let failures = 0;
+    let timer: number;
     const sync = async () => {
       if (document.visibilityState === "hidden" || syncing) return;
+      window.clearTimeout(timer);
       syncing = true;
       try {
         const next = await loadProjection(activeRoomId);
         if (!disposed) {
-          setState((current) =>
-            current?.room.roomId === activeRoomId &&
-            next.room.revision >= current.room.revision
-              ? next
-              : current,
-          );
+          adopt(next);
+          failures = 0;
+          setConnectionNotice("");
         }
       } catch (error) {
-        if (!disposed && isUnavailableRoomError(error)) returnToJoin();
+        if (!disposed) {
+          if (isUnavailableRoomError(error)) returnToJoin();
+          else {
+            failures += 1;
+            setConnectionNotice(
+              "Connection interrupted. Your last confirmed room state is shown; reconnecting automatically.",
+            );
+          }
+        }
       } finally {
         syncing = false;
+        if (!disposed)
+          timer = window.setTimeout(
+            syncWhenVisible,
+            Math.min(
+              30_000,
+              2_500 * 2 ** Math.min(failures, 4) + Math.random() * 500,
+            ),
+          );
       }
     };
     const syncWhenVisible = () => void sync();
-    const interval = window.setInterval(syncWhenVisible, 2_500);
+    timer = window.setTimeout(syncWhenVisible, 2_500);
     document.addEventListener("visibilitychange", syncWhenVisible);
+    window.addEventListener("online", syncWhenVisible);
     return () => {
       disposed = true;
-      window.clearInterval(interval);
+      window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", syncWhenVisible);
+      window.removeEventListener("online", syncWhenVisible);
     };
-  }, [activeRoomId, loadProjection, returnToJoin]);
+  }, [activeRoomId, terminal, loadProjection, returnToJoin, adopt]);
 
   const shareRoom = async () => {
     const url = new URL(window.location.href);
@@ -322,6 +435,28 @@ export function ConnectedRoom({
       setNotice(`Share this room code: ${invitation}`);
     }
   };
+
+  if (!state && (resuming || resumeFailed)) {
+    return (
+      <section className="room-shell connected-entry" aria-label="Resume room">
+        <h2>
+          {resuming
+            ? "Reconnecting to your room…"
+            : "Your room could not be reached"}
+        </h2>
+        <p role="status">
+          {resuming
+            ? "Checking this browser’s existing access. No new participant is being created."
+            : "Your access has not been replaced. Check your connection, then retry."}
+        </p>
+        {resumeFailed && (
+          <button className="primary" onClick={() => window.location.reload()}>
+            Retry connection
+          </button>
+        )}
+      </section>
+    );
+  }
 
   if (!state) {
     const candidateCount = candidateText
@@ -510,7 +645,7 @@ export function ConnectedRoom({
     ? connectedMedia[winner.name.toLowerCase()]
     : undefined;
   const startDrag = (event: PointerEvent<HTMLElement>) => {
-    if (operationPending.current) return;
+    if (operationPending.current || pendingCommand.current) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStartX.current = event.clientX;
@@ -533,6 +668,20 @@ export function ConnectedRoom({
 
   return (
     <section className="room-shell connected-room" aria-labelledby="room-title">
+      {connectionNotice && (
+        <p className="connected-notice" role="status">
+          {connectionNotice}
+        </p>
+      )}
+      {retryPending && (
+        <button
+          className="primary"
+          disabled={working}
+          onClick={() => run(sendPendingCommand)}
+        >
+          Retry pending action
+        </button>
+      )}
       <div className="connected-room__topline">
         <div>
           <p className="section-kicker">Milestone 0.3 · connected room</p>

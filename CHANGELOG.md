@@ -6,6 +6,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Resume live rooms after reload using existing cookie-authorized membership,
+  reconcile responses without revision/sequence rollback, show interrupted
+  connectivity, and retry uncertain commands with the identical idempotency key.
+
 - Require patched `js-yaml` 4.x and update the lockfile from 4.3.1 to 4.3.2
   for the high-severity merge-source CPU advisory in the lint toolchain.
 

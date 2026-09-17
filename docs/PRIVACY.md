@@ -30,3 +30,12 @@ its logs contain counts only. Scheduling or enabling that worker in a shared
 environment requires explicit operational approval.
 
 An account-based saved-group feature requires a separate consent and deletion design.
+
+## Browser continuity
+
+The live room URL can contain a non-authoritative room ID and invitation locator
+to support reloads. They grant no membership or read/write permission; the
+room-scoped HTTP-only cookie is still required. Capabilities, recovery codes,
+votes and projections are not persisted in browser storage. Pending commands
+exist only in memory. Shared invite links omit the resume room ID. See
+[ADR 0016](adr/0016-browser-room-session-continuity.md).
