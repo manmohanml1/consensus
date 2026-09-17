@@ -6,6 +6,16 @@ import {
   type Route,
 } from "@playwright/test";
 
+const uncaughtErrors = new WeakMap<Page, string[]>();
+test.beforeEach(async ({ page }) => {
+  const errors: string[] = [];
+  uncaughtErrors.set(page, errors);
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
+});
+test.afterEach(async ({ page }) => {
+  expect(uncaughtErrors.get(page) ?? []).toEqual([]);
+});
+
 test("separates the live entry from the illustrative demo", async ({
   page,
 }) => {
@@ -393,6 +403,11 @@ test("orchestrates a two-browser secure-room journey", async ({
   });
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
+  const roomErrors: string[] = [];
+  for (const page of [host, guest])
+    page.on("pageerror", (error) =>
+      roomErrors.push(error.stack ?? error.message),
+    );
 
   try {
     await host.goto("/");
@@ -496,6 +511,7 @@ test("orchestrates a two-browser secure-room journey", async ({
       scrollWidth: document.documentElement.scrollWidth,
     }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+    expect(roomErrors).toEqual([]);
   } finally {
     await hostContext.close();
     await guestContext.close();

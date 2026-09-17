@@ -14,7 +14,14 @@ export function reconcileRoom(current: RoomState, next: RoomState): RoomState {
     return current;
   const latest = next.room.revision >= current.room.revision ? next : current;
   return {
-    room: latest.room,
+    room: {
+      ...latest.room,
+      // Natural expiry is projected without incrementing the durable revision.
+      phase:
+        current.room.phase === "expired" || next.room.phase === "expired"
+          ? "expired"
+          : latest.room.phase,
+    },
     actor: {
       ...latest.actor,
       nextSequence: Math.max(
@@ -26,11 +33,15 @@ export function reconcileRoom(current: RoomState, next: RoomState): RoomState {
 }
 
 export const roomErrorCode = (error: unknown): string =>
-  typeof error === "object" && error !== null && "code" in error
-    ? String(error.code)
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  typeof error.code === "string"
+    ? error.code
     : "";
 
 export const isUncertainRoomError = (error: unknown): boolean =>
+  error instanceof Error ||
   !roomErrorCode(error) ||
   (typeof error === "object" &&
     error !== null &&

@@ -14,6 +14,18 @@ const state = (revision: number, nextSequence: number): RoomState => ({
 afterEach(() => vi.unstubAllGlobals());
 
 describe("room session reconciliation", () => {
+  it("never revives an expired room when natural expiry has the same revision", () => {
+    const active = {
+      ...state(8, 5),
+      room: { ...state(8, 5).room, phase: "voting" as const },
+    };
+    const expired = {
+      ...active,
+      room: { ...active.room, phase: "expired" as const },
+    };
+    expect(reconcileRoom(expired, active).room.phase).toBe("expired");
+    expect(reconcileRoom(active, expired).room.phase).toBe("expired");
+  });
   it("does not roll back the room or command sequence", () => {
     expect(reconcileRoom(state(8, 5), state(3, 2))).toEqual(state(8, 5));
     expect(reconcileRoom(state(8, 5), state(9, 4))).toEqual(state(9, 5));
@@ -53,5 +65,8 @@ describe("room session reconciliation", () => {
       isUncertainRoomError({ code: "stale-revision", uncertain: false }),
     ).toBe(false);
     expect(isUncertainRoomError(new TypeError("Network failed"))).toBe(true);
+    expect(
+      isUncertainRoomError(new DOMException("Timed out", "TimeoutError")),
+    ).toBe(true);
   });
 });
