@@ -26,6 +26,12 @@ The deployment is the v0.3 follow-up; v0.4's twelve issues remain open.
 
 ## Immediate corrections in this change
 
+- GitHub Dependabot alert 1 identifies a high-severity `js-yaml` CPU-exhaustion
+  advisory. The existing lockfile used 4.3.1 through the ESLint configuration
+  toolchain. The lockfile now uses patched 4.3.2 with a patched-4.x override.
+  This is not evidence of production exploitation. GitHub's default-branch
+  alert remains open until a reviewed fix reaches main and is rescanned.
+
 - Live entry and invitations no longer render the separate local prototype.
   The explicit `?demo=1` route preserves its visual/constraint reference and tests;
   invitation intent takes precedence over demo mode.
