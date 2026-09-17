@@ -6,6 +6,32 @@ import {
   type Route,
 } from "@playwright/test";
 
+test("separates the live entry from the illustrative demo", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Create temporary room" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Review candidates" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("link", { name: "Explore the separate single-device demo" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Review candidates" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Create temporary room" }),
+  ).toHaveCount(0);
+  await page.goto("/?join=r1.AAAAAAAAAAAAAAAAAAAAAA&demo=1");
+  await expect(page.getByRole("button", { name: "Ask to join" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Review candidates" }),
+  ).toHaveCount(0);
+});
+
 type Participant = {
   id: string;
   displayName: string;
@@ -275,6 +301,19 @@ test("orchestrates a two-browser secure-room journey", async ({
       .getByRole("button", { name: "Lock roster and begin voting" })
       .click();
     await guest.getByRole("button", { name: "Sync now" }).click();
+    const card = host.getByTestId("connected-ballot").locator("article");
+    await card.scrollIntoViewIfNeeded();
+    const box = await card.boundingBox();
+    if (!box) throw new Error("Voting card is missing");
+    await host.mouse.move(box.x + 30, box.y + 30);
+    await host.mouse.down();
+    await host.mouse.move(box.x + 150, box.y + 30, { steps: 8 });
+    await card.dispatchEvent("pointercancel", {
+      pointerId: 1,
+      pointerType: "mouse",
+    });
+    await host.mouse.up();
+    expect(completed.get("member_host_0001")).toBe(0);
     for (let index = 0; index < 3; index += 1) {
       if (index === 2) {
         await expect(

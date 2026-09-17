@@ -114,6 +114,7 @@ export function ConnectedRoom({
   const [invitation, setInvitation] = useState("");
   const [state, setState] = useState<RoomState | null>(null);
   const [busy, setBusy] = useState(false);
+  const operationPending = useRef(false);
   const [notice, setNotice] = useState("");
   const [dragX, setDragX] = useState(0);
   const dragStartX = useRef<number | null>(null);
@@ -126,6 +127,8 @@ export function ConnectedRoom({
   );
 
   const run = async (operation: () => Promise<void>) => {
+    if (operationPending.current) return;
+    operationPending.current = true;
     setBusy(true);
     setNotice("");
     try {
@@ -133,6 +136,7 @@ export function ConnectedRoom({
     } catch (error) {
       setNotice(messageFor(error));
     } finally {
+      operationPending.current = false;
       setBusy(false);
     }
   };
@@ -277,8 +281,10 @@ export function ConnectedRoom({
     if (!activeRoomId) return;
 
     let disposed = false;
+    let syncing = false;
     const sync = async () => {
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState === "hidden" || syncing) return;
+      syncing = true;
       try {
         const next = await loadProjection(activeRoomId);
         if (!disposed) {
@@ -291,6 +297,8 @@ export function ConnectedRoom({
         }
       } catch (error) {
         if (!disposed && isUnavailableRoomError(error)) returnToJoin();
+      } finally {
+        syncing = false;
       }
     };
     const syncWhenVisible = () => void sync();
@@ -502,6 +510,7 @@ export function ConnectedRoom({
     ? connectedMedia[winner.name.toLowerCase()]
     : undefined;
   const startDrag = (event: PointerEvent<HTMLElement>) => {
+    if (operationPending.current) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStartX.current = event.clientX;
@@ -516,6 +525,10 @@ export function ConnectedRoom({
     dragStartX.current = null;
     setDragX(0);
     if (preference) submitVote(preference);
+  };
+  const cancelDrag = () => {
+    dragStartX.current = null;
+    setDragX(0);
   };
 
   return (
@@ -727,7 +740,7 @@ export function ConnectedRoom({
                 onPointerDown={startDrag}
                 onPointerMove={moveDrag}
                 onPointerUp={endDrag}
-                onPointerCancel={endDrag}
+                onPointerCancel={cancelDrag}
                 style={{
                   transform: `translateX(${dragX}px) rotate(${dragX / 28}deg)`,
                 }}

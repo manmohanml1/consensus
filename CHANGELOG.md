@@ -6,6 +6,12 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Separate the illustrative single-device demo from live room entry and invite
+  journeys; cancel interrupted swipes without voting and guard overlapping user
+  operations and background polls.
+- Record the production product-reliability audit and a proposed smaller,
+  evidence-driven food-only v1.0 delivery sequence.
+
 - Make connected rooms update automatically while visible, allow hosts to add
   bounded manual options after room creation, make custom-option media honest,
   and return invalidated guests to a safe fresh admission request.

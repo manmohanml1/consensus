@@ -1,6 +1,6 @@
 # GitHub backlog contract
 
-`backlog-v0.3-v1.0.json` is the repository-owned source for the planned GitHub backlog after milestone 0.2. It contains exactly 100 bounded work items across milestones 0.3.0 through 1.0.0. [CQ-200 / GitHub #110](https://github.com/manmohanml1/consensus/issues/110) tracks the backlog infrastructure itself and is not one of those 100 delivery items.
+`backlog-v0.3-v1.0.json` is the repository-owned source for the planned GitHub backlog after milestone 0.2. It currently contains 101 bounded work items across milestones 0.3.0 through 1.0.0, including the added CQ-215 integration slice. Follow-up issues outside the manifest are not counted here. [CQ-200 / GitHub #110](https://github.com/manmohanml1/consensus/issues/110) tracks the backlog infrastructure itself.
 
 The catalog is intentionally more detailed than `ROADMAP.md`: roadmap versions describe product proofs, while backlog items describe reviewable outcomes with dependencies and acceptance evidence. GitHub issue numbers are delivery metadata; stable `CQ-*` identifiers remain the cross-reference used by ADRs, milestone records, commits, and pull requests.
 
@@ -8,7 +8,7 @@ The catalog is intentionally more detailed than `ROADMAP.md`: roadmap versions d
 
 | Milestone | Issues | Focus                                                |
 | --------- | -----: | ---------------------------------------------------- |
-| 0.3.0     |     14 | Durable anonymous rooms and capability security      |
+| 0.3.0     |     15 | Durable anonymous rooms and capability security      |
 | 0.4.0     |     12 | Authoritative realtime and recovery                  |
 | 0.5.0     |     14 | Licensed, provenance-aware place discovery           |
 | 0.6.0     |     14 | Closed beta evidence and operations                  |

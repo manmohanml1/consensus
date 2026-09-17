@@ -1,5 +1,10 @@
 # Roadmap
 
+The [September product reliability review](docs/planning/PRODUCT-RESET-2026-09.md)
+records current regressions and proposes a narrower food-only path to v1.0.
+Prioritize its connected-session reliability slice before expanding features;
+the version catalog below is not evidence that each earlier product gate passed.
+
 | Version | Product proof                                                                              | Status     |
 | ------- | ------------------------------------------------------------------------------------------ | ---------- |
 | 0.1.0   | Repository contracts, decision-engine foundation, and accessible single-device slice       | Complete   |
@@ -27,8 +32,8 @@ Completion means the milestone contract and verification gates are satisfied. It
 
 [CQ-205 / GitHub #14](https://github.com/manmohanml1/consensus/issues/14), [CQ-202 / GitHub #11](https://github.com/manmohanml1/consensus/issues/11), and [CQ-203 / GitHub #12](https://github.com/manmohanml1/consensus/issues/12) completed the protocol, portable persistence, and anonymous capability foundations. CQ-204/CQ-210 completed transactional commands and privacy-minimized projections; CQ-206/CQ-213 completed secure creation, non-authoritative invitations, and the first abuse circuit breakers; CQ-207/CQ-211 completed pending admission, locked electorates, and concurrency proof. CQ-208 completed authenticated expiry and bounded deletion, CQ-209 completed host-authorized transfer and capability rotation, and CQ-212 completed both disposable and hosted recovery/teardown evidence. [CQ-215 / GitHub #142](https://github.com/manmohanml1/consensus/issues/142) completed the mobile-first, two-browser product integration and passed the final protected-Preview run at commit `b080059`; its synthetic aggregate was removed with zero residue before PR #143 merged as `a9fe3ee`. CQ-214 now records the final technical security exit. Version 0.3 is active as a controlled Production-beta rollout: its remaining operational gate is the protected daily retention invocation. It is not a stable `v0.3.0` release. Tiny or tightly coupled backlog items should share a PR when that produces one coherent review and recovery boundary. Future shared migrations remain a separate owner gate.
 
-The CI/CD, release-governance, security-reporting, and clean-Windows foundation corrections are merged. [CQ-198 / GitHub #114](https://github.com/manmohanml1/consensus/issues/114) remains open only for a separately authorized Production rollback-and-restore rehearsal; that operational exercise does not block provider-neutral planning but remains required before the governance work is called complete.
+The CI/CD, release-governance, security-reporting, and clean-Windows foundation corrections are merged. [CQ-198 / GitHub #114](https://github.com/manmohanml1/consensus/issues/114) is complete as recorded in [its evidence record](docs/issues/CQ-198-devsecops-hardening.md). A separately authorized live Production rollback rehearsal belongs to CQ-908; it was not an unmet CQ-198 acceptance criterion.
 
 [CQ-107 / GitHub #129](https://github.com/manmohanml1/consensus/issues/129) and [CQ-106 / GitHub #8](https://github.com/manmohanml1/consensus/issues/8) retain the moderated-usability and physical-device evidence. The owner has explicitly deferred both to closed-beta milestone 0.6.0; neither is passed or closed, and 0.2/0.2.1 remain `Acceptance`. Their evidence is required before stable product claims or a stable `v0.3.0` release, but it does not block the controlled 0.3 Production beta.
 
-The complete 0.3–1.0 catalog contains 100 independently reviewable items in [docs/planning/BACKLOG.md](docs/planning/BACKLOG.md).
+The 0.3–1.0 manifest contains 101 items in [docs/planning/BACKLOG.md](docs/planning/BACKLOG.md); additional follow-up issues are tracked separately. Catalog size is not a launch requirement or completion metric.

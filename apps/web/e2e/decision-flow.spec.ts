@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function reachResult(page: Page) {
-  await page.goto("/");
+  await page.goto("/?demo=1");
   await page.getByRole("button", { name: "Review candidates" }).click();
   await page
     .getByRole("button", { name: "Lock roster and begin voting" })
@@ -28,7 +28,7 @@ test("completes the account-free decision journey", async ({ page }) => {
 });
 
 test("supports keyboard-only setup progression", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?demo=1");
   const roomName = page.getByLabel("Room name");
   await roomName.focus();
   await expect(roomName).toBeFocused();
@@ -40,7 +40,7 @@ test("supports keyboard-only setup progression", async ({ page }) => {
 });
 
 test("does not overflow a 390px mobile viewport", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?demo=1");
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
@@ -60,7 +60,7 @@ test("publishes valid install metadata and icons", async ({
     "Install metadata is project-independent",
   );
   test.setTimeout(60_000);
-  await page.goto("/");
+  await page.goto("/?demo=1");
 
   const manifestLink = page.locator('link[rel="manifest"]');
   await expect(manifestLink).toHaveAttribute("href", /manifest\.webmanifest/);
@@ -139,7 +139,7 @@ test("keeps the setup action within supported responsive widths", async ({
     "This test sets each supported viewport explicitly",
   );
   test.setTimeout(60_000);
-  await page.goto("/");
+  await page.goto("/?demo=1");
 
   for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: width < 600 ? 844 : 1000 });
@@ -162,7 +162,7 @@ test("supports an optional mobile swipe without removing buttons", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/?demo=1");
   await page.getByRole("button", { name: "Review candidates" }).click();
   await page
     .getByRole("button", { name: "Lock roster and begin voting" })
@@ -195,7 +195,7 @@ test("honors reduced-motion preferences", async ({ page }, testInfo) => {
     "Dedicated reduced-motion profile",
   );
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/?demo=1");
   expect(
     await page.evaluate(
       () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
