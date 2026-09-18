@@ -1,19 +1,36 @@
 import { DecisionWorkflow } from "@/components/decision-workflow";
 import { ConnectedRoom } from "@/components/connected-room";
 import { connection } from "next/server";
+import Link from "next/link";
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ join?: string | string[] }>;
+  searchParams: Promise<{ join?: string | string[]; demo?: string }>;
 }) {
   await connection();
   const query = await searchParams;
   const initialLocator =
     typeof query.join === "string" ? query.join.slice(0, 25) : "";
+  if (query.demo !== "1" || initialLocator) {
+    return (
+      <main>
+        <ConnectedRoom initialLocator={initialLocator} />
+        {!initialLocator && (
+          <p className="hero-copy">
+            <Link href="/?demo=1">Explore the separate single-device demo</Link>
+            {" · "}Demo constraints and illustrative venues are not live room
+            features.
+          </p>
+        )}
+      </main>
+    );
+  }
   return (
     <main>
-      <ConnectedRoom initialLocator={initialLocator} />
+      <p className="hero-copy">
+        <Link href="/">Back to live rooms</Link>
+      </p>
 
       <section className="hero vision-hero" aria-labelledby="hero-title">
         <div className="eyebrow">Consensus · decision MVP</div>
