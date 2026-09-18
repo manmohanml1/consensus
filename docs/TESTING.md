@@ -61,6 +61,12 @@ pull-request event remains the authoritative source, dependency, persistence,
 build, and local-browser gate; keeping the executions separate prevents an
 unrelated rerun from obscuring the exact Preview result.
 
+The quality workflow also isolates concurrency by event. Push and pull-request
+runs still cancel an older run for the same ref, while every manually approved,
+stateful Preview dispatch receives its own non-canceling run group. This prevents
+acceptance from canceling the post-merge `main` gate and prevents a later manual
+dispatch from interrupting an in-flight room journey after it has written data.
+
 The production dependency audit is also isolated from the full verify job. It
 remains fail-closed and part of the aggregate `build-and-test` requirement, but
 an advisory-service outage can be diagnosed and rerun without repeating the

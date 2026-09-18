@@ -6,6 +6,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Isolate every stateful protected-Preview acceptance dispatch from ordinary
+  push and pull-request concurrency so it cannot cancel the post-merge `main`
+  gate or interrupt another approved synthetic journey.
+
 - Resume live rooms after reload using existing cookie-authorized membership,
   reconcile responses without revision/sequence rollback, show interrupted
   connectivity, and retry uncertain commands with the identical idempotency key.
