@@ -767,7 +767,10 @@ export class PostgresRoomStore {
       `UPDATE consensus.outbox_events
           SET last_error_code = $3,
               available_at = $4,
-              poisoned_at = CASE WHEN attempt_count >= $5 THEN $6 ELSE NULL END,
+              poisoned_at = CASE
+                WHEN attempt_count >= $5 THEN $6::timestamptz
+                ELSE NULL::timestamptz
+              END,
               lease_owner = NULL,
               lease_expires_at = NULL
         WHERE id = $1 AND lease_owner = $2
