@@ -6,16 +6,28 @@ import Link from "next/link";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ join?: string | string[]; demo?: string }>;
+  searchParams: Promise<{
+    join?: string | string[];
+    room?: string | string[];
+    demo?: string;
+  }>;
 }) {
   await connection();
   const query = await searchParams;
   const initialLocator =
     typeof query.join === "string" ? query.join.slice(0, 25) : "";
-  if (query.demo !== "1" || initialLocator) {
+  const initialRoomId =
+    typeof query.room === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(query.room)
+      ? query.room
+      : "";
+  if (query.demo !== "1" || initialLocator || initialRoomId) {
     return (
       <main>
-        <ConnectedRoom initialLocator={initialLocator} />
+        <ConnectedRoom
+          key={`${initialRoomId}:${initialLocator}`}
+          initialLocator={initialLocator}
+          initialRoomId={initialRoomId}
+        />
         {!initialLocator && (
           <p className="hero-copy">
             <Link href="/?demo=1">Explore the separate single-device demo</Link>

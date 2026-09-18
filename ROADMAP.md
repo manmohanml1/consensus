@@ -5,6 +5,11 @@ records current regressions and proposes a narrower food-only path to v1.0.
 Prioritize its connected-session reliability slice before expanding features;
 the version catalog below is not evidence that each earlier product gate passed.
 
+The grouped CQ-303/308/309/310 preparation follows
+[ADR 0016](docs/adr/0016-browser-room-session-continuity.md): authorized reload,
+monotonic snapshots, bounded polling and explicit in-memory command retry.
+Transport-dependent acceptance and the full v0.4 exit remain open.
+
 | Version | Product proof                                                                              | Status     |
 | ------- | ------------------------------------------------------------------------------------------ | ---------- |
 | 0.1.0   | Repository contracts, decision-engine foundation, and accessible single-device slice       | Complete   |

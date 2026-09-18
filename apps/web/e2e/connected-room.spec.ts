@@ -6,6 +6,16 @@ import {
   type Route,
 } from "@playwright/test";
 
+const uncaughtErrors = new WeakMap<Page, string[]>();
+test.beforeEach(async ({ page }) => {
+  const errors: string[] = [];
+  uncaughtErrors.set(page, errors);
+  page.on("pageerror", (error) => errors.push(error.stack ?? error.message));
+});
+test.afterEach(async ({ page }) => {
+  expect(uncaughtErrors.get(page) ?? []).toEqual([]);
+});
+
 test("separates the live entry from the illustrative demo", async ({
   page,
 }) => {
@@ -89,6 +99,140 @@ const projection = ({
     role,
     nextSequence: 1,
   },
+});
+
+test("does not replace membership when resume is offline or denied", async ({
+  page,
+}) => {
+  let denied = false;
+  let posts = 0;
+  await page.route("**/api/v1/rooms**", async (route) => {
+    if (route.request().method() === "POST") posts += 1;
+    if (!denied) return route.abort("failed");
+    return route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({ code: "unauthorized-or-missing" }),
+    });
+  });
+  await page.goto(
+    "/?room=room_connected_state_0001&join=r1.AAAAAAAAAAAAAAAAAAAAAA",
+  );
+  await expect(
+    page.getByRole("button", { name: "Retry connection" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ask to join" })).toHaveCount(
+    0,
+  );
+  denied = true;
+  await page.getByRole("button", { name: "Retry connection" }).click();
+  await expect(page.getByRole("button", { name: "Ask to join" })).toBeVisible();
+  expect(posts).toBe(0);
+  await expect(page).not.toHaveURL(/room=/);
+});
+
+test("retries uncertain commands exactly without rolling back newer snapshots", async ({
+  page,
+}) => {
+  const current = projection();
+  const bodies: string[] = [];
+  await page.route("**/api/v1/rooms**", async (route) => {
+    if (route.request().url().endsWith("/commands")) {
+      bodies.push(route.request().postData() ?? "");
+      if (bodies.length === 1) {
+        current.room.revision = 3;
+        current.actor.nextSequence = 2;
+        return route.abort("failed");
+      }
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...current,
+          room: { ...current.room, revision: 2 },
+        }),
+      });
+    }
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(current),
+    });
+  });
+  await page.goto("/?room=room_connected_state_0001");
+  await page.getByLabel("Add an option").fill("Lantern Café");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Retry pending action" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByText("Revision 3", { exact: true })).toBeVisible({
+    timeout: 8_000,
+  });
+  await page.getByRole("button", { name: "Retry pending action" }).click();
+  await expect(
+    page.getByRole("button", { name: "Retry pending action" }),
+  ).toHaveCount(0);
+  expect(bodies).toHaveLength(2);
+  expect(bodies[1]).toBe(bodies[0]);
+  await expect(page.getByText("Revision 3", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Add an option")).toHaveValue("");
+});
+
+test("ignores a slow refresh response after a newer command", async ({
+  page,
+}) => {
+  const current = projection();
+  let delayed: Route | undefined;
+  let holdNext = false;
+  await page.route("**/api/v1/rooms**", async (route) => {
+    if (route.request().url().endsWith("/commands")) {
+      current.room.revision = 2;
+      current.actor.nextSequence = 2;
+    } else if (holdNext && !delayed) {
+      delayed = route;
+      return;
+    }
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(current),
+    });
+  });
+  await page.goto("/?room=room_connected_state_0001");
+  await expect(page.getByText("Hosting as")).toBeVisible();
+  holdNext = true;
+  await expect.poll(() => Boolean(delayed)).toBe(true);
+  await page.getByLabel("Add an option").fill("Lantern Café");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("Revision 2", { exact: true })).toBeVisible();
+  await delayed!.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify(projection()),
+  });
+  await expect(page.getByText("Revision 2", { exact: true })).toBeVisible();
+});
+
+test("shows polling interruption and recovers on connectivity return", async ({
+  page,
+}) => {
+  let fail = false;
+  await page.route("**/api/v1/rooms**", async (route) => {
+    if (fail) return route.abort("failed");
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(projection()),
+    });
+  });
+  await page.goto("/?room=room_connected_state_0001");
+  await expect(page.getByText("Hosting as")).toBeVisible();
+  fail = true;
+  await expect(page.getByText(/Connection interrupted/)).toBeVisible({
+    timeout: 8_000,
+  });
+  await expect(page.getByText("Hosting as")).toBeVisible();
+  fail = false;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByText(/Connection interrupted/)).toHaveCount(0);
 });
 
 test("orchestrates a two-browser secure-room journey", async ({
@@ -259,6 +403,11 @@ test("orchestrates a two-browser secure-room journey", async ({
   });
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
+  const roomErrors: string[] = [];
+  for (const page of [host, guest])
+    page.on("pageerror", (error) =>
+      roomErrors.push(error.stack ?? error.message),
+    );
 
   try {
     await host.goto("/");
@@ -273,6 +422,9 @@ test("orchestrates a two-browser secure-room journey", async ({
     await host.getByLabel("Your name").fill("Maya");
     await host.getByRole("button", { name: "Create temporary room" }).click();
     await expect(host.getByText("r1.AAAAAAAAAAAAAAAAAAAAAA")).toBeVisible();
+    await host.reload();
+    await expect(host.getByText("Hosting as")).toBeVisible();
+    await expect(host.getByText("r1.AAAAAAAAAAAAAAAAAAAAAA")).toBeVisible();
     await host.getByLabel("Add an option").fill("Lantern Café");
     await host.getByRole("button", { name: "Add", exact: true }).click();
     await expect(host.locator(".candidate-review-list")).toContainText(
@@ -285,6 +437,11 @@ test("orchestrates a two-browser secure-room journey", async ({
     await guest.getByLabel("Your name").fill("Sam");
     await guest.getByRole("button", { name: "Ask to join" }).click();
     await expect(guest.getByText("Waiting for the host")).toBeVisible();
+    await guest.reload();
+    await expect(guest.getByText("Waiting for the host")).toBeVisible();
+    expect(
+      participants.filter(({ id }) => id === "member_guest_0001"),
+    ).toHaveLength(1);
 
     await expect(
       host.locator(".connected-roster").getByText("Sam"),
@@ -326,6 +483,11 @@ test("orchestrates a two-browser secure-room journey", async ({
     }
     await guest.getByRole("button", { name: "Sync now" }).click();
     for (let index = 0; index < 3; index += 1) {
+      if (index === 1) {
+        await guest.reload();
+        await expect(guest.getByTestId("connected-ballot")).toBeVisible();
+        expect(completed.get("member_guest_0001")).toBe(1);
+      }
       await guest
         .getByRole("button", { name: /^Accept — a workable compromise$/ })
         .click();
@@ -340,11 +502,16 @@ test("orchestrates a two-browser secure-room journey", async ({
     await expect(guest.getByTestId("connected-result")).toContainText(
       "Garden Table",
     );
+    await guest.reload();
+    await expect(guest.getByTestId("connected-result")).toContainText(
+      "Garden Table",
+    );
     const dimensions = await host.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
     }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+    expect(roomErrors).toEqual([]);
   } finally {
     await hostContext.close();
     await guestContext.close();
@@ -437,6 +604,12 @@ test("keeps denial indistinguishable from missing room access", async ({
 test("restores host access without retaining the recovery code", async ({
   page,
 }) => {
+  await page.route("**/api/v1/rooms/**/projection", async (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(projection()),
+    }),
+  );
   await page.route("**/api/v1/rooms/**/recovery/redeem", async (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -457,6 +630,9 @@ test("restores host access without retaining the recovery code", async ({
     "Host access restored on this browser.",
   );
   await page.reload();
+  await expect(page.getByText("Hosting as")).toBeVisible();
+  expect(page.url()).not.toContain("hr1.");
+  await page.goto("/");
   await page.getByRole("button", { name: "Recover" }).click();
   await expect(page.getByLabel("One-time recovery code")).toHaveValue("");
 });
