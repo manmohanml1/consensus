@@ -31,7 +31,9 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
     const result = await client.query(
       "SELECT version FROM consensus_internal.schema_migrations ORDER BY version",
     );
-    expect(result.rows.map(({ version }) => version)).toEqual([1, 2, 3, 4, 5]);
+    expect(result.rows.map(({ version }) => version)).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
   });
 
   it("enforces room, participant, revision, foreign-key, and idempotency invariants", async () => {

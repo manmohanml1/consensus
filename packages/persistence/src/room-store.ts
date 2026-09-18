@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import {
   DECISION_RULESET_VERSION,
+  ROOM_EVENT_VERSION,
   ROOM_PROTOCOL_LIMITS,
   ROOM_PROTOCOL_VERSION,
   parseRoomProjection,
@@ -10,6 +11,7 @@ import {
   type RoomCommand,
   type RoomProjection,
   type RoomProtocolErrorCode,
+  type RoomUpdateEvent,
 } from "@consensus/domain";
 import {
   CAPABILITY_MAX_TTL_MS,
@@ -69,6 +71,20 @@ export interface JoinRoomResult {
 
 export interface RetentionSweepResult {
   deleted: number;
+}
+
+export interface LeasedRoomUpdate {
+  event: RoomUpdateEvent;
+  attemptCount: number;
+  leaseExpiresAt: string;
+  expiresAt: string;
+}
+
+export interface OutboxHealth {
+  ready: number;
+  leased: number;
+  poisoned: number;
+  oldestReadyAt: string | null;
 }
 
 export interface HostRecoveryResult {
@@ -657,6 +673,164 @@ export class PostgresRoomStore {
       limit,
       now,
     ) as Promise<RetentionSweepResult>;
+  }
+
+  async claimRoomUpdates(
+    leaseOwner: string,
+    options: { limit?: number; leaseMs?: number; now?: Date } = {},
+  ): Promise<LeasedRoomUpdate[]> {
+    if (!/^[A-Za-z0-9._:-]{8,64}$/.test(leaseOwner)) {
+      throw new Error("Outbox lease owner is invalid.");
+    }
+    const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
+    const leaseMs = Math.min(
+      Math.max(options.leaseMs ?? 30_000, 1_000),
+      300_000,
+    );
+    const now = options.now ?? new Date();
+    const leaseExpiresAt = new Date(now.getTime() + leaseMs);
+    const result = await this.pool.query<{
+      id: string;
+      room_id: string;
+      aggregate_revision: string;
+      created_at: Date;
+      attempt_count: number;
+      lease_expires_at: Date;
+      expires_at: Date;
+    }>(
+      `WITH claimable AS (
+         SELECT id
+           FROM consensus.outbox_events
+          WHERE published_at IS NULL
+            AND poisoned_at IS NULL
+            AND available_at <= $2
+            AND expires_at > $2
+            AND (lease_owner IS NULL OR lease_expires_at <= $2)
+          ORDER BY available_at, created_at, id
+          FOR UPDATE SKIP LOCKED
+          LIMIT $3
+       )
+       UPDATE consensus.outbox_events AS event
+          SET lease_owner = $1,
+              lease_expires_at = $4,
+              attempt_count = event.attempt_count + 1
+         FROM claimable
+        WHERE event.id = claimable.id
+       RETURNING event.id, event.room_id, event.aggregate_revision,
+                 event.created_at, event.attempt_count,
+                 event.lease_expires_at, event.expires_at`,
+      [leaseOwner, now, limit, leaseExpiresAt],
+    );
+    return result.rows.map((row) => ({
+      event: {
+        eventVersion: ROOM_EVENT_VERSION,
+        eventId: row.id,
+        roomId: row.room_id,
+        revision: Number(row.aggregate_revision),
+        type: "room.updated",
+        occurredAt: row.created_at.toISOString(),
+      },
+      attemptCount: row.attempt_count,
+      leaseExpiresAt: row.lease_expires_at.toISOString(),
+      expiresAt: row.expires_at.toISOString(),
+    }));
+  }
+
+  async markRoomUpdatePublished(
+    eventId: string,
+    leaseOwner: string,
+    publishedAt = new Date(),
+  ): Promise<boolean> {
+    const result = await this.pool.query(
+      `UPDATE consensus.outbox_events
+          SET published_at = $3, lease_owner = NULL, lease_expires_at = NULL,
+              last_error_code = NULL
+        WHERE id = $1 AND lease_owner = $2
+          AND published_at IS NULL AND poisoned_at IS NULL`,
+      [eventId, leaseOwner, publishedAt],
+    );
+    return (result.rowCount ?? 0) === 1;
+  }
+
+  async markRoomUpdateFailed(
+    eventId: string,
+    leaseOwner: string,
+    errorCode: string,
+    options: { retryAt: Date; maxAttempts?: number; now?: Date },
+  ): Promise<"retry" | "poison" | "lost-lease"> {
+    if (!/^[a-z0-9._-]{1,64}$/.test(errorCode)) {
+      throw new Error("Outbox error code is invalid.");
+    }
+    const maxAttempts = Math.min(Math.max(options.maxAttempts ?? 8, 1), 32);
+    const now = options.now ?? new Date();
+    const result = await this.pool.query<{ poisoned: boolean }>(
+      `UPDATE consensus.outbox_events
+          SET last_error_code = $3,
+              available_at = $4,
+              poisoned_at = CASE WHEN attempt_count >= $5 THEN $6 ELSE NULL END,
+              lease_owner = NULL,
+              lease_expires_at = NULL
+        WHERE id = $1 AND lease_owner = $2
+          AND published_at IS NULL AND poisoned_at IS NULL
+       RETURNING poisoned_at IS NOT NULL AS poisoned`,
+      [eventId, leaseOwner, errorCode, options.retryAt, maxAttempts, now],
+    );
+    const row = result.rows[0];
+    if (!row) return "lost-lease";
+    return row.poisoned ? "poison" : "retry";
+  }
+
+  async getOutboxHealth(now = new Date()): Promise<OutboxHealth> {
+    const result = await this.pool.query<{
+      ready: number;
+      leased: number;
+      poisoned: number;
+      oldest_ready_at: Date | null;
+    }>(
+      `SELECT
+         count(*) FILTER (
+           WHERE published_at IS NULL AND poisoned_at IS NULL
+             AND available_at <= $1
+             AND (lease_owner IS NULL OR lease_expires_at <= $1)
+         )::int AS ready,
+         count(*) FILTER (
+           WHERE published_at IS NULL AND poisoned_at IS NULL
+             AND lease_owner IS NOT NULL AND lease_expires_at > $1
+         )::int AS leased,
+         count(*) FILTER (WHERE poisoned_at IS NOT NULL)::int AS poisoned,
+         min(created_at) FILTER (
+           WHERE published_at IS NULL AND poisoned_at IS NULL
+             AND available_at <= $1
+             AND (lease_owner IS NULL OR lease_expires_at <= $1)
+         ) AS oldest_ready_at
+       FROM consensus.outbox_events`,
+      [now],
+    );
+    const row = result.rows[0];
+    return {
+      ready: row?.ready ?? 0,
+      leased: row?.leased ?? 0,
+      poisoned: row?.poisoned ?? 0,
+      oldestReadyAt: row?.oldest_ready_at?.toISOString() ?? null,
+    };
+  }
+
+  async deleteExpiredOutboxEvents(
+    limit = 500,
+    now = new Date(),
+  ): Promise<number> {
+    const boundedLimit = Math.min(Math.max(limit, 1), 2_000);
+    const result = await this.pool.query(
+      `DELETE FROM consensus.outbox_events
+        WHERE id IN (
+          SELECT id FROM consensus.outbox_events
+           WHERE expires_at <= $1
+           ORDER BY expires_at, id
+           LIMIT $2
+        )`,
+      [now, boundedLimit],
+    );
+    return result.rowCount ?? 0;
   }
 
   private async loadRoom(

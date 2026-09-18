@@ -13,9 +13,15 @@ import {
   type RoomState,
 } from "@/lib/room-session";
 import {
+  createRoomSyncState,
+  reduceRoomSync,
+  roomSyncCopy,
+} from "@/lib/room-sync";
+import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type PointerEvent,
@@ -115,7 +121,9 @@ export function ConnectedRoom({
   } | null>(null);
   const [resuming, setResuming] = useState(Boolean(initialRoomId));
   const [resumeFailed, setResumeFailed] = useState(false);
-  const [connectionNotice, setConnectionNotice] = useState("");
+  const [syncState, dispatchSync] = useReducer(reduceRoomSync, undefined, () =>
+    createRoomSyncState(),
+  );
   const busy = working || retryPending;
   const operationPending = useRef(false);
   const [notice, setNotice] = useState("");
@@ -127,11 +135,21 @@ export function ConnectedRoom({
     const merged = reconcileRoom(stateRef.current, next);
     stateRef.current = merged;
     setState(merged);
+    dispatchSync({
+      type: "projection-confirmed",
+      revision: merged.room.revision,
+      terminal: merged.room.phase === "expired",
+    });
   }, []);
 
   const enterRoom = (next: RoomState, invite = locator) => {
     stateRef.current = next;
     setState(next);
+    dispatchSync({
+      type: "projection-confirmed",
+      revision: next.room.revision,
+      terminal: next.room.phase === "expired",
+    });
     const url = new URL(window.location.href);
     url.search = "";
     url.searchParams.set("room", next.room.roomId);
@@ -195,6 +213,11 @@ export function ConnectedRoom({
         if (disposed) return;
         stateRef.current = next;
         setState(next);
+        dispatchSync({
+          type: "projection-confirmed",
+          revision: next.room.revision,
+          terminal: next.room.phase === "expired",
+        });
         setResumeFailed(false);
         setResuming(false);
       })
@@ -295,12 +318,13 @@ export function ConnectedRoom({
       adopt(next);
       pendingCommand.current = null;
       setRetryPending(false);
-      setConnectionNotice("");
+      dispatchSync({ type: "command-settled" });
       pending.onAccepted?.();
     } catch (error) {
       if (pendingCommand.current !== pending) return;
       if (isUncertainRoomError(error)) {
         setRetryPending(true);
+        dispatchSync({ type: "command-uncertain" });
         setNotice(
           "Delivery is uncertain. Retry the same action to confirm it safely; do not start another action.",
         );
@@ -308,6 +332,7 @@ export function ConnectedRoom({
       }
       pendingCommand.current = null;
       setRetryPending(false);
+      dispatchSync({ type: "command-settled" });
       if (isUnavailableRoomError(error)) returnToJoin();
       else {
         try {
@@ -347,6 +372,7 @@ export function ConnectedRoom({
           payload,
         }),
       };
+      dispatchSync({ type: "command-started" });
       await sendPendingCommand();
     });
 
@@ -383,21 +409,19 @@ export function ConnectedRoom({
       if (document.visibilityState === "hidden" || syncing) return;
       window.clearTimeout(timer);
       syncing = true;
+      dispatchSync({ type: "reconcile-started" });
       try {
         const next = await loadProjection(activeRoomId);
         if (!disposed) {
           adopt(next);
           failures = 0;
-          setConnectionNotice("");
         }
       } catch (error) {
         if (!disposed) {
           if (isUnavailableRoomError(error)) returnToJoin();
           else {
             failures += 1;
-            setConnectionNotice(
-              "Connection interrupted. Your last confirmed room state is shown; reconnecting automatically.",
-            );
+            dispatchSync({ type: "sync-failed" });
           }
         }
       } finally {
@@ -413,14 +437,21 @@ export function ConnectedRoom({
       }
     };
     const syncWhenVisible = () => void sync();
+    const markOffline = () => dispatchSync({ type: "browser-offline" });
+    const resumeOnline = () => {
+      dispatchSync({ type: "browser-online" });
+      syncWhenVisible();
+    };
     timer = window.setTimeout(syncWhenVisible, 2_500);
     document.addEventListener("visibilitychange", syncWhenVisible);
-    window.addEventListener("online", syncWhenVisible);
+    window.addEventListener("offline", markOffline);
+    window.addEventListener("online", resumeOnline);
     return () => {
       disposed = true;
       window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", syncWhenVisible);
-      window.removeEventListener("online", syncWhenVisible);
+      window.removeEventListener("offline", markOffline);
+      window.removeEventListener("online", resumeOnline);
     };
   }, [activeRoomId, terminal, loadProjection, returnToJoin, adopt]);
 
@@ -668,9 +699,11 @@ export function ConnectedRoom({
 
   return (
     <section className="room-shell connected-room" aria-labelledby="room-title">
-      {connectionNotice && (
+      {(syncState.mode === "degraded" || syncState.mode === "offline") && (
         <p className="connected-notice" role="status">
-          {connectionNotice}
+          {syncState.mode === "offline"
+            ? "You are offline. Confirmed room state remains visible; actions wait until you reconnect."
+            : "Updates are delayed. Confirmed room state remains visible while automatic recovery continues."}
         </p>
       )}
       {retryPending && (
@@ -687,7 +720,16 @@ export function ConnectedRoom({
           <p className="section-kicker">Milestone 0.3 · connected room</p>
           <h2 id="room-title">{state.room.title}</h2>
         </div>
-        <span className="room-status">{state.room.phase}</span>
+        <div className="room-status-group">
+          <span
+            className={`sync-status sync-status--${syncState.mode}`}
+            data-testid="room-sync-status"
+          >
+            <span aria-hidden="true" />
+            {roomSyncCopy[syncState.mode]}
+          </span>
+          <span className="room-status">{state.room.phase}</span>
+        </div>
       </div>
       <div className="connected-room__identity">
         <span>{state.actor.role === "host" ? "Hosting as" : "Joining as"}</span>
