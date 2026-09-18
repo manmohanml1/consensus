@@ -163,6 +163,8 @@ Before widening Preview access beyond controlled acceptance:
   while Preview uses shared non-production persistence;
 - repeat the full stateful run only for a materially changed accepted artifact,
   once, with an exact synthetic title and separately authorized cleanup.
+  Manual acceptance uses an isolated, non-canceling concurrency group so it
+  cannot cancel authoritative push/PR quality runs or another stateful attempt.
 
 CQ-212's owner-authorized hosted restore-branch rehearsal is complete. It
 verified migrations, least-privilege grants, synthetic aggregate deletion, and

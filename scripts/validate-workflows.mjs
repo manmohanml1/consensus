@@ -72,6 +72,23 @@ for (const file of workflowFiles) {
     );
   }
 
+  if (displayPath === ".github/workflows/quality.yml") {
+    const manualRunGroup =
+      "group: quality-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}";
+    const manualCancellationPolicy =
+      "cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}";
+    if (!source.includes(manualRunGroup)) {
+      failures.push(
+        `${displayPath}: isolate each stateful workflow_dispatch run from push and pull-request concurrency`,
+      );
+    }
+    if (!source.includes(manualCancellationPolicy)) {
+      failures.push(
+        `${displayPath}: stateful workflow_dispatch runs must not cancel in progress`,
+      );
+    }
+  }
+
   const jobs = [];
   for (let index = jobsIndex + 1; index < lines.length; index += 1) {
     const match = lines[index].match(/^  ([a-zA-Z0-9_-]+):\s*$/);
