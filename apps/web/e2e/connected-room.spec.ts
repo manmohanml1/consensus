@@ -226,7 +226,7 @@ test("shows polling interruption and recovers on connectivity return", async ({
   await page.goto("/?room=room_connected_state_0001");
   await expect(page.getByText("Hosting as")).toBeVisible();
   await expect(page.getByTestId("room-sync-status")).toContainText(
-    "auto-sync on",
+    /auto-sync on/i,
   );
   fail = true;
   await expect(page.getByText(/Updates are delayed/)).toBeVisible({
@@ -238,7 +238,7 @@ test("shows polling interruption and recovers on connectivity return", async ({
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await expect(page.getByText(/Updates are delayed/)).toHaveCount(0);
   await expect(page.getByTestId("room-sync-status")).toContainText(
-    "auto-sync on",
+    /auto-sync on/i,
   );
 });
 
@@ -255,6 +255,7 @@ test("labels offline state without hiding the last confirmed room", async ({
   await expect(page.getByText("Hosting as")).toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new Event("offline")));
   await expect(page.getByTestId("room-sync-status")).toContainText("Offline");
+  await expect(page.getByRole("button", { name: "Sync now" })).toBeDisabled();
   await expect(
     page.getByText(/confirmed room state remains visible/i),
   ).toBeVisible();

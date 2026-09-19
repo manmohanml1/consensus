@@ -39,10 +39,16 @@ export function reduceRoomSync(
   if (state.mode === "terminal") return state;
   if (signal.type === "projection-confirmed") {
     return {
-      mode: signal.terminal ? "terminal" : "current",
+      mode: signal.terminal
+        ? "terminal"
+        : state.mode === "offline"
+          ? "offline"
+          : "current",
       confirmedRevision: Math.max(state.confirmedRevision, signal.revision),
       consecutiveFailures: 0,
-      pendingCommand: false,
+      // A projection can arrive while the command HTTP response is still
+      // uncertain; only that command's own acknowledgement settles it.
+      pendingCommand: state.pendingCommand,
     };
   }
   if (signal.type === "browser-offline") {
@@ -52,7 +58,8 @@ export function reduceRoomSync(
     return { ...state, mode: "reconciling" };
   }
   if (signal.type === "reconcile-started") {
-    return state.mode === "current" && state.consecutiveFailures === 0
+    return state.mode === "offline" ||
+      (state.mode === "current" && state.consecutiveFailures === 0)
       ? state
       : { ...state, mode: "reconciling" };
   }
@@ -60,7 +67,12 @@ export function reduceRoomSync(
     const consecutiveFailures = state.consecutiveFailures + 1;
     return {
       ...state,
-      mode: consecutiveFailures >= 2 ? "degraded" : "reconciling",
+      mode:
+        state.mode === "offline"
+          ? "offline"
+          : consecutiveFailures >= 2
+            ? "degraded"
+            : "reconciling",
       consecutiveFailures,
     };
   }
@@ -88,7 +100,7 @@ export function classifyRoomUpdate(
 
 export const roomSyncCopy: Record<RoomSyncMode, string> = {
   connecting: "Connecting",
-  current: "Live · auto-sync on",
+  current: "Auto-sync on",
   reconciling: "Catching up",
   degraded: "Delayed · retrying",
   offline: "Offline · changes paused",

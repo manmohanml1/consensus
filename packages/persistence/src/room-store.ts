@@ -793,6 +793,7 @@ export class PostgresRoomStore {
       `SELECT
          count(*) FILTER (
            WHERE published_at IS NULL AND poisoned_at IS NULL
+             AND expires_at > $1
              AND available_at <= $1
              AND (lease_owner IS NULL OR lease_expires_at <= $1)
          )::int AS ready,

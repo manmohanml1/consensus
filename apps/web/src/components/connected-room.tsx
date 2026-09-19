@@ -124,7 +124,7 @@ export function ConnectedRoom({
   const [syncState, dispatchSync] = useReducer(reduceRoomSync, undefined, () =>
     createRoomSyncState(),
   );
-  const busy = working || retryPending;
+  const busy = working || retryPending || syncState.mode === "offline";
   const operationPending = useRef(false);
   const [notice, setNotice] = useState("");
   const [dragX, setDragX] = useState(0);
@@ -184,6 +184,7 @@ export function ConnectedRoom({
     stateRef.current = null;
     pendingCommand.current = null;
     setRetryPending(false);
+    dispatchSync({ type: "command-settled" });
     setState(null);
     setMode(previous?.actor.role === "host" ? "recover" : "join");
     if (previous) setRecoverRoomId(previous.room.roomId);
@@ -351,6 +352,7 @@ export function ConnectedRoom({
     onAccepted?: () => void,
   ) =>
     state &&
+    syncState.mode !== "offline" &&
     !pendingCommand.current &&
     run(async () => {
       const nonce = crypto.randomUUID();
@@ -443,6 +445,7 @@ export function ConnectedRoom({
       syncWhenVisible();
     };
     timer = window.setTimeout(syncWhenVisible, 2_500);
+    if (!navigator.onLine) markOffline();
     document.addEventListener("visibilitychange", syncWhenVisible);
     window.addEventListener("offline", markOffline);
     window.addEventListener("online", resumeOnline);
@@ -650,6 +653,14 @@ export function ConnectedRoom({
   const activeCandidates = state.room.candidates.filter(
     ({ status }) => status === "active",
   );
+  const syncLabel =
+    syncState.mode === "terminal"
+      ? roomSyncCopy.terminal
+      : retryPending
+        ? "Action pending · retry safely"
+        : syncState.pendingCommand
+          ? "Saving action…"
+          : roomSyncCopy[syncState.mode];
   const myProgress = state.room.ballotProgress.find(
     ({ participantId }) => participantId === state.actor.memberId,
   );
@@ -676,7 +687,7 @@ export function ConnectedRoom({
     ? connectedMedia[winner.name.toLowerCase()]
     : undefined;
   const startDrag = (event: PointerEvent<HTMLElement>) => {
-    if (operationPending.current || pendingCommand.current) return;
+    if (busy || operationPending.current || pendingCommand.current) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStartX.current = event.clientX;
@@ -709,7 +720,7 @@ export function ConnectedRoom({
       {retryPending && (
         <button
           className="primary"
-          disabled={working}
+          disabled={working || syncState.mode === "offline"}
           onClick={() => run(sendPendingCommand)}
         >
           Retry pending action
@@ -717,7 +728,7 @@ export function ConnectedRoom({
       )}
       <div className="connected-room__topline">
         <div>
-          <p className="section-kicker">Milestone 0.3 · connected room</p>
+          <p className="section-kicker">Connected decision room</p>
           <h2 id="room-title">{state.room.title}</h2>
         </div>
         <div className="room-status-group">
@@ -726,7 +737,7 @@ export function ConnectedRoom({
             data-testid="room-sync-status"
           >
             <span aria-hidden="true" />
-            {roomSyncCopy[syncState.mode]}
+            {syncLabel}
           </span>
           <span className="room-status">{state.room.phase}</span>
         </div>

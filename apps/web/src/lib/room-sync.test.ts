@@ -42,6 +42,41 @@ describe("room sync state machine", () => {
     expect(state.confirmedRevision).toBe(9);
   });
 
+  it("does not clear an outstanding command on an unrelated projection", () => {
+    let state = reduceRoomSync(createRoomSyncState(4), {
+      type: "command-started",
+    });
+    state = reduceRoomSync(state, {
+      type: "projection-confirmed",
+      revision: 5,
+    });
+    expect(state).toMatchObject({
+      mode: "current",
+      confirmedRevision: 5,
+      pendingCommand: true,
+    });
+    expect(
+      reduceRoomSync(state, { type: "command-settled" }).pendingCommand,
+    ).toBe(false);
+  });
+
+  it("keeps an offline signal until an explicit reconnect", () => {
+    let state = reduceRoomSync(createRoomSyncState(4), {
+      type: "browser-offline",
+    });
+    state = reduceRoomSync(state, { type: "reconcile-started" });
+    expect(state.mode).toBe("offline");
+    state = reduceRoomSync(state, { type: "sync-failed" });
+    state = reduceRoomSync(state, {
+      type: "projection-confirmed",
+      revision: 5,
+    });
+    expect(state).toMatchObject({ mode: "offline", confirmedRevision: 5 });
+    expect(reduceRoomSync(state, { type: "browser-online" }).mode).toBe(
+      "reconciling",
+    );
+  });
+
   it("classifies duplicate, next, gap, and cross-room events", () => {
     const event = {
       eventVersion: "1.0.0" as const,
