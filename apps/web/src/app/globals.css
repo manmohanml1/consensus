@@ -217,6 +217,48 @@ h1 {
   font-weight: 850;
   text-transform: uppercase;
 }
+.room-status-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sync-status {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.sync-status > span {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 12%, transparent);
+}
+.sync-status--current {
+  color: var(--mint);
+}
+.sync-status--connecting,
+.sync-status--reconciling {
+  color: var(--gold);
+}
+.sync-status--degraded,
+.sync-status--offline {
+  color: #ff9aaa;
+}
+.sync-status--terminal {
+  color: var(--muted);
+}
 .connected-room__identity {
   justify-content: flex-start;
   padding: 14px 16px;

@@ -8,6 +8,7 @@ Initial service-level indicators:
 
 - command success/error/latency by type;
 - projection convergence delay;
+- outbox ready/leased/poison counts and oldest ready-event age;
 - active rooms and participants without identity;
 - place-provider latency, rejection, fallback and data-completeness rates;
 - decision completion/no-safe-result/abandonment rates;
@@ -35,6 +36,9 @@ launch window and at least daily while rooms are enabled.
   room creation at 85% until the owner approves capacity or a paid tier;
 - investigate any unexpected authorization-denial increase without logging room
   locators, capabilities, names, votes, constraints, or precise location.
+- stop a realtime rollout when poison count is non-zero or oldest ready-event
+  age breaches the reviewed convergence objective; the safe fallback is
+  authorized projection polling, not client authority.
 
 The budget owner is the repository owner. Pre-launch resources remain within
 Vercel Hobby and Neon Free; any paid upgrade or new telemetry vendor is a

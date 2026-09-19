@@ -1,6 +1,7 @@
 import type { Preference } from "./types";
 
 export const ROOM_PROTOCOL_VERSION = "1.0.0" as const;
+export const ROOM_EVENT_VERSION = "1.0.0" as const;
 export const ROOM_PROTOCOL_LIMITS = {
   maxSerializedBytes: 16_384,
   maxParticipants: 8,
@@ -92,6 +93,20 @@ export interface RoomProjection {
     rulesetVersion: string;
     winnerCandidateId: string | null;
   };
+}
+
+/**
+ * A privacy-minimized notification that a committed room revision exists.
+ * It deliberately carries no projection, ballot, capability, or member data;
+ * recipients must fetch their authorized projection from the HTTP authority.
+ */
+export interface RoomUpdateEvent {
+  eventVersion: typeof ROOM_EVENT_VERSION;
+  eventId: string;
+  roomId: string;
+  revision: number;
+  type: "room.updated";
+  occurredAt: string;
 }
 
 /** Public, non-authoritative request made by the person creating a room. */
@@ -631,6 +646,74 @@ export function parseRoomCommand(
       type,
       payload,
     } as RoomCommand,
+  };
+}
+
+export function parseRoomUpdateEvent(
+  value: unknown,
+): RoomProtocolParseResult<RoomUpdateEvent> {
+  const issues: RoomProtocolParseIssue[] = [];
+  if (!checkSerializedSize(value, issues)) return { success: false, issues };
+  scanUnsafeKeys(value, issues);
+  if (!isRecord(value)) {
+    pushIssue(issues, "$", "invalid-type", "Expected an event object.");
+    return { success: false, issues };
+  }
+
+  rejectUnknownKeys(
+    value,
+    ["eventVersion", "eventId", "roomId", "revision", "type", "occurredAt"],
+    "$",
+    issues,
+  );
+  const eventVersion = readString(value, "eventVersion", "$", issues, {
+    max: 16,
+  });
+  if (eventVersion && eventVersion !== ROOM_EVENT_VERSION) {
+    pushIssue(
+      issues,
+      "$.eventVersion",
+      "invalid-value",
+      "Unsupported event version.",
+    );
+  }
+  const eventId = readString(value, "eventId", "$", issues, {
+    max: 64,
+    pattern: identifierPattern,
+  });
+  const roomId = readString(value, "roomId", "$", issues, {
+    max: 64,
+    pattern: identifierPattern,
+  });
+  const revision = readInteger(value, "revision", "$", issues, 1);
+  const type = readString(value, "type", "$", issues, { max: 32 });
+  if (type && type !== "room.updated") {
+    pushIssue(issues, "$.type", "invalid-value", "Unknown event type.");
+  }
+  const occurredAt = readTimestamp(value, "occurredAt", "$", issues);
+
+  if (
+    issues.length > 0 ||
+    eventVersion !== ROOM_EVENT_VERSION ||
+    !eventId ||
+    !roomId ||
+    revision === undefined ||
+    type !== "room.updated" ||
+    !occurredAt
+  ) {
+    return { success: false, issues };
+  }
+
+  return {
+    success: true,
+    data: {
+      eventVersion,
+      eventId,
+      roomId,
+      revision,
+      type,
+      occurredAt,
+    },
   };
 }
 

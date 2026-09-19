@@ -14,7 +14,7 @@ This logical model is provider-neutral. ADRs 0007, 0012, and 0013 authorize a po
 | Vote                    | Accepted reaction            | Unique room/participant/candidate, command id and sequence              |
 | Decision                | Immutable resolution         | Winning candidate, eligible roster, ruleset, reason codes, scores       |
 | Commitment              | Post-result response         | In/unsure/out with timestamp; cannot rewrite decision                   |
-| Outbox event            | Durable projection message   | Unique event id, aggregate revision, publish state                      |
+| Outbox event            | Durable update notification  | Unique event id, aggregate revision, lease/retry/poison/expiry state    |
 
 The physical model lives in ordered SQL under `packages/persistence/migrations`.
 Room identifiers are aggregate keys; child records use composite foreign keys so
@@ -57,6 +57,12 @@ outbox payloads in the same statement. Concurrent or repeated sweeps are
 idempotent and expose counts only. Production values require privacy review and
 verification. Aggregate product metrics must not retain room codes, names,
 precise coordinates, individual votes, or constraints.
+
+Outbox payloads remain internal recovery evidence. External transports receive
+only the privacy-minimized versioned update envelope from ADR 0017. Migration
+`0006` adds publish availability, expiring leases, poison visibility, and a
+seven-day event deadline. Published, poisoned, and expired rows are all bounded;
+aggregate deletion can remove them earlier through the room cascade.
 
 ## Migration rules
 

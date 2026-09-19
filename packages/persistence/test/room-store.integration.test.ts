@@ -114,6 +114,52 @@ describeDatabase("transactional room command store", () => {
     expect(evidence.rows[0]).toEqual({ commands: 1, events: 1, revision: 1 });
   });
 
+  it("leases update hints exclusively, recovers an expired lease, and exposes poison health", async () => {
+    const now = new Date();
+    const first = await store.claimRoomUpdates("worker.integration.a", {
+      limit: 1,
+      leaseMs: 1_000,
+      now,
+    });
+    expect(first).toHaveLength(1);
+    expect(first[0]).toMatchObject({
+      attemptCount: 1,
+      event: {
+        roomId: "room_store_0001",
+        revision: 1,
+        type: "room.updated",
+      },
+    });
+    expect(JSON.stringify(first[0]?.event)).not.toContain("participants");
+    await expect(
+      store.claimRoomUpdates("worker.integration.b", { now }),
+    ).resolves.toEqual([]);
+
+    const afterLease = new Date(now.getTime() + 1_001);
+    const recovered = await store.claimRoomUpdates("worker.integration.b", {
+      limit: 1,
+      now: afterLease,
+    });
+    expect(recovered[0]?.attemptCount).toBe(2);
+    await expect(
+      store.markRoomUpdateFailed(
+        recovered[0]!.event.eventId,
+        "worker.integration.b",
+        "fixture-failure",
+        {
+          retryAt: new Date(afterLease.getTime() + 1_000),
+          maxAttempts: 2,
+          now: afterLease,
+        },
+      ),
+    ).resolves.toBe("poison");
+    await expect(store.getOutboxHealth(afterLease)).resolves.toMatchObject({
+      ready: 0,
+      leased: 0,
+      poisoned: 1,
+    });
+  });
+
   it("returns trusted revision conflicts without changing the aggregate", async () => {
     await expect(
       store.executeCommand(
