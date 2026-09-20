@@ -33,3 +33,7 @@ CREATE INDEX outbox_lease_recovery
 
 CREATE INDEX outbox_retention_due
   ON consensus.outbox_events (expires_at, id);
+
+-- Runtime maintenance removes only expired, bounded batches; the database
+-- role already has read/insert/update rights from 0001.
+GRANT DELETE ON consensus.outbox_events TO consensus_runtime;

@@ -2,6 +2,7 @@
 
 import {
   ROOM_PROTOCOL_VERSION,
+  type RoomUpdateEvent,
   type Preference,
   type RoomCommand,
 } from "@consensus/domain";
@@ -14,9 +15,15 @@ import {
 } from "@/lib/room-session";
 import {
   createRoomSyncState,
+  classifyRoomUpdate,
+  nextRoomPollDelayMs,
   reduceRoomSync,
   roomSyncCopy,
 } from "@/lib/room-sync";
+import {
+  connectRoomEventHints,
+  type RoomEventConnection,
+} from "@/lib/room-event-client";
 import {
   useCallback,
   useEffect,
@@ -431,9 +438,10 @@ export function ConnectedRoom({
         if (!disposed)
           timer = window.setTimeout(
             syncWhenVisible,
-            Math.min(
-              30_000,
-              2_500 * 2 ** Math.min(failures, 4) + Math.random() * 500,
+            nextRoomPollDelayMs(
+              failures,
+              Math.random(),
+              syncState.transport === "connected",
             ),
           );
       }
@@ -456,7 +464,116 @@ export function ConnectedRoom({
       window.removeEventListener("offline", markOffline);
       window.removeEventListener("online", resumeOnline);
     };
-  }, [activeRoomId, terminal, loadProjection, returnToJoin, adopt]);
+  }, [
+    activeRoomId,
+    terminal,
+    loadProjection,
+    returnToJoin,
+    adopt,
+    syncState.transport,
+  ]);
+
+  useEffect(() => {
+    if (!activeRoomId || terminal) return;
+    const controller = new AbortController();
+    let disposed = false;
+    let disconnect = () => {};
+    let reconciling = false;
+    let desiredRevision = 0;
+    let connecting = false;
+    let connected = false;
+    let connectFailures = 0;
+    let retryTimer: number | undefined;
+    const onHint = (event: RoomUpdateEvent) => {
+      const confirmed = stateRef.current?.room.revision ?? 0;
+      if (classifyRoomUpdate(event, activeRoomId, confirmed) === "ignore")
+        return;
+      desiredRevision = Math.max(desiredRevision, event.revision);
+      dispatchSync({ type: "hint-received", revision: event.revision });
+      if (reconciling) return;
+      reconciling = true;
+      dispatchSync({ type: "reconcile-started" });
+      void (async () => {
+        try {
+          // One coalesced follow-up covers hints arriving during an earlier
+          // fetch; bounded polling handles later or unavailable revisions.
+          for (let attempt = 0; attempt < 2 && !disposed; attempt += 1) {
+            const next = await loadProjection(activeRoomId);
+            if (disposed) return;
+            adopt(next);
+            if (next.room.revision >= desiredRevision) break;
+          }
+        } catch {
+          if (!disposed) dispatchSync({ type: "sync-failed" });
+        } finally {
+          reconciling = false;
+        }
+      })();
+    };
+    const onConnection = (connection: RoomEventConnection) => {
+      if (disposed) return;
+      dispatchSync({
+        type:
+          connection === "connected"
+            ? "transport-connected"
+            : connection === "disabled"
+              ? "transport-disabled"
+              : "transport-interrupted",
+      });
+      if (connection === "connected") {
+        void loadProjection(activeRoomId)
+          .then((next) => {
+            if (!disposed) adopt(next);
+          })
+          .catch(() => {
+            if (!disposed) dispatchSync({ type: "sync-failed" });
+          });
+      }
+    };
+    const connect = () => {
+      if (disposed || connecting || connected || !navigator.onLine) return;
+      window.clearTimeout(retryTimer);
+      connecting = true;
+      void connectRoomEventHints(
+        activeRoomId,
+        onHint,
+        onConnection,
+        controller.signal,
+      )
+        .then((stop) => {
+          connecting = false;
+          if (disposed) stop();
+          else {
+            connected = true;
+            connectFailures = 0;
+            disconnect = stop;
+          }
+        })
+        .catch(() => {
+          connecting = false;
+          if (disposed) return;
+          // Keep polling while retrying a failed token or subscription.
+          dispatchSync({ type: "transport-interrupted" });
+          connectFailures += 1;
+          retryTimer = window.setTimeout(
+            connect,
+            nextRoomPollDelayMs(connectFailures, Math.random()),
+          );
+        });
+    };
+    const reconnectWhenOnline = () => {
+      if (!connected) connect();
+    };
+    window.addEventListener("online", reconnectWhenOnline);
+    connect();
+    return () => {
+      disposed = true;
+      controller.abort();
+      window.clearTimeout(retryTimer);
+      window.removeEventListener("online", reconnectWhenOnline);
+      disconnect();
+    };
+  }, [activeRoomId, terminal, loadProjection, adopt]);
 
   const shareRoom = async () => {
     const url = new URL(window.location.href);

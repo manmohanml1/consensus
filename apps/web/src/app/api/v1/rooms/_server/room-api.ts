@@ -22,6 +22,10 @@ import {
   serializeCapabilityCookie,
 } from "@consensus/security";
 import type { NextRequest } from "next/server";
+import {
+  roomEventsEnabled,
+  issueRoomSubscribeToken,
+} from "./room-event-delivery";
 
 const noStoreHeaders = {
   "Cache-Control": "no-store, max-age=0",
@@ -394,6 +398,41 @@ export async function handleProjection(
     if (error instanceof RoomStoreError) {
       return protocolErrorResponse(error.code, error.currentRevision);
     }
+    return protocolErrorResponse("temporarily-unavailable");
+  }
+}
+
+export async function handleRoomEventToken(
+  request: NextRequest,
+  roomId: string,
+): Promise<Response> {
+  if (process.env.CONSENSUS_REALTIME_ENABLED !== "true") {
+    return new Response(null, { status: 204, headers: noStoreHeaders });
+  }
+  if (!roomEventsEnabled())
+    return protocolErrorResponse("temporarily-unavailable");
+  if (!roomIdPattern.test(roomId)) {
+    return protocolErrorResponse("unauthorized-or-missing");
+  }
+  const configured = configuredStore();
+  if (!configured) return protocolErrorResponse("temporarily-unavailable");
+  try {
+    const state = await configured.store.getAuthorizedProjection(
+      roomId,
+      request.cookies.get(CAPABILITY_COOKIE_NAME)?.value,
+      configured.pepper,
+    );
+    if (state.projection.phase === "expired") {
+      return protocolErrorResponse("unauthorized-or-missing");
+    }
+    const tokenRequest = await issueRoomSubscribeToken(roomId);
+    return new Response(JSON.stringify(tokenRequest), {
+      status: 200,
+      headers: noStoreHeaders,
+    });
+  } catch (error) {
+    if (error instanceof RoomStoreError)
+      return protocolErrorResponse(error.code);
     return protocolErrorResponse("temporarily-unavailable");
   }
 }

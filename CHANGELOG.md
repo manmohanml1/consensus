@@ -6,6 +6,13 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Keep the connected-room badge in polling-backup mode while optional push is
+  interrupted, and distinguish a stale hint from a confirmed projection.
+
+- Replace a tautological notification-disorder check with deterministic
+  multi-device partition and loss recovery evidence, and correct the realtime
+  contract's unsupported offline-queue claim.
+
 - Isolate every stateful protected-Preview acceptance dispatch from ordinary
   push and pull-request concurrency so it cannot cancel the post-merge `main`
   gate or interrupt another approved synthetic journey.
@@ -48,6 +55,16 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Verify that the Production hostname points to the exact promoted deployment and retain the first owner-gated promotion evidence.
 
 ### Added
+
+- Add a disabled-by-default realtime candidate with room-scoped subscribe-only
+  token issuance, committed-outbox publish attempts, a protected count-only
+  worker/health boundary, bounded outbox expiry cleanup, and a provider
+  comparison plus activation/recovery runbook. No provider is provisioned or
+  activated by this change.
+
+- Prove automatic host/guest admission, ballot, and result convergence without
+  manual sync in the isolated browser journey; share bounded poll scheduling
+  between the browser and unit tests.
 
 - A protected, exact-main Production migration workflow, an isolated Production
   Neon provisioning record, and privacy-bounded physical-device/moderated
