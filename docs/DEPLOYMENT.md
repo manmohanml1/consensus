@@ -9,8 +9,11 @@ Shared non-production and independent Production Neon projects both contain
 migrations `0001`–`0005` and use distinct least-privilege identities. Vercel
 Production has its own pooled runtime URL, capability pepper, bounded daily
 retention cron, and `CONSENSUS_ROOM_CREATION_ENABLED=true`. Realtime remains a
-future v0.4 capability; there is no custom domain, stable release tag, or
-GitHub Release.
+disabled-by-default v0.4 candidate; no provider or migration `0006` is active
+in a shared environment. See the
+[v0.4 activation checklist](operations/v04-realtime-activation.md) before any
+environment change. There is no custom domain, stable release tag, or GitHub
+Release.
 
 The current activation and verification evidence is recorded in
 [the 2026-09-07 Production beta activation record](operations/2026-09-07-production-beta-activation.md).

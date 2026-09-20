@@ -93,11 +93,42 @@ describe("room sync state machine", () => {
     expect(classifyRoomUpdate(event, "room_other_001", 3)).toBe("ignore");
   });
 
+  it("keeps polling backup visible until push transport reconnects", () => {
+    let state = createRoomSyncState(4);
+    state = reduceRoomSync(state, { type: "transport-connected" });
+    state = reduceRoomSync(state, { type: "hint-received", revision: 6 });
+    expect(state.mode).toBe("stale");
+    state = reduceRoomSync(state, { type: "reconcile-started" });
+    expect(state.mode).toBe("reconciling");
+    state = reduceRoomSync(state, { type: "transport-interrupted" });
+    state = reduceRoomSync(state, {
+      type: "projection-confirmed",
+      revision: 6,
+    });
+    expect(state).toMatchObject({
+      mode: "degraded",
+      transport: "interrupted",
+      confirmedRevision: 6,
+    });
+    state = reduceRoomSync(state, { type: "transport-connected" });
+    state = reduceRoomSync(state, {
+      type: "projection-confirmed",
+      revision: 6,
+    });
+    expect(state).toMatchObject({ mode: "current", transport: "connected" });
+    expect(reduceRoomSync(state, { type: "hint-received", revision: 5 })).toBe(
+      state,
+    );
+  });
+
   it("bounds retry scheduling even after repeated failures", () => {
     expect(nextRoomPollDelayMs(0, 0)).toBe(2_500);
     expect(nextRoomPollDelayMs(1, 1)).toBe(5_500);
     expect(nextRoomPollDelayMs(3, 0)).toBe(20_000);
     expect(nextRoomPollDelayMs(50, 1)).toBe(30_000);
     expect(nextRoomPollDelayMs(-2, Number.NaN)).toBe(2_500);
+    expect(nextRoomPollDelayMs(0, 0, true)).toBe(15_000);
+    expect(nextRoomPollDelayMs(0, 1, true)).toBe(17_000);
+    expect(nextRoomPollDelayMs(1, 0, true)).toBe(5_000);
   });
 });

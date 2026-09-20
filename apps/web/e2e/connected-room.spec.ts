@@ -217,6 +217,9 @@ test("shows polling interruption and recovers on connectivity return", async ({
 }) => {
   let fail = false;
   await page.route("**/api/v1/rooms**", async (route) => {
+    if (new URL(route.request().url()).pathname.endsWith("/events/token")) {
+      return route.fulfill({ status: 204, body: "" });
+    }
     if (fail) return route.abort("failed");
     return route.fulfill({
       contentType: "application/json",

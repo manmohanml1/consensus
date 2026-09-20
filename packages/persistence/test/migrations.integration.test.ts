@@ -105,6 +105,11 @@ describeDatabase("room migrations on disposable PostgreSQL", () => {
           "UPDATE consensus.decisions SET status = 'no-safe-result'",
         ),
       ).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        client.query(
+          "DELETE FROM consensus.outbox_events WHERE expires_at < now()",
+        ),
+      ).resolves.toMatchObject({ rowCount: 0 });
     } finally {
       await client.query("RESET ROLE");
     }

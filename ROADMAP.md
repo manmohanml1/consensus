@@ -13,6 +13,10 @@ The next convergence-evidence PR strengthens deterministic partition and
 notification-loss simulations and proves the isolated two-browser journey
 advances without manual sync. It is local evidence, not a provider rollout or
 shared-environment acceptance.
+The same open PR now groups the opt-in transport candidate, authorization,
+publisher/worker, degraded fallback, retention and operations documentation.
+ADR 0018 remains proposed and the v0.4 exit still needs separately authorized
+non-production provider/migration activation and measured multi-device proof.
 
 | Version | Product proof                                                                              | Status     |
 | ------- | ------------------------------------------------------------------------------------------ | ---------- |

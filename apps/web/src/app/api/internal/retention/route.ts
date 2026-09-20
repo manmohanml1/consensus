@@ -15,7 +15,16 @@ function configuredDependencies(): RetentionDependencies | null {
   store ??= PostgresRoomStore.fromConnectionString(connectionString);
   return {
     isEnabled: () => process.env.CONSENSUS_RETENTION_DELETE_ENABLED === "true",
-    deleteDue: (limit, now) => store!.deleteRoomsDueForDeletion(limit, now),
+    deleteDue: async (limit, now) => {
+      const result = await store!.deleteRoomsDueForDeletion(limit, now);
+      // Keep expiry maintenance on during a transport rollback. Enable this
+      // independently only after migration 0006 has been applied.
+      if (process.env.CONSENSUS_OUTBOX_RETENTION_ENABLED === "true") {
+        const expiredEvents = await store!.deleteExpiredOutboxEvents(500, now);
+        console.info("consensus.realtime.outbox.retention", { expiredEvents });
+      }
+      return result;
+    },
     onCompleted: (deleted) => {
       console.info("consensus.retention.sweep.completed", { deleted });
     },
