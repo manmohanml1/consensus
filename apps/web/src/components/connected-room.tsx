@@ -14,6 +14,7 @@ import {
 } from "@/lib/room-session";
 import {
   createRoomSyncState,
+  nextRoomPollDelayMs,
   reduceRoomSync,
   roomSyncCopy,
 } from "@/lib/room-sync";
@@ -431,10 +432,7 @@ export function ConnectedRoom({
         if (!disposed)
           timer = window.setTimeout(
             syncWhenVisible,
-            Math.min(
-              30_000,
-              2_500 * 2 ** Math.min(failures, 4) + Math.random() * 500,
-            ),
+            nextRoomPollDelayMs(failures, Math.random()),
           );
       }
     };

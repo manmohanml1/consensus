@@ -6,6 +6,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Fixed
 
+- Replace a tautological notification-disorder check with deterministic
+  multi-device partition and loss recovery evidence, and correct the realtime
+  contract's unsupported offline-queue claim.
+
 - Isolate every stateful protected-Preview acceptance dispatch from ordinary
   push and pull-request concurrency so it cannot cancel the post-merge `main`
   gate or interrupt another approved synthetic journey.
@@ -48,6 +52,10 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Verify that the Production hostname points to the exact promoted deployment and retain the first owner-gated promotion evidence.
 
 ### Added
+
+- Prove automatic host/guest admission, ballot, and result convergence without
+  manual sync in the isolated browser journey; share bounded poll scheduling
+  between the browser and unit tests.
 
 - A protected, exact-main Production migration workflow, an isolated Production
   Neon provisioning record, and privacy-bounded physical-device/moderated

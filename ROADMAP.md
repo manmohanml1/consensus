@@ -9,6 +9,10 @@ The grouped CQ-303/308/309/310 preparation follows
 [ADR 0016](docs/adr/0016-browser-room-session-continuity.md): authorized reload,
 monotonic snapshots, bounded polling and explicit in-memory command retry.
 Transport-dependent acceptance and the full v0.4 exit remain open.
+The next convergence-evidence PR strengthens deterministic partition and
+notification-loss simulations and proves the isolated two-browser journey
+advances without manual sync. It is local evidence, not a provider rollout or
+shared-environment acceptance.
 
 | Version | Product proof                                                                              | Status     |
 | ------- | ------------------------------------------------------------------------------------------ | ---------- |

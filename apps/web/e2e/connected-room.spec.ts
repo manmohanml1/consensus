@@ -484,7 +484,9 @@ test("orchestrates a two-browser secure-room journey", async ({
     await host
       .getByRole("button", { name: "Lock roster and begin voting" })
       .click();
-    await guest.getByRole("button", { name: "Sync now" }).click();
+    await expect(guest.getByTestId("connected-ballot")).toBeVisible({
+      timeout: 10_000,
+    });
     const card = host.getByTestId("connected-ballot").locator("article");
     await card.scrollIntoViewIfNeeded();
     const box = await card.boundingBox();
@@ -508,7 +510,7 @@ test("orchestrates a two-browser secure-room journey", async ({
         .getByRole("button", { name: /^Prefer — a positive choice$/ })
         .click();
     }
-    await guest.getByRole("button", { name: "Sync now" }).click();
+    await expect(guest.getByTestId("connected-ballot")).toBeVisible();
     for (let index = 0; index < 3; index += 1) {
       if (index === 1) {
         await guest.reload();
@@ -519,15 +521,17 @@ test("orchestrates a two-browser secure-room journey", async ({
         .getByRole("button", { name: /^Accept — a workable compromise$/ })
         .click();
     }
-    await host.getByRole("button", { name: "Sync now" }).click();
+    await expect(
+      host.getByRole("button", { name: "Resolve fairly" }),
+    ).toBeEnabled({ timeout: 10_000 });
     await host.getByRole("button", { name: "Resolve fairly" }).click();
-    await guest.getByRole("button", { name: "Sync now" }).click();
 
     await expect(host.getByTestId("connected-result")).toContainText(
       "Garden Table",
     );
     await expect(guest.getByTestId("connected-result")).toContainText(
       "Garden Table",
+      { timeout: 10_000 },
     );
     await guest.reload();
     await expect(guest.getByTestId("connected-result")).toContainText(

@@ -55,12 +55,16 @@ separate migration authorization.
 
 - Ignore an event at or below the client’s applied revision.
 - On a revision gap, fetch the current authorized projection.
-- Queue unsent commands locally only with an expiry and visible pending state.
-- After reconnect, submit each command id once and accept server reconciliation.
+- The current browser client holds at most one uncertain command in memory and
+  visibly offers an explicit retry with the same idempotency key. It does not
+  persist or automatically replay an offline command queue. Expiring queued
+  replay remains future work and must have separate safety and UX evidence.
+- After reconnect, fetch the authorized projection; retry an uncertain command
+  only with its original command id and accept server reconciliation.
 - Never resolve a match from uncommitted peer broadcasts.
-- When notification delivery is absent or unhealthy, poll sequentially with
-  jittered bounded backoff and show `Delayed` or `Offline` rather than claiming
-  the room is current.
+- Today the browser polls the authorized projection sequentially while visible
+  with jittered bounded backoff, and shows `Delayed` or `Offline` on known
+  interruption. Notification transport has not been connected.
 
 ## Performance targets
 

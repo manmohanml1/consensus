@@ -98,6 +98,19 @@ export function classifyRoomUpdate(
   return event.revision === confirmedRevision + 1 ? "refresh" : "gap";
 }
 
+export function nextRoomPollDelayMs(failures: number, jitter: number): number {
+  const safeFailures = Number.isFinite(failures)
+    ? Math.max(0, Math.floor(failures))
+    : 0;
+  const safeJitter = Number.isFinite(jitter)
+    ? Math.min(1, Math.max(0, jitter))
+    : 0;
+  return Math.min(
+    30_000,
+    2_500 * 2 ** Math.min(safeFailures, 4) + safeJitter * 500,
+  );
+}
+
 export const roomSyncCopy: Record<RoomSyncMode, string> = {
   connecting: "Connecting",
   current: "Auto-sync on",

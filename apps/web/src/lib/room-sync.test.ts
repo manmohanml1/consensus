@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   classifyRoomUpdate,
   createRoomSyncState,
+  nextRoomPollDelayMs,
   reduceRoomSync,
 } from "./room-sync";
 
@@ -90,5 +91,13 @@ describe("room sync state machine", () => {
     expect(classifyRoomUpdate(event, event.roomId, 7)).toBe("refresh");
     expect(classifyRoomUpdate(event, event.roomId, 3)).toBe("gap");
     expect(classifyRoomUpdate(event, "room_other_001", 3)).toBe("ignore");
+  });
+
+  it("bounds retry scheduling even after repeated failures", () => {
+    expect(nextRoomPollDelayMs(0, 0)).toBe(2_500);
+    expect(nextRoomPollDelayMs(1, 1)).toBe(5_500);
+    expect(nextRoomPollDelayMs(3, 0)).toBe(20_000);
+    expect(nextRoomPollDelayMs(50, 1)).toBe(30_000);
+    expect(nextRoomPollDelayMs(-2, Number.NaN)).toBe(2_500);
   });
 });
