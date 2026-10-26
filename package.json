@@ -23,6 +23,6 @@
     "verify": "pnpm release:check && pnpm backlog:check && pnpm docs:check && pnpm workflow:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
-    "prettier": "^3.6.2"
+    "prettier": "^3.9.10"
   }
 }
